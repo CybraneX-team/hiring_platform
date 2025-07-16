@@ -1,48 +1,93 @@
 "use client";
 
 import type React from "react";
-
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Input } from "@/app/components/ui/Input";
 import { Label } from "@/app/components/ui/label";
 import Link from "next/link";
 import Image from "next/image";
+import {
+  motion,
+  AnimatePresence,
+  easeInOut,
+  easeOut,
+  easeIn,
+} from "framer-motion";
 
 export default function SignupPage() {
+  const router = useRouter();
   const [useEmail, setUseEmail] = useState(false);
-  const [otp, setOtp] = useState(["", "", "", ""]);
 
-  const handleOtpChange = (index: number, value: string) => {
-    if (value.length <= 1) {
-      const newOtp = [...otp];
-      newOtp[index] = value;
-      setOtp(newOtp);
-
-      // Auto-focus next input
-      if (value && index < 3) {
-        const nextInput = document.getElementById(`otp-${index + 1}`);
-        nextInput?.focus();
-      }
-    }
+  // Animation variants
+  const containerVariants = {
+    hidden: "",
+    visible: {
+      opacity: 1,
+      transition: {
+        duration: 0.6,
+        staggerChildren: 0.1,
+      },
+    },
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      const prevInput = document.getElementById(`otp-${index - 1}`);
-      prevInput?.focus();
-    }
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: easeOut,
+      },
+    },
+  };
+  const buttonVariants = {
+    initial: { scale: 1 },
+    hover: {
+      scale: 1.02,
+      transition: { duration: 0.2 },
+    },
+    tap: {
+      scale: 0.98,
+      transition: { duration: 0.1 },
+    },
+  };
+
+  const socialButtonVariants = {
+    initial: { scale: 1 },
+    hover: {
+      scale: 1.05,
+      transition: { duration: 0.2 },
+    },
+    tap: {
+      scale: 0.95,
+      transition: { duration: 0.1 },
+    },
+  };
+
+  const inputVariants = {
+    focus: {
+      scale: 1.02,
+      transition: { duration: 0.2 },
+    },
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] ">
+    <motion.div
+      className="min-h-screen bg-[#F5F5F5]"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
       <div className="container mx-auto px-6 py-8">
-        <div className="mb-16">
+        <motion.div className="mb-16" variants={itemVariants}>
           <h1 className="text-lg font-medium text-gray-900">Logo</h1>
-        </div>
+        </motion.div>
 
         <div className="max-w-md mx-auto space-y-6">
-          <div className="text-center space-y-2">
+          <motion.div className="text-center space-y-2" variants={itemVariants}>
             <h2 className="text-2xl md:text-3xl font-medium text-gray-900">
               Create an account
             </h2>
@@ -52,120 +97,130 @@ export default function SignupPage() {
                 Sign in
               </Link>
             </p>
-          </div>
+          </motion.div>
 
-          {/* Full Name */}
-          <div className="space-y-2">
+          <motion.div className="space-y-2" variants={itemVariants}>
             <Label
               htmlFor="fullname"
               className="text-sm font-medium text-gray-700"
             >
               Full Name
             </Label>
-            <Input
-              id="fullname"
-              placeholder="John Doe"
-              className="h-12 bg-white border-gray-200 rounded-lg"
-            />
-          </div>
+            <motion.div variants={inputVariants} whileFocus="focus">
+              <Input
+                id="fullname"
+                placeholder="John Doe"
+                className="h-12 bg-white border-gray-200 rounded-lg"
+              />
+            </motion.div>
+          </motion.div>
 
-          {/* Phone/Email */}
-          <div className="space-y-2">
+          <motion.div className="space-y-2" variants={itemVariants}>
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium text-gray-700">
                 {useEmail ? "Email" : "Phone"}
               </Label>
-              <button
+              <motion.button
                 onClick={() => setUseEmail(!useEmail)}
                 className="text-xs text-gray-500 hover:text-gray-700"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 {useEmail ? "Use phone instead" : "Use email instead"}
-              </button>
+              </motion.button>
             </div>
 
             <div className="flex gap-2">
-              {!useEmail && (
-                <select className="h-12 px-3 bg-white border border-gray-200 rounded-lg text-sm w-20 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option>+91</option>
-                </select>
-              )}
-              <Input
-                placeholder={useEmail ? "Enter your email" : "1234 567 890"}
-                className="h-12 bg-white border-gray-200 rounded-lg flex-1"
-                type={useEmail ? "email" : "tel"}
-              />
-              <button className="text-black h-12 px-6 bg-[#DFDFDF] border border-gray-200 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors">
-                Get OTP
-              </button>
-            </div>
-          </div>
-
-          {/* OTP */}
-          <div className="space-y-2 max-w-2/3">
-            <Label className="text-sm font-medium text-gray-700">OTP</Label>
-            <div className="flex gap-2 items-center">
-              {otp.map((digit, index) => (
-                <Input
-                  key={index}
-                  id={`otp-${index}`}
-                  value={digit}
-                  onChange={(e) => handleOtpChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="h-12 w-12 text-center bg-white border-gray-200 rounded-lg"
-                  maxLength={1}
-                />
-              ))}
-              <button
-                className="p-4 rounded-lg flex items-center justify-center transition-colors"
-                style={{ backgroundColor: "#17181D" }}
+              <AnimatePresence mode="wait">
+                {!useEmail && (
+                  <motion.select
+                    className="h-12 px-3 bg-white border border-gray-200 rounded-lg text-sm w-20 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <option>+91</option>
+                  </motion.select>
+                )}
+              </AnimatePresence>
+              <motion.div
+                className="flex-1"
+                variants={inputVariants}
+                whileFocus="focus"
               >
-                <ArrowRight className="h-4 w-4 text-white" />
-              </button>
+                <Input
+                  placeholder={useEmail ? "Enter your email" : "1234 567 890"}
+                  className="h-12 bg-white border-gray-200 rounded-lg flex-1"
+                  type={useEmail ? "email" : "tel"}
+                />
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Password */}
-          <div className="space-y-2">
+          <motion.div className="space-y-2" variants={itemVariants}>
             <Label
               htmlFor="password"
               className="text-sm font-medium text-gray-700"
             >
               Password
             </Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              className="h-12 bg-white border-gray-200 rounded-lg"
-            />
-          </div>
+            <motion.div variants={inputVariants} whileFocus="focus">
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                className="h-12 bg-white border-gray-200 rounded-lg"
+              />
+            </motion.div>
+          </motion.div>
 
-          {/* Create Account Button */}
-          <button
-            className="w-full h-12 rounded-lg text-black font-medium transition-opacity hover:opacity-90"
+          <motion.button
+            className="w-full h-12 rounded-lg text-black font-medium transition-opacity hover:opacity-90 cursor-pointer"
             style={{ backgroundColor: "#76FF82" }}
+            onClick={() => router.push("/otp")}
+            variants={buttonVariants}
+            initial="initial"
+            whileHover="hover"
+            whileTap="tap"
           >
-            Create your account
-          </button>
+            <motion.span initial={{ opacity: 1 }} whileHover={{ opacity: 0.9 }}>
+              Verify your account
+            </motion.span>
+          </motion.button>
 
           {/* Divider */}
-          <div className="relative">
+          <motion.div className="relative" variants={itemVariants}>
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-200" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-gray-50 px-2 text-gray-500">
+              <span className="bg-[#F5F5F5] px-2 text-gray-500">
                 Or continue with
               </span>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Social Login */}
-          <div className="grid grid-cols-2 gap-3">
-            <button className="h-12 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors">
+          <motion.div
+            className="grid grid-cols-2 gap-3"
+            variants={itemVariants}
+          >
+            <motion.button
+              className="h-12 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors"
+              variants={socialButtonVariants}
+              initial="initial"
+              whileHover="hover"
+              whileTap="tap"
+            >
               <span className="text-lg font-bold text-black">G</span>
-            </button>
-            <button className="h-12 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors">
+            </motion.button>
+            <motion.button
+              className="h-12 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors"
+              variants={socialButtonVariants}
+              initial="initial"
+              whileHover="hover"
+              whileTap="tap"
+            >
               <span className="text-lg">
                 <Image
                   src="/images/apple.png"
@@ -174,10 +229,10 @@ export default function SignupPage() {
                   alt="image"
                 />
               </span>
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

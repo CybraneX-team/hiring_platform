@@ -5,45 +5,86 @@ import { Input } from "@/app/components/ui/Input";
 import { Label } from "@/app/components/ui/label";
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "framer-motion";
+import { easeOut } from "framer-motion";
 
 export default function LoginPage() {
   const [usePhone, setUsePhone] = useState(false);
 
-  return (
-    <div className="min-h-screen bg-[#F5F5F5]">
-      <div className="container mx-auto px-6 py-8">
-        {/* Logo - positioned at start */}
-        <div className="mb-16">
-          <h1 className="text-lg font-medium text-gray-900">Logo</h1>
-        </div>
+  // Animation Variants
+  const containerVariants = {
+    hidden: "",
+    visible: {
+      opacity: 1,
+      transition: {
+        duration: 0.6,
+        staggerChildren: 0.1,
+      },
+    },
+  };
 
-        {/* Main Form - centered */}
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: easeOut,
+      },
+    },
+  };
+
+  const buttonVariants = {
+    initial: { scale: 1 },
+    hover: {
+      scale: 1.02,
+      transition: { duration: 0.2 },
+    },
+    tap: {
+      scale: 0.98,
+      transition: { duration: 0.1 },
+    },
+  };
+
+  return (
+    <motion.div
+      className="min-h-screen bg-[#F5F5F5]"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
+      <div className="container mx-auto px-6 py-8">
+        <motion.div className="mb-16" variants={itemVariants}>
+          <h1 className="text-lg font-medium text-gray-900">Logo</h1>
+        </motion.div>
+
         <div className="max-w-md mx-auto space-y-6">
-          {/* Header */}
-          <div className="text-center space-y-2">
+          <motion.div className="text-center space-y-2" variants={itemVariants}>
             <h2 className="text-2xl md:text-3xl font-medium text-gray-900">
               Log in your account
             </h2>
             <p className="text-sm text-gray-600">
-              Don't have an account ?{" "}
+              Don't have an account?{" "}
               <Link href="/signup" className="text-gray-900 hover:underline">
                 Create account
               </Link>
             </p>
-          </div>
+          </motion.div>
 
-          {/* Email/Phone */}
-          <div className="space-y-2">
+          <motion.div className="space-y-2" variants={itemVariants}>
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium text-gray-700">
                 {usePhone ? "Phone" : "Email"}
               </Label>
-              <button
+              <motion.button
                 onClick={() => setUsePhone(!usePhone)}
                 className="text-xs text-gray-500 hover:text-gray-700"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 {usePhone ? "Use email instead" : "Use phone number instead"}
-              </button>
+              </motion.button>
             </div>
 
             {usePhone ? (
@@ -64,10 +105,9 @@ export default function LoginPage() {
                 type="email"
               />
             )}
-          </div>
+          </motion.div>
 
-          {/* Password */}
-          <div className="space-y-2">
+          <motion.div className="space-y-2" variants={itemVariants}>
             <Label
               htmlFor="password"
               className="text-sm font-medium text-gray-700"
@@ -80,18 +120,21 @@ export default function LoginPage() {
               placeholder="Enter your password"
               className="h-12 bg-white border-gray-200 rounded-lg"
             />
-          </div>
+          </motion.div>
 
-          {/* Log In Button */}
-          <button
+          {/* Login Button */}
+          <motion.button
             className="w-full h-12 rounded-lg text-black font-medium transition-opacity hover:opacity-90"
             style={{ backgroundColor: "#76FF82" }}
+            variants={buttonVariants}
+            initial="initial"
+            whileHover="hover"
+            whileTap="tap"
           >
             Log In
-          </button>
+          </motion.button>
 
-          {/* Divider */}
-          <div className="relative">
+          <motion.div className="relative" variants={itemVariants}>
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-200" />
             </div>
@@ -100,26 +143,40 @@ export default function LoginPage() {
                 Or continue with
               </span>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Social Login */}
-          <div className="grid grid-cols-2 gap-3">
-            <button className="h-12 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors">
+          <motion.div
+            className="grid grid-cols-2 gap-3"
+            variants={itemVariants}
+          >
+            <motion.button
+              className="h-12 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors"
+              variants={buttonVariants}
+              initial="initial"
+              whileHover="hover"
+              whileTap="tap"
+            >
               <span className="text-lg font-bold text-black">G</span>
-            </button>
-            <button className="h-12 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors">
+            </motion.button>
+            <motion.button
+              className="h-12 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors"
+              variants={buttonVariants}
+              initial="initial"
+              whileHover="hover"
+              whileTap="tap"
+            >
               <span className="text-lg">
                 <Image
                   src="/images/apple.png"
                   height={14}
                   width={11}
-                  alt="image"
+                  alt="apple"
                 />
               </span>
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
