@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Input } from "@/app/components/ui/Input";
 import { Label } from "@/app/components/ui/label";
@@ -14,15 +14,22 @@ import {
   easeInOut,
   easeOut,
   easeIn,
+  Variants 
 } from "framer-motion";
+import { toast } from "react-toastify";
+import { useUser } from "../context/UserContext";
 
 export default function SignupPage() {
   const router = useRouter();
-  const [useEmail, setUseEmail] = useState(false);
+  const [useEmail, setUseEmail] = useState(true);
+  const [otp, setotp] = useState("")
+  const { userCreds, setUserCreds, setmode } = useUser();
 
   // Animation variants
-  const containerVariants = {
-    hidden: "",
+  const containerVariants : Variants  = {
+    hidden: {
+    opacity: 0,
+  },
     visible: {
       opacity: 1,
       transition: {
@@ -74,6 +81,44 @@ export default function SignupPage() {
     },
   };
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      toast.info("Already logged in");
+      router.push("/"); 
+    }
+  }, [router])
+  async function verifyAccount(){
+    const req = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/register`
+      , {
+        method : "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body : JSON.stringify({
+          name :  userCreds.name,
+          email : userCreds.email,
+          password : userCreds.password
+        }), 
+      }
+    )
+    const response = await req.json()
+    if(response.message === "User already exists"){
+      toast.info("User already exists")
+      return 
+    }
+    if(response.message === "All fields are required"){
+      toast.info("All fields are required")
+      return 
+    }
+    
+    if(req.ok){
+      toast.success(response.message)
+      router.push("/otp")
+      setmode("register")
+    }
+  }
   return (
     <motion.div
       className="min-h-screen bg-[#F5F5F5]"
@@ -111,6 +156,10 @@ export default function SignupPage() {
                 id="fullname"
                 placeholder="John Doe"
                 className="h-12 bg-white border-gray-200 rounded-lg"
+                onChange={(e)=>{setUserCreds({
+                  ...userCreds,
+                  name: e.target.value
+                })}}
               />
             </motion.div>
           </motion.div>
@@ -120,14 +169,14 @@ export default function SignupPage() {
               <Label className="text-sm font-medium text-gray-700">
                 {useEmail ? "Email" : "Phone"}
               </Label>
-              <motion.button
+              {/* <motion.button
                 onClick={() => setUseEmail(!useEmail)}
                 className="text-xs text-gray-500 hover:text-gray-700"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 {useEmail ? "Use phone instead" : "Use email instead"}
-              </motion.button>
+              </motion.button> */}
             </div>
 
             <div className="flex gap-2">
@@ -153,6 +202,10 @@ export default function SignupPage() {
                   placeholder={useEmail ? "Enter your email" : "1234 567 890"}
                   className="h-12 bg-white border-gray-200 rounded-lg flex-1"
                   type={useEmail ? "email" : "tel"}
+                  onChange={(e)=>{setUserCreds({
+                    ...userCreds,
+                    email: e.target.value
+                  })}}
                 />
               </motion.div>
             </div>
@@ -171,6 +224,10 @@ export default function SignupPage() {
                 type="password"
                 placeholder="Enter your password"
                 className="h-12 bg-white border-gray-200 rounded-lg"
+                onChange={(e)=>{setUserCreds({
+                  ...userCreds,
+                  password : e.target.value
+                })}}
               />
             </motion.div>
           </motion.div>
@@ -178,11 +235,11 @@ export default function SignupPage() {
           <motion.button
             className="w-full h-12 rounded-lg text-black font-medium transition-opacity hover:opacity-90 cursor-pointer"
             style={{ backgroundColor: "#76FF82" }}
-            onClick={() => router.push("/otp")}
             variants={buttonVariants}
             initial="initial"
             whileHover="hover"
             whileTap="tap"
+            onClick={verifyAccount}
           >
             <motion.span initial={{ opacity: 1 }} whileHover={{ opacity: 0.9 }}>
               Verify your account

@@ -1,4 +1,21 @@
+"use client"
+
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { toast } from "react-toastify";
+
 export default function HeroSection() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      toast.info("Not logged in");
+      router.push("/signup"); 
+    }
+  }, [router])
+  
   return (
     <div
       className="m-3 bg-[#F4FFF5] rounded-xl"

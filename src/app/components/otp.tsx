@@ -6,12 +6,16 @@ import { ArrowRight } from "lucide-react";
 import { Input } from "@/app/components/ui/Input";
 import { Label } from "@/app/components/ui/label";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import { easeOut } from "framer-motion";
+import { useUser } from "../context/UserContext";
+import { toast } from "react-toastify";
 
 export default function Otp() {
   const router = useRouter();
   const [otp, setOtp] = useState(["", "", "", ""]);
+  const [enteredOtp , setenteredOtp ]  = useState("")
+  const { userCreds , setuser, setUserCreds, mode, loginCreds }  = useUser()
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length <= 1) {
@@ -25,6 +29,7 @@ export default function Otp() {
         nextInput?.focus();
       }
     }
+    console.log("otp", otp)
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
@@ -34,9 +39,61 @@ export default function Otp() {
     }
   };
 
+  const otpToSent =  ()=>{ otp.forEach((e)=>{
+              let s = ""
+              s+=e
+              setenteredOtp(s)
+              return enteredOtp
+            })
+          }
+  async function verifyOTP(){
+
+    let finalOTP = ""
+    otp.forEach(element => {
+      finalOTP+=element
+    });
+
+    const makeReq = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/verify-otp`
+      ,
+      {
+        method : "POST",
+        headers : {
+          "Content-Type" : "application/json"
+        },
+        body : JSON.stringify(
+          {
+            name : userCreds.name,
+            email: mode === "register" ? userCreds.email :  loginCreds.email ,
+            password : mode === "register" ? userCreds.password :  loginCreds.password,
+            otp : finalOTP,
+            mode
+          },
+        )
+     }
+    )
+    if(makeReq.status === 400){
+      const response = await makeReq.json()
+      toast.info(response.message)
+      return 
+    }
+    if(makeReq.ok){
+      const response = await makeReq.json()
+      setuser(response.user)
+      setUserCreds({
+        name   : "",
+        email  : "",
+        password : ""
+      })
+      localStorage.setItem("token", response.token)
+      router.push("/")
+      return
+    }
+  }
   // Animation variants
-  const containerVariants = {
-    hidden: "",
+  const containerVariants : Variants = {
+    hidden: {
+    opacity: 0,
+  },
     visible: {
       opacity: 1,
       transition: {
@@ -139,6 +196,7 @@ export default function Otp() {
             style={{ backgroundColor: "#76FF82" }}
             variants={buttonVariants}
             initial="initial"
+            onClick={verifyOTP}
             whileHover="hover"
             whileTap="tap"
           >
