@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 
 const CalendarSec = () => {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 2, 1)); // March 2025
+  const [currentDate, setCurrentDate] = useState(new Date(2025, 2, 1));
   const [selectedDate, setSelectedDate] = useState(12);
-  const [events, setEvents] = useState({
+  const [events, setEvents] = useState<Events>({
     21: [{ time: "4:30 pm", title: "Interview at Riverleaf" }],
   });
 
@@ -32,15 +32,24 @@ const CalendarSec = () => {
     "Saturday",
   ];
 
-  const getDaysInMonth = (date) => {
+  const getDaysInMonth = (date: Date): number => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   };
 
-  const getFirstDayOfMonth = (date) => {
+  const getFirstDayOfMonth = (date: Date): number => {
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
-  const navigateMonth = (direction) => {
+  interface Event {
+    time: string;
+    title: string;
+  }
+
+  interface Events {
+    [key: number]: Event[];
+  }
+
+  const navigateMonth = (direction: number): void => {
     const newDate = new Date(currentDate);
     newDate.setMonth(currentDate.getMonth() + direction);
     setCurrentDate(newDate);
