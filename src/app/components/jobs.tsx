@@ -130,7 +130,6 @@ export default function JobComponent() {
             </motion.span>
           </div>
 
-          {/* User icons - positioned to the far right */}
           <div className="flex items-center space-x-3 ml-auto bg-white rounded-full">
             <motion.button
               whileHover={{ scale: 1.05 }}

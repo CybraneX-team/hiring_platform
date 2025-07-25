@@ -21,7 +21,7 @@ export default function SignupPage() {
 
   // Animation variants
   const containerVariants = {
-    hidden: "",
+    hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
