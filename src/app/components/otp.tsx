@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Input } from "@/app/components/ui/Input";
 import { Label } from "@/app/components/ui/label";
@@ -16,6 +16,7 @@ export default function Otp() {
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [enteredOtp , setenteredOtp ]  = useState("")
   const { userCreds , setuser, setUserCreds, mode, loginCreds }  = useUser()
+  const [loggingIn, setloggingIn] = useState(false)
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length <= 1) {
@@ -29,7 +30,6 @@ export default function Otp() {
         nextInput?.focus();
       }
     }
-    console.log("otp", otp)
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
@@ -47,46 +47,52 @@ export default function Otp() {
             })
           }
   async function verifyOTP(){
+    try {
+      setloggingIn(true); 
+      let finalOTP = ""
+      otp.forEach(element => {
+        finalOTP+=element
+      });
 
-    let finalOTP = ""
-    otp.forEach(element => {
-      finalOTP+=element
-    });
-
-    const makeReq = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/verify-otp`
-      ,
-      {
-        method : "POST",
-        headers : {
-          "Content-Type" : "application/json"
-        },
-        body : JSON.stringify(
-          {
-            name : userCreds.name,
-            email: mode === "register" ? userCreds.email :  loginCreds.email ,
-            password : mode === "register" ? userCreds.password :  loginCreds.password,
-            otp : finalOTP,
-            mode
+      const makeReq = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/verify-otp`
+        ,
+        {
+          method : "POST",
+          headers : {
+            "Content-Type" : "application/json"
           },
-        )
-     }
-    )
-    if(makeReq.status === 400){
-      const response = await makeReq.json()
-      toast.info(response.message)
-      return 
-    }
-    if(makeReq.ok){
-      const response = await makeReq.json()
-      setuser(response.user)
-      setUserCreds({
-        name   : "",
-        email  : "",
-        password : ""
-      })
-      localStorage.setItem("token", response.token)
-      router.push("/")
-      return
+          body : JSON.stringify(
+            {
+              name : userCreds.name,
+              email: mode === "register" ? userCreds.email :  loginCreds.email ,
+              password : mode === "register" ? userCreds.password :  loginCreds.password,
+              otp : finalOTP,
+              mode
+            },
+          )
+      }
+      )
+      if(makeReq.status === 400){
+        const response = await makeReq.json()
+        toast.info(response.message)
+        return 
+      }
+      if(makeReq.ok){
+        const response = await makeReq.json()
+        setuser(response.user)
+        setUserCreds({
+          name   : "",
+          email  : "",
+          password : ""
+        })
+        localStorage.setItem("token", response.token)
+        router.push("/")
+        return
+      }
+    }catch (error : any) {
+        toast.error(`Something went wrong :  ${error.message}`);
+    }finally{
+      setloggingIn(false); 
     }
   }
   // Animation variants
@@ -126,8 +132,62 @@ export default function Otp() {
       transition: { duration: 0.1 },
     },
   };
+  const Loader = () => {
+    const messages = [
+      "Verifying your identity...",
+      "Encrypting data securely...",
+      "Fetching your credentials from hyperspace...",
+      "Polishing the pixels...",
+      "Casting some JavaScript spells ✨...",
+      "Calling the backend wizards...",
+      "Sharpening the UX blades...",
+      "One more moment... making it perfect!"
+    ];
+
+
+      const [currentMessage, setCurrentMessage] = useState(messages[0]);
+
+      useEffect(() => {
+        const interval = setInterval(() => {
+          setCurrentMessage((prev) => {
+            const currentIndex = messages.indexOf(prev);
+            return messages[(currentIndex + 1) % messages.length];
+          });
+        }, 550); 
+
+        return () => clearInterval(interval);
+      }, []);
+
+    return (
+      <motion.div
+        className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center text-center px-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <motion.div
+          className="w-20 h-20 border-[5px] border-t-[#76FF82] border-gray-300 rounded-full animate-spin mb-6"
+          initial={{ scale: 0.8 }}
+          animate={{ scale: [1, 1.1, 1], rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+        />
+        <motion.p
+          key={currentMessage}
+          className="text-gray-800 text-lg font-medium"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.4 }}
+        >
+          {currentMessage}
+        </motion.p>
+      </motion.div>
+    );
+  };
 
   return (
+    <>
+     {loggingIn && <Loader />}
     <motion.div
       className="min-h-screen bg-[#F5F5F5]"
       initial="hidden"
@@ -192,7 +252,8 @@ export default function Otp() {
 
           {/* Submit Button */}
           <motion.button
-            className="w-full h-12 rounded-lg text-black font-medium transition-opacity hover:opacity-90 mt-10 cursor-pointer"
+            className="w-full h-12 rounded-lg text-black font-medium transition-opacity  capitalize
+            hover:opacity-90 mt-10 cursor-pointer"
             style={{ backgroundColor: "#76FF82" }}
             variants={buttonVariants}
             initial="initial"
@@ -200,10 +261,11 @@ export default function Otp() {
             whileHover="hover"
             whileTap="tap"
           >
-            Create your account
+            {mode === "register" ? 'Create your account'  : 'Log in to your account'}
           </motion.button>
         </div>
       </div>
     </motion.div>
+    </>
   );
 }
