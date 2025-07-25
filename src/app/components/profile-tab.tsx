@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Star, Upload, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import CalendarSection from "./calender";
 
 const tabs = [
   { id: "profile", label: "Profile" },
@@ -360,50 +361,9 @@ export default function ProfileTab() {
             animate="visible"
             exit="exit"
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="space-y-12"
+            className="w-full"
           >
-            <motion.div
-              variants={itemVariants}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                Availability
-              </h3>
-              <p className="text-gray-600 text-base mb-2">
-                {profileData.schedule.availability}
-              </p>
-              <p className="text-gray-500 text-base">
-                Timezone: {profileData.schedule.timezone}
-              </p>
-            </motion.div>
-            <motion.div
-              variants={itemVariants}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                Preferred Meeting Times
-              </h3>
-              <motion.ul
-                className="space-y-3"
-                variants={containerVariants}
-                transition={{ staggerChildren: 0.1 }}
-              >
-                {profileData.schedule.preferredMeetingTimes.map(
-                  (time, index) => (
-                    <motion.li
-                      key={index}
-                      variants={itemVariants}
-                      whileHover={{ x: 8 }}
-                      transition={{ duration: 0.4, ease: "easeOut" }}
-                      className="flex items-center gap-3 cursor-default"
-                    >
-                      <Calendar className="w-5 h-5 text-gray-400" />
-                      <span className="text-gray-600 text-base">{time}</span>
-                    </motion.li>
-                  )
-                )}
-              </motion.ul>
-            </motion.div>
+            <CalendarSection />
           </motion.div>
         );
 

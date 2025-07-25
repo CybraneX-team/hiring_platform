@@ -1,8 +1,11 @@
-"use client"
+"use client";
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "react-toastify";
+
+import React from "react";
+import Link from "next/link";
 
 export default function HeroSection() {
   const router = useRouter();
@@ -12,10 +15,10 @@ export default function HeroSection() {
 
     if (!token) {
       toast.info("Not logged in");
-      router.push("/signup"); 
+      router.push("/signup");
     }
-  }, [router])
-  
+  }, [router]);
+
   return (
     <div
       className="m-3 bg-[#F4FFF5] rounded-xl"
@@ -27,9 +30,11 @@ export default function HeroSection() {
         </h1>
 
         <div className="flex flex-col sm:flex-row gap-4">
-          <button className="bg-[#76FF83] text-black px-8 py-3 rounded-xl font-medium text-lg hover:bg-[#6ef07a] transition-colors">
-            Hire engineers
-          </button>
+          <Link href="/company/signup">
+            <button className="bg-[#76FF83] text-black px-8 py-3 rounded-xl font-medium text-lg hover:bg-[#6ef07a] transition-colors">
+              Hire engineers
+            </button>
+          </Link>
           <button className="bg-[#D2FFD6] text-black px-8 py-3 rounded-xl font-medium text-lg hover:bg-[#c5f2ca] transition-colors">
             Apply for a Job
           </button>

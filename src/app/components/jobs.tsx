@@ -11,7 +11,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-
+import Link from "next/link";
 const jobListings = [
   {
     id: 1,
@@ -329,17 +329,18 @@ export default function JobComponent() {
                         </div>
                       </div>
                     </div>
-
-                    <motion.button
-                      whileHover={{
-                        scale: 1.02,
-                        boxShadow: "0 4px 12px rgba(118, 255, 130, 0.3)",
-                      }}
-                      whileTap={{ scale: 0.98 }}
-                      className="bg-[#76FF82] text-black font-medium px-6 py-2 rounded-full text-sm"
-                    >
-                      View Role
-                    </motion.button>
+                    <Link href="/jobs/details">
+                      <motion.button
+                        whileHover={{
+                          scale: 1.02,
+                          boxShadow: "0 4px 12px rgba(118, 255, 130, 0.3)",
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        className="bg-[#76FF82] text-black font-medium px-6 py-2 rounded-full text-sm"
+                      >
+                        View Role
+                      </motion.button>
+                    </Link>
                   </div>
                 </div>
               </motion.div>
