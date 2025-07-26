@@ -24,7 +24,6 @@ export default function Otp() {
       newOtp[index] = value;
       setOtp(newOtp);
 
-      // Auto-focus next input
       if (value && index < 3) {
         const nextInput = document.getElementById(`otp-${index + 1}`);
         nextInput?.focus();
