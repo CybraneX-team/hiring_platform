@@ -9,6 +9,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import Link from "next/link";
 
 function JobHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -82,12 +83,14 @@ function JobHeader() {
               >
                 <Mail className="w-4 h-4 text-gray-600" />
               </motion.button>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                className="w-8 h-8 bg-[#3159AB] p-5 rounded-full flex items-center justify-center text-white font-medium cursor-pointer"
-              >
-                R
-              </motion.div>
+              <Link href="/profile">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  className="w-8 h-8 bg-[#3159AB] p-5 rounded-full flex items-center justify-center text-white font-medium cursor-pointer"
+                >
+                  R
+                </motion.div>
+              </Link>
             </div>
 
             {/* Hamburger menu */}

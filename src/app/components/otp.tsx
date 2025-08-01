@@ -85,7 +85,7 @@ export default function Otp() {
           password: "",
         });
         localStorage.setItem("token", response.token);
-        router.push("/");
+        router.push("/jobs");
         return;
       }
     } catch (error: any) {

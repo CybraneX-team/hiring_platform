@@ -7,53 +7,55 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { easeOut, Variants } from "framer-motion";
-import {useRouter} from "next/navigation"
+import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useUser } from "../context/UserContext";
 export default function LoginPage() {
-
-  const router = useRouter()
+  const router = useRouter();
 
   const [usePhone, setUsePhone] = useState(false);
-  const {loginCreds, setLoginCreds,mode, setmode }  =  useUser()
+  const { loginCreds, setLoginCreds, mode, setmode } = useUser();
   // Animation Variants
 
-    useEffect(() => {
-      const token = localStorage.getItem("token");
-  
-      if (token) {
-        toast.info("Already logged in");
-        router.push("/"); 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      toast.info("Already logged in");
+      router.push("/jobs");
+    }
+  }, [router]);
+
+  const login = async () => {
+    const makeReq = await fetch(
+      `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/login`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: loginCreds.email,
+          password: loginCreds.password,
+        }),
       }
-    }, [router])
-
-  const login = async ()=>{
-    const makeReq = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/login`, {
-      method : "POST",
-      headers : {
-        "Content-Type" : "application/json"
-      },
-      body : JSON.stringify({
-        email : loginCreds.email,
-        password  : loginCreds.password
-      })
-    })
-    if(makeReq.status === 400){
-      const response = await makeReq.json()
-      toast.info(response.message)
-      return 
+    );
+    if (makeReq.status === 400) {
+      const response = await makeReq.json();
+      toast.info(response.message);
+      return;
     }
 
-    if(makeReq.ok){
-      const resposne = await makeReq.json()
-      toast.info(resposne.message)
-      setmode("login")
-      router.push("/otp")
+    if (makeReq.ok) {
+      const resposne = await makeReq.json();
+      toast.info(resposne.message);
+      setmode("login");
+      router.push("/otp");
     }
-  }
-  const containerVariants : Variants  = {
+  };
+  const containerVariants: Variants = {
     hidden: {
-      opacity : 0
+      opacity: 0,
     },
     visible: {
       opacity: 1,
@@ -88,7 +90,6 @@ export default function LoginPage() {
     },
   };
 
-  
   return (
     <motion.div
       className="min-h-screen bg-[#F5F5F5]"
@@ -145,14 +146,12 @@ export default function LoginPage() {
                 placeholder="xyz@email.com"
                 className="h-12 bg-white border-gray-200 rounded-lg"
                 type="email"
-                onChange={
-                  (e)=>{
-                    setLoginCreds({
-                      ...loginCreds,
-                      email : e.target.value
-                    })
-                  }
-                }
+                onChange={(e) => {
+                  setLoginCreds({
+                    ...loginCreds,
+                    email: e.target.value,
+                  });
+                }}
               />
             )}
           </motion.div>
@@ -169,14 +168,12 @@ export default function LoginPage() {
               type="password"
               placeholder="Enter your password"
               className="h-12 bg-white border-gray-200 rounded-lg"
-              onChange={
-                 (e)=>{
-                   setLoginCreds({
-                     ...loginCreds,
-                     password : e.target.value
-                   })
-                 }
-               }
+              onChange={(e) => {
+                setLoginCreds({
+                  ...loginCreds,
+                  password: e.target.value,
+                });
+              }}
             />
           </motion.div>
 
