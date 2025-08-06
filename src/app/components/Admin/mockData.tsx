@@ -1,0 +1,145 @@
+import type {
+  Company,
+  Role,
+  Application,
+  DocumentType,
+  SubmittedDocument,
+} from "../../types";
+
+export const companies: Company[] = [
+  {
+    id: 1,
+    name: "TechCorp Solutions",
+    logo: "T",
+    activeRoles: 12,
+    totalApplications: 145,
+    location: "San Francisco, CA",
+    industry: "Technology",
+  },
+  {
+    id: 2,
+    name: "InnovateLabs",
+    logo: "I",
+    activeRoles: 8,
+    totalApplications: 89,
+    location: "New York, NY",
+    industry: "Software",
+  },
+  {
+    id: 3,
+    name: "DataDrive Inc",
+    logo: "D",
+    activeRoles: 15,
+    totalApplications: 203,
+    location: "Austin, TX",
+    industry: "Data Analytics",
+  },
+  {
+    id: 4,
+    name: "CloudFirst",
+    logo: "C",
+    activeRoles: 6,
+    totalApplications: 67,
+    location: "Seattle, WA",
+    industry: "Cloud Services",
+  },
+];
+
+export const activeRoles: Role[] = [
+  {
+    id: 1,
+    title: "Senior Software Engineer",
+    department: "Engineering",
+    applications: 23,
+    salary: "120k-150k",
+    type: "Full-Time",
+    posted: "2 days ago",
+    status: "Active",
+  },
+  {
+    id: 2,
+    title: "Product Manager",
+    department: "Product",
+    applications: 18,
+    salary: "110k-140k",
+    type: "Full-Time",
+    posted: "5 days ago",
+    status: "Active",
+  },
+  {
+    id: 3,
+    title: "UX Designer",
+    department: "Design",
+    applications: 31,
+    salary: "90k-120k",
+    type: "Full-Time",
+    posted: "1 week ago",
+    status: "Active",
+  },
+];
+
+export const applications: Application[] = [
+  {
+    id: 1,
+    name: "John Smith",
+    email: "john.smith@email.com",
+    phone: "+1 (555) 123-4567",
+    experience: "5 years",
+    status: "selected",
+    appliedDate: "2024-01-15",
+    avatar: "J",
+    location: "San Francisco, CA",
+    currentRole: "Software Engineer at Meta",
+  },
+  {
+    id: 2,
+    name: "Sarah Johnson",
+    email: "sarah.j@email.com",
+    phone: "+1 (555) 987-6543",
+    experience: "7 years",
+    status: "selected",
+    appliedDate: "2024-01-14",
+    avatar: "S",
+    location: "New York, NY",
+    currentRole: "Senior Developer at Google",
+  },
+  {
+    id: 3,
+    name: "Mike Chen",
+    email: "mike.chen@email.com",
+    phone: "+1 (555) 456-7890",
+    experience: "3 years",
+    status: "pending",
+    appliedDate: "2024-01-16",
+    avatar: "M",
+    location: "Austin, TX",
+    currentRole: "Frontend Developer at Spotify",
+  },
+  {
+    id: 4,
+    name: "Emily Davis",
+    email: "emily.davis@email.com",
+    phone: "+1 (555) 321-0987",
+    experience: "4 years",
+    status: "pending",
+    appliedDate: "2024-01-13",
+    avatar: "E",
+    location: "Seattle, WA",
+    currentRole: "Full Stack Developer at Netflix",
+  },
+];
+
+export const documentTypes: DocumentType[] = [
+  { id: 1, name: "Aadhar Card", required: true },
+  { id: 2, name: "PAN Card", required: true },
+  { id: 3, name: "Resume/CV", required: true },
+  { id: 4, name: "Educational Certificates", required: false },
+  { id: 5, name: "Experience Letters", required: false },
+  { id: 6, name: "Portfolio/Work Samples", required: false },
+];
+
+export const submittedDocuments: SubmittedDocument[] = [
+  { id: 1, name: "Aadhar Card", status: "submitted", file: "aadhar_john.pdf" },
+  { id: 2, name: "PAN Card", status: "submitted", file: "pan_john.pdf" },
+  { id: 3, name: "Resume/CV", status: "submitted", file: "resume_john.pdf" },
+];
