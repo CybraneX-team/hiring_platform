@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Star, Upload, Calendar, Plus, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const tabs = [
   { id: "profile", label: "Profile" },
@@ -544,13 +545,15 @@ export default function ProfileTab() {
                     <span className="text-xs text-gray-400 order-2 sm:order-1">
                       {application.date}
                     </span>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="px-3 sm:px-4 py-1.5 sm:py-2 bg-[#76FF82] hover:bg-green-400 text-black text-xs sm:text-sm rounded-full transition-colors order-1 sm:order-2 self-start sm:self-auto"
-                    >
-                      View Applications
-                    </motion.button>
+                    <Link href="/company/applications">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 bg-[#76FF82] hover:bg-green-400 text-black text-xs sm:text-sm rounded-full transition-colors order-1 sm:order-2 self-start sm:self-auto"
+                      >
+                        View Applications
+                      </motion.button>
+                    </Link>
                   </div>
                 </motion.div>
               ))}
