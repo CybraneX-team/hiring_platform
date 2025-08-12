@@ -4,11 +4,6 @@ import { motion } from "framer-motion";
 import { ArrowLeft, MapPin, Clock, CheckCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-interface ApplicationDetailViewProps {
-  onBack: () => void;
-  applicantId: string;
-}
-
 const CircularProgress = ({ percentage }: { percentage: number }) => {
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
@@ -108,10 +103,7 @@ const mockApplicantDetail = {
   },
 };
 
-export default function ApplicationDetailView({
-  onBack,
-  applicantId,
-}: ApplicationDetailViewProps) {
+export default function ApplicationDetailView() {
   const applicant = mockApplicantDetail;
 
   const router = useRouter();
