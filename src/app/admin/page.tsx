@@ -19,6 +19,7 @@ import ApplicantDetailsView from "../components/Admin/views/ApplicantsDetail";
 import RequestDocumentsView from "../components/Admin/views/reqDoc";
 import DocumentVerificationView from "../components/Admin/views/docVerification";
 import AnalyticsView from "../components/Admin/views/AnalyticsView";
+import InspectView from "../components/Admin/views/InspectView";
 
 export default function AdminPanel() {
   const [currentView, setCurrentView] = useState<ViewType>("companies");
@@ -26,11 +27,17 @@ export default function AdminPanel() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [selectedApplicant, setSelectedApplicant] =
     useState<Application | null>(null);
+  const [selectedApplicantId, setSelectedApplicantId] = useState<string | null>(
+    null
+  ); // Added for new application detail view
   const [searchQuery, setSearchQuery] = useState("");
   const [requestedDocs, setRequestedDocs] = useState<number[]>([]);
   const [submittedDocs, setSubmittedDocs] = useState(submittedDocuments);
   const [selectedDocs, setSelectedDocs] = useState<number[]>([]);
   const [analyticsData] = useState(generateAnalyticsData());
+  const [selectedInspectItem, setSelectedInspectItem] = useState<string | null>(
+    null
+  ); // Added state for selected inspect item
 
   const handleCompanySelect = (company: Company) => {
     setSelectedCompany(company);
@@ -45,6 +52,15 @@ export default function AdminPanel() {
   const handleApplicantSelect = (applicant: Application) => {
     setSelectedApplicant(applicant);
     setCurrentView("applicant-details");
+  };
+
+  const handleViewApplications = () => {
+    setCurrentView("applications-list");
+  };
+
+  const handleOpenApplication = (applicantId: string) => {
+    setSelectedApplicantId(applicantId);
+    setCurrentView("application-detail");
   };
 
   const handleRequestDocuments = () => {
@@ -79,6 +95,12 @@ export default function AdminPanel() {
     );
   };
 
+  const handleInspectItemSelect = (item: any) => {
+    // Added handler for inspect item selection
+    setSelectedInspectItem(item.id);
+    setCurrentView("inspect-detail");
+  };
+
   const goBack = () => {
     switch (currentView) {
       case "roles":
@@ -88,6 +110,13 @@ export default function AdminPanel() {
       case "applications":
         setCurrentView("roles");
         setSelectedRole(null);
+        break;
+      case "applications-list":
+        setCurrentView("applications");
+        break;
+      case "application-detail":
+        setCurrentView("applications-list");
+        setSelectedApplicantId(null);
         break;
       case "applicant-details":
         setCurrentView("applications");
@@ -99,6 +128,10 @@ export default function AdminPanel() {
       case "document-verification":
         setCurrentView("applicant-details");
         break;
+      case "inspect-detail": // Added inspect detail back navigation
+        setCurrentView("inspect");
+        setSelectedInspectItem(null);
+        break;
       default:
         setCurrentView("companies");
     }
@@ -107,10 +140,13 @@ export default function AdminPanel() {
   const handleNavigate = (view: ViewType) => {
     setCurrentView(view);
     // Reset states when navigating to main views
-    if (view === "companies" || view === "analytics") {
+    if (view === "companies" || view === "analytics" || view === "inspect") {
+      // Added inspect to reset condition
       setSelectedCompany(null);
       setSelectedRole(null);
       setSelectedApplicant(null);
+      setSelectedApplicantId(null);
+      setSelectedInspectItem(null); // Added reset for inspect item
     }
   };
 
@@ -137,6 +173,23 @@ export default function AdminPanel() {
             selectedRole={selectedRole}
             applications={applications}
             onApplicantSelect={handleApplicantSelect}
+            onViewApplications={handleViewApplications} // Added new prop
+          />
+        ) : null;
+      case "applications-list":
+        return selectedRole && selectedCompany ? (
+          <ApplicationsListView
+            onBack={goBack}
+            onOpenApplication={handleOpenApplication}
+            companyName={selectedCompany.name}
+            roleName={selectedRole.title}
+          />
+        ) : null;
+      case "application-detail":
+        return selectedApplicantId ? (
+          <ApplicationDetailView
+            onBack={goBack}
+            applicantId={selectedApplicantId}
           />
         ) : null;
       case "applicant-details":
@@ -172,6 +225,10 @@ export default function AdminPanel() {
         ) : null;
       case "analytics":
         return <AnalyticsView analyticsData={analyticsData} />;
+      case "inspect": // Added inspect view case
+        return <InspectView onItemSelect={handleInspectItemSelect} />;
+      // case "inspect-detail": // Added inspect detail view case
+      //   return selectedInspectItem ? <InspectDetailView itemId={selectedInspectItem} onBack={goBack} /> : null
       default:
         return null;
     }

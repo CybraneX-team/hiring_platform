@@ -95,6 +95,17 @@ export default function Header({
             >
               Companies
             </motion.button>
+            <motion.button
+              whileHover={{ y: -1 }}
+              onClick={() => onNavigate && onNavigate("inspect")}
+              className={`text-sm font-medium cursor-pointer transition-colors ${
+                currentView === "inspect" || currentView === "inspect-detail"
+                  ? "text-[#76FF82]"
+                  : "text-[#32343A] hover:text-[#76FF82]"
+              }`}
+            >
+              Inspector
+            </motion.button>
           </div>
         </div>
         {/* Desktop Admin Profile */}

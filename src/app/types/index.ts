@@ -66,11 +66,26 @@ export interface AnalyticsData {
   }>;
 }
 
+export interface InspectItem {
+  id: string;
+  no: string;
+  name: string;
+  company: string;
+  status: "active" | "pending" | "completed";
+  lastActivity: string;
+  role: string;
+  email: string;
+}
+
 export type ViewType =
   | "companies"
   | "roles"
   | "applications"
+  | "applications-list"
+  | "application-detail"
   | "applicant-details"
   | "request-documents"
   | "document-verification"
-  | "analytics";
+  | "analytics"
+  | "inspect"
+  | "inspect-detail";
