@@ -173,23 +173,6 @@ export default function AdminPanel() {
             selectedRole={selectedRole}
             applications={applications}
             onApplicantSelect={handleApplicantSelect}
-            onViewApplications={handleViewApplications} // Added new prop
-          />
-        ) : null;
-      case "applications-list":
-        return selectedRole && selectedCompany ? (
-          <ApplicationsListView
-            onBack={goBack}
-            onOpenApplication={handleOpenApplication}
-            companyName={selectedCompany.name}
-            roleName={selectedRole.title}
-          />
-        ) : null;
-      case "application-detail":
-        return selectedApplicantId ? (
-          <ApplicationDetailView
-            onBack={goBack}
-            applicantId={selectedApplicantId}
           />
         ) : null;
       case "applicant-details":
