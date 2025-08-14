@@ -19,13 +19,6 @@ interface Applicant {
   matchPercentage: number;
 }
 
-interface ApplicationsListViewProps {
-  onBack: () => void;
-  onOpenApplication: (applicantId: string) => void;
-  companyName: string;
-  roleName: string;
-}
-
 const CircularProgress = ({ percentage }: { percentage: number }) => {
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
@@ -148,12 +141,7 @@ const filterTabs = [
   { id: "distance", label: "Distance > 50km", count: 1 },
 ];
 
-export default function ApplicationsListView({
-  onBack,
-  onOpenApplication,
-  companyName,
-  roleName,
-}: ApplicationsListViewProps) {
+export default function ApplicationsListView() {
   const [activeFilter, setActiveFilter] = useState("all");
   const router = useRouter();
   return (
