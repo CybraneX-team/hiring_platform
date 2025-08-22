@@ -9,9 +9,11 @@ import {
   GraduationCap,
   Briefcase,
   X,
+  ArrowLeft,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CalendarSection from "./calender";
+import { useRouter } from "next/navigation";
 
 const tabs = [
   { id: "profile", label: "Profile" },
@@ -625,6 +627,8 @@ export default function ProfileTab() {
     }
   };
 
+  const router = useRouter();
+
   return (
     <div className="min-h-screen bg-[#F5F5F5] overflow-x-hidden">
       {renderModal()}
@@ -642,6 +646,17 @@ export default function ProfileTab() {
 
       <div className="pt-16 sm:pt-24 pb-8 sm:pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-10">
+            <motion.button
+              onClick={() => router.back()}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </motion.button>
+          </div>
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}

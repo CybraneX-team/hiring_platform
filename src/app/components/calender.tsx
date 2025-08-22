@@ -1,11 +1,29 @@
-import React, { useState } from "react";
+"use client";
 
-const CalendarSec = () => {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 2, 1));
+import { useState } from "react";
+import { Pencil, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+
+const CalendarSection = () => {
+  const [currentDate, setCurrentDate] = useState(new Date(2025, 2, 1)); // March 2025
   const [selectedDate, setSelectedDate] = useState(12);
-  const [events, setEvents] = useState<Events>({
-    21: [{ time: "4:30 pm", title: "Interview at Riverleaf" }],
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [tempDate, setTempDate] = useState({
+    month: 2, // March (0-indexed)
+    year: 2025,
   });
+
+  const [attendanceData, setAttendanceData] = useState({
+    presentDays: [13, 14, 18, 19], // Green border days
+    absentDays: [15], // Red border days
+    eventDays: [12, 21], // Days with blue dots
+    totalAttended: 20,
+    totalHolidays: 4,
+  });
+
+  const dailyRecords = [
+    { time: "4:30 pm", activity: "Work Log Out" },
+    { time: "6:30 pm", activity: "Interview at Riverleaf" },
+  ];
 
   const months = [
     "January",
@@ -32,6 +50,17 @@ const CalendarSec = () => {
     "Saturday",
   ];
 
+  const markAsPresent = () => {
+    if (selectedDate && !attendanceData.presentDays.includes(selectedDate)) {
+      setAttendanceData((prev) => ({
+        ...prev,
+        presentDays: [...prev.presentDays, selectedDate],
+        absentDays: prev.absentDays.filter((day) => day !== selectedDate),
+        totalAttended: prev.totalAttended + 1,
+      }));
+    }
+  };
+
   const getDaysInMonth = (date: Date): number => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   };
@@ -40,19 +69,23 @@ const CalendarSec = () => {
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
-  interface Event {
-    time: string;
-    title: string;
-  }
-
-  interface Events {
-    [key: number]: Event[];
-  }
-
   const navigateMonth = (direction: number): void => {
     const newDate = new Date(currentDate);
     newDate.setMonth(currentDate.getMonth() + direction);
     setCurrentDate(newDate);
+  };
+
+  const openDatePicker = () => {
+    setTempDate({
+      month: currentDate.getMonth(),
+      year: currentDate.getFullYear(),
+    });
+    setShowDatePicker(true);
+  };
+
+  const applyDateSelection = () => {
+    setCurrentDate(new Date(tempDate.year, tempDate.month, 1));
+    setShowDatePicker(false);
   };
 
   const renderCalendarDays = () => {
@@ -62,29 +95,43 @@ const CalendarSec = () => {
 
     // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-20"></div>);
+      days.push(<div key={`empty-${i}`} className="h-16"></div>);
     }
 
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const isSelected = day === selectedDate;
-      const hasEvent = events[day];
+      const isPresent = attendanceData.presentDays.includes(day);
+      const isAbsent = attendanceData.absentDays.includes(day);
+      const hasEvent = attendanceData.eventDays.includes(day);
       const isSunday = (firstDay + day - 1) % 7 === 0;
+
+      let cellClasses =
+        "h-16 flex items-center justify-center text-sm font-medium cursor-pointer relative rounded-md transition-colors duration-150 ";
+
+      if (isSunday) {
+        cellClasses += "bg-rose-100 text-gray-800 ";
+      } else {
+        cellClasses += "bg-gray-50 hover:bg-gray-100 text-gray-800 ";
+      }
+
+      if (isSelected) {
+        cellClasses += "border-2 border-blue-400 bg-white ";
+      } else if (isPresent) {
+        cellClasses += "border-2 border-green-400 ";
+      } else if (isAbsent) {
+        cellClasses += "border-2 border-red-400 ";
+      }
 
       days.push(
         <div
           key={day}
           onClick={() => setSelectedDate(day)}
-          className={`
-            h-20 flex items-center justify-center text-base font-semibold cursor-pointer relative rounded-xl text-black
-            ${isSunday ? "bg-rose-100" : "bg-gray-50 hover:bg-gray-100"}
-            ${isSelected ? "border-2 border-blue-400 bg-white" : ""}
-            transition-colors duration-150
-          `}
+          className={cellClasses}
         >
           {day}
           {hasEvent && (
-            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
+            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
               <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
               <div className="w-1 h-1 bg-blue-500 rounded-full mt-0.5"></div>
             </div>
@@ -96,106 +143,191 @@ const CalendarSec = () => {
     return days;
   };
 
-  const selectedDateEvents = events[selectedDate] || [];
-
   return (
-    <div className="bg-white w-full shadow-lg rounded-lg overflow-hidden ">
-      {/* Header */}
-      <div className="flex items-center justify-between p-6 bg-white border-b">
-        <button
-          onClick={() => navigateMonth(-1)}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-black"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
+    <>
+      <div className="bg-white w-full shadow-sm rounded-lg overflow-hidden">
+        {/* Header with navigation and Mark as Present button */}
+        <div className="flex items-center justify-between p-8 bg-white border-b border-gray-200">
+          <div className="flex items-center space-x-6">
+            <button
+              onClick={() => navigateMonth(-1)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
+            </button>
 
-        <div className="flex items-center space-x-6">
-          <span className="text-2xl font-semibold text-black">
-            {selectedDate}
-          </span>
-          <span className="text-2xl font-semibold text-black">
-            {months[currentDate.getMonth()]}
-          </span>
-          <span className="text-2xl font-semibold text-black">
-            {currentDate.getFullYear()}
-          </span>
+            <div className="flex items-center space-x-3">
+              <span className="text-2xl font-semibold text-gray-900">
+                {selectedDate}
+              </span>
+              <button
+                onClick={openDatePicker}
+                className="flex items-center space-x-2 px-3 py-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <span className="text-2xl font-semibold text-gray-900">
+                  {months[currentDate.getMonth()]}
+                </span>
+                <span className="text-2xl font-semibold text-gray-900">
+                  {currentDate.getFullYear()}
+                </span>
+                <Calendar className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+
+            <button
+              onClick={() => navigateMonth(1)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
+
+          <button
+            onClick={markAsPresent}
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            Mark as Present
+          </button>
         </div>
 
-        <button
-          onClick={() => navigateMonth(1)}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-black"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
-      </div>
+        {/* Days of week header */}
+        <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+          {daysOfWeek.map((day, index) => (
+            <div
+              key={day}
+              className={`p-3 text-xs font-semibold text-center ${
+                index === 0 ? "bg-rose-100 text-rose-800" : "text-gray-600"
+              }`}
+            >
+              {day}
+            </div>
+          ))}
+        </div>
 
-      {/* Days of week header */}
-      <div className="grid grid-cols-7 bg-gray-50">
-        {daysOfWeek.map((day, index) => (
-          <div
-            key={day}
-            className={`
-              p-4 text-sm font-semibold text-center
-              ${index === 0 ? "bg-rose-100 text-rose-800" : "text-gray-600"}
-            `}
-          >
-            {day}
+        <div className="grid grid-cols-7 gap-3 p-8 border-b border-gray-200">
+          {renderCalendarDays()}
+        </div>
+
+        {/* Attendance statistics section */}
+        <div className="px-8 py-6 border-b border-gray-200">
+          <div className="flex items-center justify-between text-sm text-gray-600">
+            <span>
+              Total Attended days :{" "}
+              <span className="font-semibold text-gray-900">
+                {attendanceData.totalAttended}
+              </span>
+            </span>
+            <span>
+              Total holidays taken :{" "}
+              <span className="font-semibold text-gray-900">
+                {String(attendanceData.totalHolidays).padStart(2, "0")}
+              </span>
+            </span>
           </div>
-        ))}
-      </div>
+        </div>
 
-      {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-3 p-4 border-b">
-        {renderCalendarDays()}
-      </div>
-
-      {/* Selected day events */}
-      <div className="p-6">
-        <div className="text-lg font-semibold text-gray-800 mb-4">Day</div>
-        {selectedDateEvents.length > 0 ? (
-          <div className="space-y-3">
-            {selectedDateEvents.map((event, index) => (
-              <div
-                key={index}
-                className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg"
-              >
-                <span className="text-base font-semibold text-gray-900">
-                  {event.time}
+        <div className="p-8">
+          <div className="bg-gray-100 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Daily Record
+              </h3>
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-gray-500">
+                  Updated on 17-03-2025 17:33
                 </span>
-                <span className="text-base text-gray-700">{event.title}</span>
+                <button className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-lg transition-colors">
+                  <Pencil className="w-4 h-4" />
+                  Update Record
+                </button>
               </div>
-            ))}
+            </div>
+
+            <div className="space-y-4">
+              {dailyRecords.map((record, index) => (
+                <div key={index} className="flex items-center gap-3 text-sm">
+                  <span className="font-semibold text-gray-900 min-w-[60px]">
+                    {record.time}
+                  </span>
+                  <span className="text-gray-600">|</span>
+                  <span className="text-gray-700">{record.activity}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        ) : (
-          <div className="text-base text-gray-500 p-3">No events scheduled</div>
-        )}
+        </div>
       </div>
-    </div>
+
+      {/* Date picker dialog */}
+      {showDatePicker && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-80">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Select Date
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Month
+                </label>
+                <select
+                  value={tempDate.month}
+                  onChange={(e) =>
+                    setTempDate((prev) => ({
+                      ...prev,
+                      month: Number.parseInt(e.target.value),
+                    }))
+                  }
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {months.map((month, index) => (
+                    <option key={month} value={index}>
+                      {month}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Year
+                </label>
+                <input
+                  type="number"
+                  value={tempDate.year}
+                  onChange={(e) =>
+                    setTempDate((prev) => ({
+                      ...prev,
+                      year: Number.parseInt(e.target.value),
+                    }))
+                  }
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  min="2020"
+                  max="2030"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowDatePicker(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={applyDateSelection}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
-export default CalendarSec;
+export default CalendarSection;
