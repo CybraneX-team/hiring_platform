@@ -9,6 +9,7 @@ import { X, Upload, FileText, Check, Eye } from "lucide-react";
 interface FileUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
+  title: string;
 }
 
 interface UploadedFile {
@@ -23,6 +24,7 @@ interface UploadedFile {
 export default function FileUploadModal({
   isOpen,
   onClose,
+  title,
 }: FileUploadModalProps) {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [dragActive, setDragActive] = useState(false);

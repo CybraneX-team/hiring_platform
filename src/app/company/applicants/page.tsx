@@ -13,7 +13,6 @@ const CircularProgress = ({ percentage }: { percentage: number }) => {
   return (
     <div className="relative w-12 h-12">
       <svg className="w-12 h-12 transform rotate-360" viewBox="0 0 44 44">
-        {/* Background circle */}
         <circle
           cx="22"
           cy="22"
@@ -22,7 +21,6 @@ const CircularProgress = ({ percentage }: { percentage: number }) => {
           strokeWidth="3"
           fill="none"
         />
-        {/* Progress circle */}
         <circle
           cx="22"
           cy="22"
@@ -230,7 +228,6 @@ export default function ApplicationDetailView() {
             </div>
           </div>
 
-          {/* Two Column Layout for Academics and Languages */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* Academics Section */}
             <div>

@@ -1,11 +1,11 @@
 "use client";
 
+import type React from "react";
+
 import { useState, useRef, useEffect } from "react";
 import {
   Star,
   Upload,
-  Calendar,
-  Plus,
   GraduationCap,
   Briefcase,
   X,
@@ -14,6 +14,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import CalendarSection from "./calender";
 import { useRouter } from "next/navigation";
+import FileUploadModal from "./Admin/FileUploadModal";
 
 const tabs = [
   { id: "profile", label: "Profile" },
@@ -119,6 +120,7 @@ export default function ProfileTab() {
   const [modalType, setModalType] = useState<
     "education" | "experience" | "certificate" | null
   >(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
@@ -632,6 +634,11 @@ export default function ProfileTab() {
   return (
     <div className="min-h-screen bg-[#F5F5F5] overflow-x-hidden">
       {renderModal()}
+      <FileUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        title="Upload Resume/CV"
+      />
 
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -689,9 +696,10 @@ export default function ProfileTab() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => setIsUploadModalOpen(true)}
                 className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 border border-[#12372B] text-gray-700 bg-transparent hover:bg-gray-50 transition-colors text-sm sm:text-base whitespace-nowrap"
               >
-                Edit Profile
+                Upload Resume/CV
               </motion.button>
             </div>
           </motion.div>
