@@ -280,6 +280,7 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
       <FileUploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
+        title="Upload New"
       />
     </div>
   );
