@@ -5,6 +5,7 @@ import { Star, Upload, Calendar, Plus, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import ResumeManager from "../../components/Company/ResumeManager";
 
 const tabs = [
   { id: "profile", label: "Profile" },
@@ -13,6 +14,7 @@ const tabs = [
   { id: "certifications", label: "Certifications" },
   { id: "schedule", label: "Schedule" },
   { id: "applications", label: "Applications" },
+  { id: "resumes", label: "Resume Management" },
 ];
 
 const profileData = {
@@ -558,6 +560,21 @@ export default function ProfileTab() {
                 </motion.div>
               ))}
             </motion.div>
+          </motion.div>
+        );
+
+      case "resumes":
+        return (
+          <motion.div
+            key="resumes"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="w-full"
+          >
+            <ResumeManager />
           </motion.div>
         );
 

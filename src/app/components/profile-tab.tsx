@@ -10,11 +10,14 @@ import {
   Briefcase,
   X,
   ArrowLeft,
+  Search,
+  FileText,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CalendarSection from "./calender";
 import { useRouter } from "next/navigation";
-import FileUploadModal from "./Admin/FileUploadModal";
+import ResumeUpload from "./ResumeUpload";
+import JobMatching from "./JobMatching";
 
 const tabs = [
   { id: "profile", label: "Profile" },
@@ -22,6 +25,7 @@ const tabs = [
   { id: "experiences", label: "Experiences" },
   { id: "certifications", label: "Certifications" },
   { id: "schedule", label: "Schedule" },
+  { id: "resume", label: "Resume & Jobs" },
 ];
 
 const profileData = {
@@ -114,13 +118,16 @@ const skillVariants = {
 };
 
 export default function ProfileTab() {
-  const [activeTab, setActiveTab] = useState("education");
+  const [activeTab, setActiveTab] = useState("resume");
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<
     "education" | "experience" | "certificate" | null
   >(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [currentResumeId, setCurrentResumeId] = useState<string | null>(null);
+  const [showJobMatching, setShowJobMatching] = useState(false);
+  const [userId] = useState("user123"); // In a real app, this would come from authentication
   const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
@@ -624,6 +631,85 @@ export default function ProfileTab() {
           </motion.div>
         );
 
+      case "resume":
+        return (
+          <motion.div
+            key="resume"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="space-y-6"
+          >
+            {!showJobMatching ? (
+              <div className="space-y-6">
+                {/* Resume Upload Section */}
+                <div className="bg-white rounded-xl p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      Resume Management
+                    </h3>
+                    {currentResumeId && (
+                      <button
+                        onClick={() => setShowJobMatching(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <Search className="w-4 h-4" />
+                        Find Matching Jobs
+                      </button>
+                    )}
+                  </div>
+                  
+                  <ResumeUpload
+                    userId={userId}
+                    onUploadComplete={(data) => {
+                      setCurrentResumeId(data.resumeId);
+                    }}
+                  />
+                  
+                  {currentResumeId && (
+                    <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-green-600" />
+                        <span className="text-green-800 font-medium">
+                          Resume uploaded successfully! 
+                        </span>
+                      </div>
+                      <p className="text-green-700 text-sm mt-1">
+                        You can now search for matching jobs using our AI-powered matching system.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Job Matching Section */}
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    AI-Powered Job Matches
+                  </h3>
+                  <button
+                    onClick={() => setShowJobMatching(false)}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to Resume
+                  </button>
+                </div>
+                
+                {currentResumeId && (
+                  <JobMatching
+                    resumeId={currentResumeId}
+                    userId={userId}
+                  />
+                )}
+              </div>
+            )}
+          </motion.div>
+        );
+
       default:
         return null;
     }
@@ -634,11 +720,6 @@ export default function ProfileTab() {
   return (
     <div className="min-h-screen bg-[#F5F5F5] overflow-x-hidden">
       {renderModal()}
-      <FileUploadModal
-        isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
-        title="Upload Resume/CV"
-      />
 
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -696,10 +777,10 @@ export default function ProfileTab() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setIsUploadModalOpen(true)}
+                onClick={() => setActiveTab("resume")}
                 className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 border border-[#12372B] text-gray-700 bg-transparent hover:bg-gray-50 transition-colors text-sm sm:text-base whitespace-nowrap"
               >
-                Upload Resume/CV
+                Resume & Jobs
               </motion.button>
             </div>
           </motion.div>
