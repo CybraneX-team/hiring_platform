@@ -78,13 +78,13 @@ export default function Otp() {
       }
       if (makeReq.ok) {
         const response = await makeReq.json();
-        setuser(response.user);
         setUserCreds({
           name: "",
           email: "",
           password: "",
         });
         localStorage.setItem("token", response.token);
+        localStorage.setItem("user", JSON.stringify(response.user));
         router.push("/jobs");
         return;
       }
@@ -245,6 +245,7 @@ export default function Otp() {
                   initial="initial"
                   whileHover="hover"
                   whileTap="tap"
+                  onClick={verifyOTP}  
                 >
                   <ArrowRight className="h-4 w-4 text-white" />
                 </motion.button>

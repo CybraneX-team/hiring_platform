@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useUser } from "../context/UserContext";
 const jobListings = [
   {
     id: 1,
@@ -69,7 +70,17 @@ export default function JobComponent() {
   const [activeFilter, setActiveFilter] = useState("Part-Time");
   const [searchQuery, setSearchQuery] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  // const router = useRouter();
 
+  useEffect(() => {
+    // Only runs on the client
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      setToken(storedToken);
+    }
+  }, []);
+  const { user } = useUser();
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
@@ -142,7 +153,7 @@ export default function JobComponent() {
                 whileHover={{ scale: 1.05 }}
                 className="w-8 h-8 bg-[#3159AB] p-5 rounded-full flex items-center justify-center text-white font-medium cursor-pointer"
               >
-                R
+              <span>{user?.name ? user.name.charAt(0) : "NA"}</span>
               </motion.div>
             </Link>
           </div>

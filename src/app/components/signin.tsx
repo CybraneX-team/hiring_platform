@@ -10,19 +10,23 @@ import { easeOut, Variants } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useUser } from "../context/UserContext";
+import { Eye, EyeOff } from "lucide-react";
+
 export default function LoginPage() {
   const router = useRouter();
 
   const [usePhone, setUsePhone] = useState(false);
-  const { loginCreds, setLoginCreds, mode, setmode } = useUser();
-  // Animation Variants
+  const [showPassword, setShowPassword] = useState(false);
 
+  const { loginCreds, setLoginCreds, mode, setmode, setuser, setUserCreds } = useUser();
+  
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
 
-    if (token) {
-      toast.info("Already logged in");
-      router.push("/jobs");
+    toast.info("Already logged in");
+    if (token && storedUser) {
+      router.push("/profile");
     }
   }, [router]);
 
@@ -40,19 +44,28 @@ export default function LoginPage() {
         }),
       }
     );
-    if (makeReq.status === 400) {
+    console.log("makeReq.ok", makeReq.ok);
+    if (makeReq.ok == false) {
       const response = await makeReq.json();
+      console.log("response", response);
       toast.info(response.message);
       return;
     }
 
     if (makeReq.ok) {
-      const resposne = await makeReq.json();
-      toast.info(resposne.message);
-      setmode("login");
-      router.push("/otp");
+      const response = await makeReq.json();
+      setuser(response.user);
+      setUserCreds({
+        name: "",
+        email: "",
+        password: "",
+      });
+      localStorage.setItem("token", response.token);
+      localStorage.setItem("user", JSON.stringify(response.user));
+      router.push("/profile");
     }
   };
+
   const containerVariants: Variants = {
     hidden: {
       opacity: 0,
@@ -115,6 +128,7 @@ export default function LoginPage() {
             </p>
           </motion.div>
 
+          {/* Email / Phone */}
           <motion.div className="space-y-2" variants={itemVariants}>
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium text-gray-700">
@@ -156,6 +170,7 @@ export default function LoginPage() {
             )}
           </motion.div>
 
+          {/* Password with Eye Toggle */}
           <motion.div className="space-y-2" variants={itemVariants}>
             <Label
               htmlFor="password"
@@ -163,18 +178,31 @@ export default function LoginPage() {
             >
               Password
             </Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              className="h-12 bg-white border-gray-200 rounded-lg"
-              onChange={(e) => {
-                setLoginCreds({
-                  ...loginCreds,
-                  password: e.target.value,
-                });
-              }}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                className="h-12 bg-white border-gray-200 rounded-lg pr-10"
+                onChange={(e) => {
+                  setLoginCreds({
+                    ...loginCreds,
+                    password: e.target.value,
+                  });
+                }}
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 cursor-pointer"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </motion.div>
 
           {/* Login Button */}
@@ -190,6 +218,7 @@ export default function LoginPage() {
             Log In
           </motion.button>
 
+          {/* Divider */}
           <motion.div className="relative" variants={itemVariants}>
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-200" />
@@ -201,6 +230,7 @@ export default function LoginPage() {
             </div>
           </motion.div>
 
+          {/* Social Buttons */}
           <motion.div
             className="grid grid-cols-2 gap-3"
             variants={itemVariants}

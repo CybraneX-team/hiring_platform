@@ -3,7 +3,7 @@
 import type React from "react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/app/components/ui/Input";
 import { Label } from "@/app/components/ui/label";
 import Link from "next/link";
@@ -11,9 +11,7 @@ import Image from "next/image";
 import {
   motion,
   AnimatePresence,
-  easeInOut,
   easeOut,
-  easeIn,
   Variants 
 } from "framer-motion";
 import { toast } from "react-toastify";
@@ -22,14 +20,14 @@ import { useUser } from "../context/UserContext";
 export default function SignupPage() {
   const router = useRouter();
   const [useEmail, setUseEmail] = useState(true);
-  const [otp, setotp] = useState("")
+  const [otp, setotp] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
   const { userCreds, setUserCreds, setmode } = useUser();
 
   // Animation variants
-  const containerVariants : Variants  = {
-    hidden: {
-    opacity: 0,
-  },
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
@@ -88,37 +86,41 @@ export default function SignupPage() {
       toast.info("Already logged in");
       router.push("/"); 
     }
-  }, [router])
-  async function verifyAccount(){
-    const req = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/register`
-      , {
-        method : "POST",
+  }, [router]);
+
+  async function verifyAccount() {
+    const req = await fetch(
+      `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/register`,
+      {
+        method: "POST",
         headers: {
-            "Content-Type": "application/json",
+          "Content-Type": "application/json",
         },
-        body : JSON.stringify({
-          name :  userCreds.name,
-          email : userCreds.email,
-          password : userCreds.password
-        }), 
+        body: JSON.stringify({
+          name: userCreds.name,
+          email: userCreds.email,
+          password: userCreds.password,
+        }),
       }
-    )
-    const response = await req.json()
-    if(response.message === "User already exists"){
-      toast.info("User already exists")
-      return 
+    );
+    const response = await req.json();
+    if (response.message === "User already exists") {
+      toast.info("User already exists");
+      return;
     }
-    if(response.message === "All fields are required"){
-      toast.info("All fields are required")
-      return 
+    if (response.message === "All fields are required") {
+      toast.info("All fields are required");
+      return;
     }
-    
-    if(req.ok){
-      toast.success(response.message)
-      router.push("/otp")
-      setmode("register")
+
+    if (req.ok) {
+      toast.success(response.message);
+      localStorage.setItem("pendingCreds", JSON.stringify(userCreds));
+      setmode("register");
+      router.push("/otp");
     }
   }
+
   return (
     <motion.div
       className="min-h-screen bg-[#F5F5F5]"
@@ -144,6 +146,7 @@ export default function SignupPage() {
             </p>
           </motion.div>
 
+          {/* Full Name */}
           <motion.div className="space-y-2" variants={itemVariants}>
             <Label
               htmlFor="fullname"
@@ -156,27 +159,22 @@ export default function SignupPage() {
                 id="fullname"
                 placeholder="John Doe"
                 className="h-12 bg-white border-gray-200 rounded-lg"
-                onChange={(e)=>{setUserCreds({
-                  ...userCreds,
-                  name: e.target.value
-                })}}
+                onChange={(e) =>
+                  setUserCreds({
+                    ...userCreds,
+                    name: e.target.value,
+                  })
+                }
               />
             </motion.div>
           </motion.div>
 
+          {/* Email or Phone */}
           <motion.div className="space-y-2" variants={itemVariants}>
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium text-gray-700">
                 {useEmail ? "Email" : "Phone"}
               </Label>
-              {/* <motion.button
-                onClick={() => setUseEmail(!useEmail)}
-                className="text-xs text-gray-500 hover:text-gray-700"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                {useEmail ? "Use phone instead" : "Use email instead"}
-              </motion.button> */}
             </div>
 
             <div className="flex gap-2">
@@ -202,15 +200,18 @@ export default function SignupPage() {
                   placeholder={useEmail ? "Enter your email" : "1234 567 890"}
                   className="h-12 bg-white border-gray-200 rounded-lg flex-1"
                   type={useEmail ? "email" : "tel"}
-                  onChange={(e)=>{setUserCreds({
-                    ...userCreds,
-                    email: e.target.value
-                  })}}
+                  onChange={(e) =>
+                    setUserCreds({
+                      ...userCreds,
+                      email: e.target.value,
+                    })
+                  }
                 />
               </motion.div>
             </div>
           </motion.div>
 
+          {/* Password with Eye Toggle */}
           <motion.div className="space-y-2" variants={itemVariants}>
             <Label
               htmlFor="password"
@@ -218,20 +219,34 @@ export default function SignupPage() {
             >
               Password
             </Label>
-            <motion.div variants={inputVariants} whileFocus="focus">
+            <div className="relative">
               <Input
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
-                className="h-12 bg-white border-gray-200 rounded-lg"
-                onChange={(e)=>{setUserCreds({
-                  ...userCreds,
-                  password : e.target.value
-                })}}
+                className="h-12 bg-white border-gray-200 rounded-lg pr-10"
+                onChange={(e) =>
+                  setUserCreds({
+                    ...userCreds,
+                    password: e.target.value,
+                  })
+                }
               />
-            </motion.div>
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 cursor-pointer"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </motion.div>
 
+          {/* Verify Button */}
           <motion.button
             className="w-full h-12 rounded-lg text-black font-medium transition-opacity hover:opacity-90 cursor-pointer"
             style={{ backgroundColor: "#76FF82" }}
@@ -258,6 +273,7 @@ export default function SignupPage() {
             </div>
           </motion.div>
 
+          {/* Social buttons */}
           <motion.div
             className="grid grid-cols-2 gap-3"
             variants={itemVariants}
