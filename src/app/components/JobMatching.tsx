@@ -79,7 +79,7 @@ export default function JobMatching({ resumeId, userId }: JobMatchingProps) {
       setLoading(true);
       setError(null);
       
-      const response = await apiClient.post(`/api/resume/${resumeId}/match-jobs`, {
+      const response : any = await apiClient.post(`/api/resume/${resumeId}/match-jobs`, {
         limit: 20,
         minScore: filters.minScore
       });

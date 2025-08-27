@@ -62,7 +62,7 @@ export default function ResumeManager() {
 
   const fetchJobs = async () => {
     try {
-      const response = await apiClient.get("/api/jobs");
+      const response : any = await apiClient.get("/api/jobs");
       // API returns {jobs: [...]} so we need to access .jobs
       const jobsData = response.data.jobs || response.data;
       setJobs(Array.isArray(jobsData) ? jobsData : []);
@@ -82,7 +82,7 @@ export default function ResumeManager() {
       const scores = await Promise.all(
         resumes.map(async (resume) => {
           try {
-            const response = await apiClient.post(`/api/resume/${resume._id}/match-jobs`, {
+            const response : any = await apiClient.post(`/api/resume/${resume._id}/match-jobs`, {
               limit: 20,
               minScore: 0 // Get score even if low
             });

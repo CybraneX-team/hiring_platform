@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Upload, FileText, X, Check, Loader2, Eye } from "lucide-react";
 import apiClient from "../utils/api";
 
+
 interface ResumeUploadProps {
   userId: string;
   onUploadComplete?: (resumeData: any) => void;
@@ -99,11 +100,11 @@ export default function ResumeUpload({ userId, onUploadComplete, onClose }: Resu
       formData.append('resume', file);
       formData.append('userId', userId);
 
-      const response = await apiClient.post('/api/resume/upload', formData, {
+      const response : any = await apiClient.post('/api/resume/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        onUploadProgress: (progressEvent: any) => {
+        onUploadProgress : (progressEvent: any) => {
           const progress = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
           setUploadedFiles(prev => 
             prev.map(f => 
@@ -113,7 +114,7 @@ export default function ResumeUpload({ userId, onUploadComplete, onClose }: Resu
             )
           );
         },
-      });
+      } as any);
 
       // Update file status
       setUploadedFiles(prev => 
