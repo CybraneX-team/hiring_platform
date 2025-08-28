@@ -10,6 +10,7 @@ import {
   Briefcase,
   X,
   ArrowLeft,
+  Edit2,
   Search,
   FileText,
 } from "lucide-react";
@@ -28,7 +29,7 @@ const tabs = [
   { id: "resume", label: "Resume & Jobs" },
 ];
 
-const profileData = {
+const initialProfileData = {
   profile: {
     bio: "Experienced software developer with a passion for creating innovative solutions. Specialized in full-stack development with expertise in React, Node.js, and cloud technologies.",
     skills: ["JavaScript", "React", "Node.js", "Python", "AWS", "Docker"],
@@ -36,11 +37,13 @@ const profileData = {
   },
   education: [
     {
+      id: 1,
       type: "Graduation",
       period: "2022-2024",
       institution: "University of Michigan",
     },
     {
+      id: 2,
       type: "Highschool",
       period: "2019-2021",
       institution: "Inter State school of Michigan",
@@ -48,6 +51,7 @@ const profileData = {
   ],
   experiences: [
     {
+      id: 1,
       title: "Senior Software Engineer",
       company: "Tech Solutions Inc.",
       period: "2023-Present",
@@ -55,6 +59,7 @@ const profileData = {
         "Lead development of scalable web applications using React and Node.js",
     },
     {
+      id: 2,
       title: "Full Stack Developer",
       company: "Digital Innovations LLC",
       period: "2021-2023",
@@ -64,6 +69,7 @@ const profileData = {
   ],
   certifications: [
     {
+      id: 1,
       name: "Certified Kubernetes Administrator",
       issuer: "Cloud Native Computing Foundation",
       date: "March 2023",
@@ -76,7 +82,6 @@ const profileData = {
   },
 };
 
-// Animation variants
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -125,6 +130,10 @@ export default function ProfileTab() {
     "education" | "experience" | "certificate" | null
   >(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [profileData, setProfileData] = useState(initialProfileData);
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [formData, setFormData] = useState<any>({});
   const [currentResumeId, setCurrentResumeId] = useState<string | null>(null);
   const [showJobMatching, setShowJobMatching] = useState(false);
   const [userId] = useState("user123"); // In a real app, this would come from authentication
@@ -220,14 +229,86 @@ export default function ProfileTab() {
     );
   };
 
+  const openEditModal = (
+    type: "education" | "experience" | "certificate",
+    item: any
+  ) => {
+    setModalType(type);
+    setEditingItem(item);
+    setIsEditMode(true);
+    setFormData(item);
+    setIsModalOpen(true);
+  };
+
   const openModal = (type: "education" | "experience" | "certificate") => {
     setModalType(type);
+    setEditingItem(null);
+    setIsEditMode(false);
+    setFormData({});
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setModalType(null);
+    setEditingItem(null);
+    setIsEditMode(false);
+    setFormData({});
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (isEditMode && editingItem && modalType) {
+      setProfileData((prev) => ({
+        ...prev,
+        [modalType === "certificate"
+          ? "certifications"
+          : modalType === "education"
+          ? "education"
+          : "experiences"]: prev[
+          modalType === "certificate"
+            ? "certifications"
+            : modalType === "education"
+            ? "education"
+            : "experiences"
+        ].map((item: any) =>
+          item.id === editingItem.id ? { ...item, ...formData } : item
+        ),
+      }));
+    } else if (modalType) {
+      const newItem = {
+        ...formData,
+        id: Date.now(),
+      };
+
+      setProfileData((prev) => ({
+        ...prev,
+        [modalType === "certificate"
+          ? "certifications"
+          : modalType === "education"
+          ? "education"
+          : "experiences"]: [
+          ...prev[
+            modalType === "certificate"
+              ? "certifications"
+              : modalType === "education"
+              ? "education"
+              : "experiences"
+          ],
+          newItem,
+        ],
+      }));
+    }
+
+    closeModal();
   };
 
   const renderModal = () => {
@@ -235,7 +316,7 @@ export default function ProfileTab() {
 
     const modalContent = {
       education: {
-        title: "Add Education",
+        title: isEditMode ? "Edit Education" : "Add Education",
         fields: [
           {
             name: "type",
@@ -257,7 +338,7 @@ export default function ProfileTab() {
         ],
       },
       experience: {
-        title: "Add Experience",
+        title: isEditMode ? "Edit Experience" : "Add Experience",
         fields: [
           {
             name: "title",
@@ -279,7 +360,7 @@ export default function ProfileTab() {
         ],
       },
       certificate: {
-        title: "Add Certificate",
+        title: isEditMode ? "Edit Certificate" : "Add Certificate",
         fields: [
           {
             name: "name",
@@ -340,7 +421,7 @@ export default function ProfileTab() {
               </motion.button>
             </div>
 
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               {config.fields.map((field, index) => (
                 <motion.div
                   key={field.name}
@@ -354,12 +435,20 @@ export default function ProfileTab() {
                   {field.type === "textarea" ? (
                     <textarea
                       placeholder={field.placeholder}
+                      value={formData[field.name] || ""}
+                      onChange={(e) =>
+                        handleInputChange(field.name, e.target.value)
+                      }
                       className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none h-20 sm:h-24 text-sm sm:text-base"
                     />
                   ) : (
                     <input
                       type="text"
                       placeholder={field.placeholder}
+                      value={formData[field.name] || ""}
+                      onChange={(e) =>
+                        handleInputChange(field.name, e.target.value)
+                      }
                       className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm sm:text-base"
                     />
                   )}
@@ -390,12 +479,15 @@ export default function ProfileTab() {
                   whileTap={{ scale: 0.98 }}
                   className="flex-1 px-4 py-2 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
                 >
-                  Add{" "}
-                  {modalType === "certificate"
-                    ? "Certificate"
-                    : modalType === "education"
-                    ? "Education"
-                    : "Experience"}
+                  {isEditMode
+                    ? "Save Changes"
+                    : `Add ${
+                        modalType === "certificate"
+                          ? "Certificate"
+                          : modalType === "education"
+                          ? "Education"
+                          : "Experience"
+                      }`}
                 </motion.button>
               </motion.div>
             </form>
@@ -494,16 +586,25 @@ export default function ProfileTab() {
           >
             {profileData.education.map((edu, index) => (
               <motion.div
-                key={index}
+                key={edu.id}
                 variants={cardVariants}
                 whileHover={{
                   y: -4,
                   boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
                 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                className="bg-white rounded-xl p-4 sm:p-5 shadow-sm"
+                className="bg-white rounded-xl p-4 sm:p-5 shadow-sm relative group"
               >
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                <motion.button
+                  onClick={() => openEditModal("education", edu)}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <Edit2 className="w-4 h-4 text-gray-600" />
+                </motion.button>
+
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 pr-10">
                   {edu.type}
                 </h3>
                 <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">
@@ -538,16 +639,25 @@ export default function ProfileTab() {
           >
             {profileData.experiences.map((exp, index) => (
               <motion.div
-                key={index}
+                key={exp.id}
                 variants={cardVariants}
                 whileHover={{
                   y: -4,
                   boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
                 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                className="bg-white rounded-xl p-4 sm:p-5 shadow-sm"
+                className="bg-white rounded-xl p-4 sm:p-5 shadow-sm relative group"
               >
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1">
+                <motion.button
+                  onClick={() => openEditModal("experience", exp)}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <Edit2 className="w-4 h-4 text-gray-600" />
+                </motion.button>
+
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 pr-10">
                   {exp.title}
                 </h3>
                 <p className="text-blue-600 font-medium text-sm sm:text-base mb-2">
@@ -585,16 +695,25 @@ export default function ProfileTab() {
           >
             {profileData.certifications.map((cert, index) => (
               <motion.div
-                key={index}
+                key={cert.id}
                 variants={cardVariants}
                 whileHover={{
                   y: -4,
                   boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
                 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                className="space-y-3 sm:space-y-4 bg-white rounded-xl p-4 sm:p-5 shadow-sm"
+                className="space-y-3 sm:space-y-4 bg-white rounded-xl p-4 sm:p-5 shadow-sm relative group"
               >
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
+                <motion.button
+                  onClick={() => openEditModal("certificate", cert)}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <Edit2 className="w-4 h-4 text-gray-600" />
+                </motion.button>
+
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 pr-10">
                   {cert.name}
                 </h3>
                 <p className="text-gray-600 text-sm sm:text-base">
@@ -660,24 +779,25 @@ export default function ProfileTab() {
                       </button>
                     )}
                   </div>
-                  
+
                   <ResumeUpload
                     userId={userId}
                     onUploadComplete={(data) => {
                       setCurrentResumeId(data.resumeId);
                     }}
                   />
-                  
+
                   {currentResumeId && (
                     <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
                       <div className="flex items-center gap-2">
                         <FileText className="w-5 h-5 text-green-600" />
                         <span className="text-green-800 font-medium">
-                          Resume uploaded successfully! 
+                          Resume uploaded successfully!
                         </span>
                       </div>
                       <p className="text-green-700 text-sm mt-1">
-                        You can now search for matching jobs using our AI-powered matching system.
+                        You can now search for matching jobs using our
+                        AI-powered matching system.
                       </p>
                     </div>
                   )}
@@ -698,12 +818,9 @@ export default function ProfileTab() {
                     Back to Resume
                   </button>
                 </div>
-                
+
                 {currentResumeId && (
-                  <JobMatching
-                    resumeId={currentResumeId}
-                    userId={userId}
-                  />
+                  <JobMatching resumeId={currentResumeId} userId={userId} />
                 )}
               </div>
             )}
@@ -749,7 +866,7 @@ export default function ProfileTab() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 sm:mb-16 gap-4 sm:gap-6"
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 sm:mb-12 gap-4 sm:gap-6"
           >
             <div className="flex items-center gap-4 sm:gap-6">
               <motion.div
