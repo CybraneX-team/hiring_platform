@@ -7,6 +7,7 @@ import { useUser } from "../context/UserContext";
 import { useRouter } from "next/navigation";
 export default function Header() {
   const [token, setToken] = useState<string | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
   const router = useRouter();
   useEffect(() => {
     // Only runs on the client
@@ -15,10 +16,35 @@ export default function Header() {
       setToken(storedToken);
     }
   }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 0) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const { user } = useUser();
   return (
-    <nav className="flex items-center justify-between px-8 md:px-16 py-3 mt-3">
-      <div className="text-white text-2xl font-semibold">Logo</div>
+    <nav
+      className={`flex items-center justify-between px-8 md:px-16 py-3 fixed w-full transition-colors duration-300 z-50
+        ${isScrolled ? "bg-white " : "bg-transparent"}
+      `}
+    >
+      <div
+        className={`text-2xl font-semibold transition-colors duration-300 ${
+          isScrolled ? "text-black" : "text-white"
+        }`}
+      >
+        Compscope
+      </div>
+
       <div className="flex items-center gap-4">
         {!token && (
           <Link href="/signin">
@@ -28,7 +54,11 @@ export default function Header() {
           </Link>
         )}
 
-        <Menu className="w-6 h-6 text-white ml-10" />
+        <Menu
+          className={`w-6 h-6 ml-10 transition-colors duration-300 ${
+            isScrolled ? "text-black" : "text-white"
+          }`}
+        />
 
         {token && (
           <Link href="/profile">
