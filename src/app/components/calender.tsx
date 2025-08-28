@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import {
+  Pencil,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Plus,
+  Trash2,
+} from "lucide-react";
 
 const CalendarSection = () => {
   const [currentDate, setCurrentDate] = useState(new Date(2025, 2, 1)); // March 2025
@@ -20,10 +27,12 @@ const CalendarSection = () => {
     totalHolidays: 4,
   });
 
-  const dailyRecords = [
-    { time: "4:30 pm", activity: "Work Log Out" },
-    { time: "6:30 pm", activity: "Interview at Riverleaf" },
-  ];
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [dailyRecords, setDailyRecords] = useState([
+    { id: 1, time: "4:30 pm", activity: "Work Log Out" },
+    { id: 2, time: "6:30 pm", activity: "Interview at Riverleaf" },
+  ]);
+  const [editingRecords, setEditingRecords] = useState(dailyRecords);
 
   const months = [
     "January",
@@ -49,6 +58,49 @@ const CalendarSection = () => {
     "Friday",
     "Saturday",
   ];
+
+  const openUpdateModal = () => {
+    setEditingRecords([...dailyRecords]);
+    setShowUpdateModal(true);
+  };
+
+  const addNewRecord = () => {
+    const newRecord = {
+      id: Date.now(),
+      time: "",
+      activity: "",
+    };
+    setEditingRecords([...editingRecords, newRecord]);
+  };
+
+  const updateRecord = (
+    id: number,
+    field: "time" | "activity",
+    value: string
+  ) => {
+    setEditingRecords((prev) =>
+      prev.map((record) =>
+        record.id === id ? { ...record, [field]: value } : record
+      )
+    );
+  };
+
+  const deleteRecord = (id: number) => {
+    setEditingRecords((prev) => prev.filter((record) => record.id !== id));
+  };
+
+  const saveRecords = () => {
+    const validRecords = editingRecords.filter(
+      (record) => record.time.trim() !== "" && record.activity.trim() !== ""
+    );
+    setDailyRecords(validRecords);
+    setShowUpdateModal(false);
+  };
+
+  const cancelEdit = () => {
+    setEditingRecords([...dailyRecords]);
+    setShowUpdateModal(false);
+  };
 
   const markAsPresent = () => {
     if (selectedDate && !attendanceData.presentDays.includes(selectedDate)) {
@@ -236,7 +288,10 @@ const CalendarSection = () => {
                 <span className="text-xs text-gray-500">
                   Updated on 17-03-2025 17:33
                 </span>
-                <button className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-lg transition-colors">
+                <button
+                  onClick={openUpdateModal}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                >
                   <Pencil className="w-4 h-4" />
                   Update Record
                 </button>
@@ -244,8 +299,11 @@ const CalendarSection = () => {
             </div>
 
             <div className="space-y-4">
-              {dailyRecords.map((record, index) => (
-                <div key={index} className="flex items-center gap-3 text-sm">
+              {dailyRecords.map((record) => (
+                <div
+                  key={record.id}
+                  className="flex items-center gap-3 text-sm"
+                >
                   <span className="font-semibold text-gray-900 min-w-[60px]">
                     {record.time}
                   </span>
@@ -321,6 +379,97 @@ const CalendarSection = () => {
                 className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
               >
                 Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUpdateModal && (
+        <div className="fixed inset-0 bg-[#00000057]  flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[80vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Update Daily Records
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Edit your daily activity records
+              </p>
+            </div>
+
+            <div className="p-6 max-h-96 overflow-y-auto">
+              <div className="space-y-4">
+                {editingRecords.map((record, index) => (
+                  <div
+                    key={record.id}
+                    className="border border-gray-200 rounded-lg p-4"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-gray-700">
+                        Record {index + 1}
+                      </span>
+                      <button
+                        onClick={() => deleteRecord(record.id)}
+                        className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Time
+                        </label>
+                        <input
+                          type="text"
+                          value={record.time}
+                          onChange={(e) =>
+                            updateRecord(record.id, "time", e.target.value)
+                          }
+                          placeholder="e.g., 4:30 pm"
+                          className="w-full px-3 py-2 border border-gray-300 text-gray-400 font-semibold rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Activity
+                        </label>
+                        <input
+                          type="text"
+                          value={record.activity}
+                          onChange={(e) =>
+                            updateRecord(record.id, "activity", e.target.value)
+                          }
+                          placeholder="e.g., Work Log Out"
+                          className="w-full px-3 py-2 border border-gray-300 text-gray-400 font-semibold rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={addNewRecord}
+                className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add New Record
+              </button>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={cancelEdit}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveRecords}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
+              >
+                Save Changes
               </button>
             </div>
           </div>

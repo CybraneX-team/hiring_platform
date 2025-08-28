@@ -599,7 +599,7 @@ export default function ProfileTab() {
                   onClick={() => openEditModal("education", edu)}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors opacity-0 group-hover:opacity-100"
+                  className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors "
                 >
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
@@ -652,7 +652,7 @@ export default function ProfileTab() {
                   onClick={() => openEditModal("experience", exp)}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors opacity-0 group-hover:opacity-100"
+                  className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors "
                 >
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
@@ -708,7 +708,7 @@ export default function ProfileTab() {
                   onClick={() => openEditModal("certificate", cert)}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors opacity-0 group-hover:opacity-100"
+                  className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors "
                 >
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
