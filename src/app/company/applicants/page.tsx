@@ -103,7 +103,6 @@ const mockApplicantDetail = {
 
 export default function ApplicationDetailView() {
   const applicant = mockApplicantDetail;
-
   const router = useRouter();
 
   return (

@@ -49,51 +49,67 @@ export default function Otp() {
   async function verifyOTP() {
     try {
       setloggingIn(true);
-      let finalOTP = "";
-      otp.forEach((element) => {
-        finalOTP += element;
+
+      // Collect OTP from array
+      let finalOTP = otp.join("");
+
+      let url = "";
+      let body: any = {};
+
+      if (mode === "register") {
+        // Inspector OTP verification
+        url = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/verify-otp`;
+        body = {
+          name: userCreds.name,
+          email: loginCreds?.email || userCreds.email,
+          password: loginCreds?.password || userCreds.password,
+          otp: finalOTP,
+          mode,
+        };
+      } else if (mode === "company") {
+        // Company OTP verification (different API!)
+        url = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/company/verify-company-otp`;
+        body = {
+          fullName: userCreds.name,
+          companyName: userCreds.companyName,
+          gstNumber: userCreds.gstNumber,
+          businessEmail: userCreds.email, // backend expects "businessEmail"
+          password: userCreds.password,
+          otpRecived: finalOTP,
+        };
+      }
+
+      const makeReq = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       });
 
-      const makeReq = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/verify-otp`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: userCreds.name,
-            email: mode === "register" ? userCreds.email : loginCreds.email,
-            password:
-              mode === "register" ? userCreds.password : loginCreds.password,
-            otp: finalOTP,
-            mode,
-          }),
-        }
-      );
-      if (makeReq.status === 400) {
-        const response = await makeReq.json();
-        toast.info(response.message);
+      const response = await makeReq.json();
+
+      if (!makeReq.ok) {
+        toast.info(response.message || "OTP verification failed");
         return;
       }
-      if (makeReq.ok) {
-        const response = await makeReq.json();
-        setUserCreds({
-          name: "",
-          email: "",
-          password: "",
-        });
-        localStorage.setItem("token", response.token);
-        localStorage.setItem("user", JSON.stringify(response.user));
+
+      // ✅ store user + token
+      setUserCreds({ name: "", email: "", password: "" });
+      localStorage.setItem("token", response.token);
+      localStorage.setItem("user", JSON.stringify(response.user));
+
+      // Redirect differently
+      if (mode === "company") {
+        router.push("/company/profile");
+      } else {
         router.push("/jobs");
-        return;
       }
     } catch (error: any) {
-      toast.error(`Something went wrong :  ${error.message}`);
+      toast.error(`Something went wrong : ${error.message}`);
     } finally {
       setloggingIn(false);
     }
   }
+
   // Animation variants
   const containerVariants: Variants = {
     hidden: {
@@ -245,7 +261,7 @@ export default function Otp() {
                   initial="initial"
                   whileHover="hover"
                   whileTap="tap"
-                  onClick={verifyOTP}  
+                  onClick={verifyOTP}
                 >
                   <ArrowRight className="h-4 w-4 text-white" />
                 </motion.button>

@@ -24,8 +24,8 @@ export default function LoginPage() {
     const token = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
 
-    toast.info("Already logged in");
     if (token && storedUser) {
+      toast.info("Already logged in");
       router.push("/profile");
     }
   }, [router]);
@@ -44,10 +44,8 @@ export default function LoginPage() {
         }),
       }
     );
-    console.log("makeReq.ok", makeReq.ok);
     if (makeReq.ok == false) {
       const response = await makeReq.json();
-      console.log("response", response);
       toast.info(response.message);
       return;
     }

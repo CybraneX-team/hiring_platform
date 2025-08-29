@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, MapPin, Clock, Plus } from "lucide-react";
 import type { InspectItem } from "@/app/types";
@@ -53,7 +53,8 @@ const CircularProgress = ({ percentage }: { percentage: number }) => {
 };
 
 export default function InspectView({ onItemSelect }: InspectViewProps) {
-  const [filteredItems, setFilteredItems] = useState(inspectItems);
+  const [items, setItems] = useState<InspectItem[]>([]);
+  const [filteredItems, setFilteredItems] = useState<InspectItem[]>([]);
   const [activeFilter, setActiveFilter] = useState("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -89,6 +90,26 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
     },
   ];
 
+  const fetchProfiles = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/getProfile`);
+      const data = await res.json();
+      setItems(data.profiles);
+      setFilteredItems(data.profiles);
+    } catch (err) {
+      console.error("Failed to fetch profiles", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfiles();
+
+    // listen to upload events
+    const handler = () => fetchProfiles();
+    window.addEventListener("resumeUploaded", handler);
+    return () => window.removeEventListener("resumeUploaded", handler);
+  }, []);
+
   const handleFilterChange = (filterId: string) => {
     setActiveFilter(filterId);
     setIsFilterOpen(false);
@@ -96,26 +117,26 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
     let filtered = inspectItems;
     switch (filterId) {
       case "active":
-        filtered = inspectItems.filter((item) => item.status === "active");
+        filtered = items.filter((item) => item.status === "active");
         break;
       case "pending":
-        filtered = inspectItems.filter((item) => item.status === "pending");
+        filtered = items.filter((item) => item.status === "pending");
         break;
       case "completed":
-        filtered = inspectItems.filter((item) => item.status === "completed");
+        filtered = items.filter((item) => item.status === "completed");
         break;
       case "assigned":
-        filtered = inspectItems.filter(
+        filtered = items.filter(
           (item) => item.company !== "Not Assigned"
         );
         break;
       case "unassigned":
-        filtered = inspectItems.filter(
+        filtered = items.filter(
           (item) => item.company === "Not Assigned"
         );
         break;
       default:
-        filtered = inspectItems;
+        filtered = items;
     }
     setFilteredItems(filtered);
   };
@@ -177,12 +198,12 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
           Add More
         </motion.button>
       </div>
-      <Link href="/company/applicants">
+
         <div className="space-y-4">
           <AnimatePresence>
-            {filteredItems.map((item, index) => (
+            {filteredItems.map((item : any, index) => (
               <motion.div
-                key={item.id}
+                key={index}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
@@ -198,7 +219,7 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
                       <span className="text-white font-semibold text-sm">
                         {item.name
                           .split(" ")
-                          .map((n) => n[0])
+                          .map((n : any) => n[0])
                           .join("")}
                       </span>
                     </div>
@@ -241,32 +262,22 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
 
                         <div className="flex items-center gap-1">
                           <MapPin className="w-4 h-4" />
-                          <span>USA, Michigan</span>
+                          <span>{item.location ?  item.location : ""}</span>
                         </div>
 
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          <span>5 Years</span>
+                          <span>{item.yearsOfExp ? item.yearsOfExp  :"" }</span>
                         </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Right Section - Match Percentage */}
-                  <div className="flex flex-col items-center gap-1">
-                    <CircularProgress
-                      percentage={Math.floor(Math.random() * 30) + 70}
-                    />
-                    <span className="text-xs text-gray-500 text-center">
-                      AI match score
-                    </span>
                   </div>
                 </div>
               </motion.div>
             ))}
           </AnimatePresence>
         </div>
-      </Link>
+      {/* </Link> */}
 
       {/* Empty State */}
       {filteredItems.length === 0 && (

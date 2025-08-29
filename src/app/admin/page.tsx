@@ -20,6 +20,7 @@ import RequestDocumentsView from "../components/Admin/views/reqDoc";
 import DocumentVerificationView from "../components/Admin/views/docVerification";
 import AnalyticsView from "../components/Admin/views/AnalyticsView";
 import InspectView from "../components/Admin/views/InspectView";
+import Companyapplicants from "../components/Companyapplicants";
 
 export default function AdminPanel() {
   const [currentView, setCurrentView] = useState<ViewType>("companies");
@@ -97,7 +98,7 @@ export default function AdminPanel() {
 
   const handleInspectItemSelect = (item: any) => {
     // Added handler for inspect item selection
-    setSelectedInspectItem(item.id);
+    setSelectedInspectItem(item);
     setCurrentView("inspect-detail");
   };
 
@@ -210,8 +211,8 @@ export default function AdminPanel() {
         return <AnalyticsView analyticsData={analyticsData} />;
       case "inspect": // Added inspect view case
         return <InspectView onItemSelect={handleInspectItemSelect} />;
-      // case "inspect-detail": // Added inspect detail view case
-      //   return selectedInspectItem ? <InspectDetailView itemId={selectedInspectItem} onBack={goBack} /> : null
+      case "inspect-detail": // Added inspect detail view case
+        return selectedInspectItem ? <Companyapplicants itemId={selectedInspectItem} onBack={goBack} /> : null
       default:
         return null;
     }

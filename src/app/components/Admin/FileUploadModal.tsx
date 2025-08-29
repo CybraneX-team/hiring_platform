@@ -5,6 +5,7 @@ import type React from "react";
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Upload, FileText, Check, Eye } from "lucide-react";
+import { toast } from "react-toastify";
 
 interface FileUploadModalProps {
   isOpen: boolean;
@@ -55,6 +56,7 @@ export default function FileUploadModal({
     handleFiles(files);
   };
 
+  // inside FileUploadModal
   const handleFiles = (files: File[]) => {
     const validFiles = files.filter(
       (file) =>
@@ -64,7 +66,7 @@ export default function FileUploadModal({
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     );
 
-    validFiles.forEach((file) => {
+    validFiles.forEach(async (file) => {
       const newFile: UploadedFile = {
         name: file.name,
         size: (file.size / 1024 / 1024).toFixed(2) + " MB",
@@ -76,28 +78,48 @@ export default function FileUploadModal({
 
       setUploadedFiles((prev) => [...prev, newFile]);
 
-      // Simulate upload progress
-      const interval = setInterval(() => {
-        setUploadedFiles((prev) =>
-          prev.map((f) =>
-            f.name === file.name && f.isUploading
-              ? { ...f, uploadProgress: Math.min(f.uploadProgress + 10, 100) }
-              : f
-          )
-        );
-      }, 200);
+      // 🔹 Create FormData for API call
+      const formData = new FormData();
+      formData.append("resume", file);
 
-      // Complete upload after 2 seconds
-      setTimeout(() => {
-        clearInterval(interval);
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/resume`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (!res.ok) toast.error("Upload failed");
+
+        // ✅ resume uploaded + profile created
+        const data = await res.json();
+
+        // let parent (InspectView) refresh the list
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("resumeUploaded"));
+        }
+
+        // 🔹 REMOVE the file from the list after successful upload
+        setUploadedFiles((prev) => prev.filter((f) => f.name !== file.name));
+
+        // Clean up the blob URL to prevent memory leaks
+        URL.revokeObjectURL(newFile.url);
+        onClose()
+        toast.success("profile created")
+      } catch (err) {
+        console.error("Upload failed", err);
+
+        // 🔹 On error, mark as failed or remove from list
         setUploadedFiles((prev) =>
           prev.map((f) =>
             f.name === file.name
-              ? { ...f, isUploading: false, uploadProgress: 100 }
+              ? { ...f, isUploading: false, uploadProgress: 0 }
               : f
           )
         );
-      }, 2000);
+      }
     });
   };
 

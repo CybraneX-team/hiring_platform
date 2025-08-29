@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Input } from "@/app/components/ui/Input";
 import { Label } from "@/app/components/ui/label";
@@ -15,9 +15,71 @@ import {
   easeOut,
   easeIn,
 } from "framer-motion";
+import { useUser } from "@/app/context/UserContext";
+import { toast } from "react-toastify";
 
 export default function SignupPage() {
   const router = useRouter();
+  const { user } = useUser();
+
+  useEffect(() => {
+    if (user) {
+      toast.info("You are already logged in");
+      router.push("/company/profile"); // or homepage
+    }
+  }, [user, router]);
+
+  const { setUserCreds, setmode } = useUser();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    fullName: "",
+    organizationEmail: "",
+    companyName: "",
+    gstNumber: "",
+    password: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.id]: e.target.value });
+  };
+
+  const handleSignup = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/company/create`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            companyName: formData.companyName,
+            gstNumber: formData.gstNumber,
+            organizationEmail: formData.organizationEmail,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || "Failed to send OTP");
+
+      // Store signup data in session/localStorage to use later in OTP verification
+      localStorage.setItem("signupData", JSON.stringify(formData));
+      setUserCreds({
+        name: formData.fullName,
+        email: formData.organizationEmail,
+        password: formData.password,
+        companyName: formData.companyName,
+        gstNumber: formData.gstNumber,
+      });
+      setmode("company");
+      router.push("/otp"); // go to OTP page
+    } catch (err: any) {
+      toast.info(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Animation variants
   const containerVariants = {
@@ -102,14 +164,16 @@ export default function SignupPage() {
           {/* Full Name */}
           <motion.div className="space-y-2" variants={itemVariants}>
             <Label
-              htmlFor="fullname"
+              htmlFor="fullName"
               className="text-sm font-medium text-gray-700"
             >
               Full Name
             </Label>
             <motion.div variants={inputVariants} whileFocus="focus">
               <Input
-                id="fullname"
+                id="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
                 placeholder="John Doe"
                 className="h-12 bg-white border-gray-200 rounded-lg focus:!ring-black focus:!border-black focus:!outline-none focus:!ring-[1px]"
               />
@@ -119,14 +183,16 @@ export default function SignupPage() {
           {/* Organization Email */}
           <motion.div className="space-y-2" variants={itemVariants}>
             <Label
-              htmlFor="orgEmail"
+              htmlFor="organizationEmail"
               className="text-sm font-medium text-gray-700"
             >
               Organization Email
             </Label>
             <motion.div variants={inputVariants} whileFocus="focus">
               <Input
-                id="orgEmail"
+                id="organizationEmail"
+                value={formData.organizationEmail}
+                onChange={handleChange}
                 type="email"
                 placeholder="you@organization.com"
                 className="h-12 bg-white border-gray-200 rounded-lg focus:!ring-black focus:!border-black focus:!outline-none focus:!ring-[1px]"
@@ -137,14 +203,16 @@ export default function SignupPage() {
           {/* Organization Name */}
           <motion.div className="space-y-2" variants={itemVariants}>
             <Label
-              htmlFor="orgName"
+              htmlFor="companyName"
               className="text-sm font-medium text-gray-700"
             >
               Organization Name
             </Label>
             <motion.div variants={inputVariants} whileFocus="focus">
               <Input
-                id="orgName"
+                id="companyName"
+                value={formData.companyName}
+                onChange={handleChange}
                 placeholder="Your Organization"
                 className="h-12 bg-white border-gray-200 rounded-lg focus:!ring-black focus:!border-black focus:!outline-none focus:!ring-[1px]"
               />
@@ -153,12 +221,17 @@ export default function SignupPage() {
 
           {/* GST Number */}
           <motion.div className="space-y-2" variants={itemVariants}>
-            <Label htmlFor="gst" className="text-sm font-medium text-gray-700">
+            <Label
+              htmlFor="gstNumber"
+              className="text-sm font-medium text-gray-700"
+            >
               Organization GST Number
             </Label>
             <motion.div variants={inputVariants} whileFocus="focus">
               <Input
-                id="gst"
+                id="gstNumber"
+                onChange={handleChange}
+                value={formData.gstNumber}
                 placeholder="22AAAAA0000A1Z5"
                 className="h-12 bg-white border-gray-200 rounded-lg focus:!ring-black focus:!border-black focus:!outline-none focus:!ring-[1px]"
               />
@@ -176,6 +249,8 @@ export default function SignupPage() {
             <motion.div variants={inputVariants} whileFocus="focus">
               <Input
                 id="password"
+                value={formData.password}
+                onChange={handleChange}
                 type="password"
                 placeholder="Enter your password"
                 className="h-12 bg-white border-gray-200 rounded-lg focus:!ring-black focus:!border-black focus:!outline-none focus:!ring-[1px]"
@@ -187,14 +262,14 @@ export default function SignupPage() {
           <motion.button
             className="w-full h-12 rounded-lg text-black font-medium transition-opacity hover:opacity-90 cursor-pointer"
             style={{ backgroundColor: "#76FF82" }}
-            onClick={() => router.push("/otp")}
+            onClick={handleSignup}
             variants={buttonVariants}
             initial="initial"
             whileHover="hover"
             whileTap="tap"
           >
             <motion.span initial={{ opacity: 1 }} whileHover={{ opacity: 0.9 }}>
-              Verify your account
+              {loading ? "Sending OTP..." : "Verify your account"}
             </motion.span>
           </motion.button>
 

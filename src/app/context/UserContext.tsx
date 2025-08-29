@@ -6,6 +6,8 @@ interface UserCreds {
   name: string;
   email: string;
   password: string;
+  companyName ?: string,
+  gstNumber?  : string
 }
 
 interface UserInterface {
