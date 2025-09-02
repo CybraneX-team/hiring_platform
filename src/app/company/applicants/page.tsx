@@ -1,8 +1,11 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ArrowLeft, MapPin, Clock, CheckCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, MapPin, Clock, CheckCircle, Download } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
+import { toJpeg } from "html-to-image";
+import jsPDF from "jspdf";
 
 const CircularProgress = ({ percentage }: { percentage: number }) => {
   const radius = 20;
@@ -34,7 +37,7 @@ const CircularProgress = ({ percentage }: { percentage: number }) => {
           className="transition-all duration-300 ease-in-out"
         />
       </svg>
-      {/* Percentage text */}
+
       <div className="absolute inset-0 flex items-center justify-center">
         <span className="text-black font-semibold text-sm">{percentage}%</span>
       </div>
@@ -105,14 +108,79 @@ export default function ApplicationDetailView() {
   const applicant = mockApplicantDetail;
   const router = useRouter();
 
+  const [isShortlisted, setIsShortlisted] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const brandName = "Compscope";
+  const brandInitial = brandName.charAt(0);
+  const [preparingPdf, setPreparingPdf] = useState(false);
+
+  const handleShortlist = () => {
+    setIsShortlisted((prev) => !prev);
+  };
+
+  const handleDownload = async () => {
+    if (!contentRef.current) return;
+
+    setPreparingPdf(true);
+    await new Promise((r) =>
+      requestAnimationFrame(() => requestAnimationFrame(r))
+    );
+
+    try {
+      const node = contentRef.current;
+      const rect = node.getBoundingClientRect();
+
+      const dataUrl = await toJpeg(node, {
+        quality: 0.95,
+        backgroundColor: "#ffffff",
+        cacheBust: true,
+        filter: (n: HTMLElement) => {
+          const hasAttr = typeof n.getAttribute === "function";
+          const ignore =
+            hasAttr &&
+            (n.getAttribute("data-html2canvas-ignore") === "true" ||
+              n.getAttribute("data-pdf-hide") === "true");
+          return !ignore;
+        },
+      });
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const imgWidth = pageWidth;
+      const imgHeight = (rect.height * imgWidth) / rect.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(dataUrl, "JPEG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(dataUrl, "JPEG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`${applicant.name.replace(/\s+/g, "-")}-CV.pdf`);
+    } finally {
+      setPreparingPdf(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F5F5] p-4 sm:p-6 lg:p-8">
+      <div className="sr-only" aria-live="polite">
+        {isShortlisted ? "Shortlisted" : ""}
+      </div>
       <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">
         Compscope
       </h1>
       <div className="max-w-6xl mx-auto mt-12">
         {/* Header */}
-        <div className="mb-10">
+        <div className="mb-10 flex items-center justify-between">
           <motion.button
             onClick={() => router.back()}
             whileHover={{ scale: 1.02 }}
@@ -122,10 +190,74 @@ export default function ApplicationDetailView() {
             <ArrowLeft className="w-4 h-4" />
             Back
           </motion.button>
+
+          <div
+            className="flex items-center gap-3"
+            data-html2canvas-ignore="true"
+          >
+            <motion.button
+              type="button"
+              onClick={handleShortlist}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-4 py-2 rounded-full bg-[#76FF82] text-black font-medium shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#76FF82]"
+              aria-pressed={isShortlisted}
+            >
+              <AnimatePresence initial={false} mode="wait">
+                {!isShortlisted ? (
+                  <motion.span
+                    key="label-shortlist"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.16, ease: "easeOut" }}
+                  >
+                    Shortlist
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="label-shortlisted"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.16, ease: "easeOut" }}
+                    className="inline-flex items-center gap-1"
+                  >
+                    <motion.span
+                      initial={{ scale: 0.6, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.6, opacity: 0 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 650,
+                        damping: 18,
+                      }}
+                      className="inline-flex"
+                    >
+                      <CheckCircle className="w-4 h-4" color="#000000" />
+                    </motion.span>
+                    <span>Shortlisted</span>
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+
+            <motion.button
+              type="button"
+              onClick={handleDownload}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-4 py-2 rounded-full bg-[#76FF82] text-black font-medium inline-flex items-center gap-2 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#76FF82]"
+            >
+              <Download className="w-4 h-4" />
+              Download
+            </motion.button>
+          </div>
         </div>
 
         {/* Main Content Card */}
         <motion.div
+          ref={contentRef}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-xl p-6 sm:p-8 shadow-sm"
@@ -147,7 +279,20 @@ export default function ApplicationDetailView() {
               </div>
             </div>
 
-            <CircularProgress percentage={applicant.matchPercentage} />
+            <div className="relative w-12 h-12">
+              {!preparingPdf && (
+                <div data-pdf-hide="true">
+                  <CircularProgress percentage={applicant.matchPercentage} />
+                </div>
+              )}
+              {preparingPdf && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-black text-white flex items-center justify-center font-semibold">
+                    {brandInitial}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Status Indicators */}

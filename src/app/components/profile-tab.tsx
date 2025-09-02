@@ -13,6 +13,7 @@ import {
   Edit2,
   Search,
   FileText,
+  Eye,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CalendarSection from "./calender";
@@ -73,6 +74,9 @@ const initialProfileData = {
       name: "Certified Kubernetes Administrator",
       issuer: "Cloud Native Computing Foundation",
       date: "March 2023",
+      certificateUrl: "https://example.com/certificate.pdf",
+      certificateMime: "application/pdf",
+      certificateFileName: "certificate.pdf",
     },
   ],
   schedule: {
@@ -138,6 +142,11 @@ export default function ProfileTab() {
   const [showJobMatching, setShowJobMatching] = useState(false);
   const [userId] = useState("user123"); // In a real app, this would come from authentication
   const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  const [previewCert, setPreviewCert] = useState<{
+    url: string;
+    name?: string;
+    type?: string;
+  } | null>(null);
 
   useEffect(() => {
     const activeIndex = tabs.findIndex((tab) => tab.id === activeTab);
@@ -202,7 +211,7 @@ export default function ProfileTab() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.4 }}
-          className="text-lg sm:text-xl font-semibold text-gray-900 mb-3"
+          className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4"
         >
           {title}
         </motion.h3>
@@ -210,7 +219,7 @@ export default function ProfileTab() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.4 }}
-          className="text-gray-600 text-sm sm:text-base mb-6"
+          className="text-gray-600 text-sm sm:text-base mb-6 sm:mb-8"
         >
           {description}
         </motion.p>
@@ -254,6 +263,7 @@ export default function ProfileTab() {
     setEditingItem(null);
     setIsEditMode(false);
     setFormData({});
+    setPreviewCert(null);
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -280,7 +290,18 @@ export default function ProfileTab() {
             ? "education"
             : "experiences"
         ].map((item: any) =>
-          item.id === editingItem.id ? { ...item, ...formData } : item
+          item.id === editingItem.id
+            ? {
+                ...item,
+                ...formData,
+                // keep previous certificate file if not changed
+                certificateUrl: formData.certificateUrl ?? item.certificateUrl,
+                certificateMime:
+                  formData.certificateMime ?? item.certificateMime,
+                certificateFileName:
+                  formData.certificateFileName ?? item.certificateFileName,
+              }
+            : item
         ),
       }));
     } else if (modalType) {
@@ -389,6 +410,21 @@ export default function ProfileTab() {
 
     const config = modalContent[modalType];
 
+    const handleCertificateFileChange = (file: File | null) => {
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      setFormData((prev: any) => ({
+        ...prev,
+        certificateUrl: url,
+        certificateMime: file.type,
+        certificateFileName: file.name,
+      }));
+    };
+
+    const isPdf = (mime?: string, url?: string) =>
+      (mime && mime.includes("pdf")) ||
+      (url && url.toLowerCase().endsWith(".pdf"));
+
     return (
       <AnimatePresence>
         <motion.div
@@ -416,6 +452,7 @@ export default function ProfileTab() {
                 whileTap={{ scale: 0.9 }}
                 onClick={closeModal}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Close"
               >
                 <X className="w-5 h-5 text-gray-500" />
               </motion.button>
@@ -455,11 +492,58 @@ export default function ProfileTab() {
                 </motion.div>
               ))}
 
+              {modalType === "certificate" && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    delay: config.fields.length * 0.1,
+                    duration: 0.3,
+                  }}
+                  className="space-y-2"
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Certificate File (PDF or image)
+                  </label>
+                  <input
+                    type="file"
+                    accept="application/pdf,image/*"
+                    onChange={(e) =>
+                      handleCertificateFileChange(e.target.files?.[0] || null)
+                    }
+                    className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  {formData.certificateUrl && (
+                    <div className="mt-3 border border-gray-200 rounded-lg p-2">
+                      <p className="text-xs text-gray-500 mb-2">
+                        {formData.certificateFileName || "Selected file"}
+                      </p>
+                      {isPdf(
+                        formData.certificateMime,
+                        formData.certificateUrl
+                      ) ? (
+                        <iframe
+                          src={formData.certificateUrl}
+                          title="Certificate preview"
+                          className="w-full h-64 rounded-md"
+                        />
+                      ) : (
+                        <img
+                          src={formData.certificateUrl || "/placeholder.svg"}
+                          alt="Certificate preview"
+                          className="w-full max-h-64 object-contain rounded-md"
+                        />
+                      )}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{
-                  delay: config.fields.length * 0.1,
+                  delay: (config.fields.length + 1) * 0.1,
                   duration: 0.3,
                 }}
                 className="flex flex-col sm:flex-row gap-3 pt-4"
@@ -600,6 +684,7 @@ export default function ProfileTab() {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors "
+                  aria-label="Edit education"
                 >
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
@@ -653,6 +738,7 @@ export default function ProfileTab() {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors "
+                  aria-label="Edit experience"
                 >
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
@@ -693,7 +779,7 @@ export default function ProfileTab() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="space-y-6 sm:space-y-8"
           >
-            {profileData.certifications.map((cert, index) => (
+            {profileData.certifications.map((cert: any) => (
               <motion.div
                 key={cert.id}
                 variants={cardVariants}
@@ -709,6 +795,7 @@ export default function ProfileTab() {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors "
+                  aria-label="Edit certificate"
                 >
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
@@ -722,6 +809,24 @@ export default function ProfileTab() {
                 <p className="text-gray-500 text-sm sm:text-base">
                   Issued: {cert.date}
                 </p>
+
+                {cert.certificateUrl && (
+                  <div className="pt-2">
+                    <button
+                      onClick={() =>
+                        setPreviewCert({
+                          url: cert.certificateUrl,
+                          name: cert.name,
+                          type: cert.certificateMime,
+                        })
+                      }
+                      className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
+                    >
+                      <Eye className="w-4 h-4" />
+                      See Certificate
+                    </button>
+                  </div>
+                )}
               </motion.div>
             ))}
 
@@ -732,6 +837,55 @@ export default function ProfileTab() {
               <Upload className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto" />,
               "certificate"
             )}
+
+            {/* Certificate Preview Modal */}
+            <AnimatePresence>
+              {previewCert && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+                  onClick={() => setPreviewCert(null)}
+                >
+                  <motion.div
+                    initial={{ scale: 0.95, y: 20 }}
+                    animate={{ scale: 1, y: 0 }}
+                    exit={{ scale: 0.95, y: 20 }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-white rounded-xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl"
+                  >
+                    <div className="flex items-center justify-between px-4 py-3 border-b">
+                      <p className="text-sm font-medium text-gray-800 truncate">
+                        {previewCert.name || "Certificate Preview"}
+                      </p>
+                      <button
+                        onClick={() => setPreviewCert(null)}
+                        className="p-2 rounded-md hover:bg-gray-100"
+                        aria-label="Close preview"
+                      >
+                        <X className="w-5 h-5 text-gray-600" />
+                      </button>
+                    </div>
+                    <div className="p-4 bg-gray-50">
+                      {previewCert.type?.includes("pdf") ? (
+                        <iframe
+                          src={previewCert.url}
+                          title="Certificate PDF"
+                          className="w-full h-[70vh] rounded-md bg-white"
+                        />
+                      ) : (
+                        <img
+                          src={previewCert.url || "/placeholder.svg"}
+                          alt="Certificate image"
+                          className="w-full max-h-[70vh] object-contain rounded-md bg-white"
+                        />
+                      )}
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         );
 

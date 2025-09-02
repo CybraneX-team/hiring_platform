@@ -7,7 +7,7 @@ import JobHeader from "@/app/components/jobHeader";
 import { useRouter } from "next/navigation";
 
 export default function PostRole() {
-  const [activePayRange, setActivePayRange] = useState("Per Hour");
+  const [activePayRange, setActivePayRange] = useState("Daily");
   const [companyPerksInput, setCompanyPerksInput] = useState("");
   const [companyPerks, setCompanyPerks] = useState<string[]>([]);
   const [requiredSkillsetInput, setRequiredSkillsetInput] = useState("");
@@ -42,6 +42,8 @@ export default function PostRole() {
   const [currentOption, setCurrentOption] = useState("");
   const [currentOptions, setCurrentOptions] = useState<string[]>([]);
 
+  const [fatAdded, setFatAdded] = useState(false);
+
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
       const response = await fetch(
@@ -65,7 +67,6 @@ export default function PostRole() {
     } catch (error) {
       console.error("Reverse geocoding failed:", error);
     }
-    // Fallback to a more readable coordinate format
     return `Location: ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`;
   };
 
@@ -76,7 +77,6 @@ export default function PostRole() {
           const { latitude, longitude } = position.coords;
           console.log("[v0] Got coordinates:", latitude, longitude);
 
-          // Try to get a readable address
           const address = await reverseGeocode(latitude, longitude);
           console.log("[v0] Converted to address:", address);
 
@@ -216,7 +216,7 @@ export default function PostRole() {
   return (
     <div className="min-h-screen bg-[#F5F5F5] ">
       <JobHeader />
-      <div className="max-w-5xl mx-auto p-8">
+      <div className="max-w-5xl md:mx-auto p-8 -mx-5">
         {/* Back Button */}
         <motion.button
           initial={{ opacity: 0, y: -20 }}
@@ -233,7 +233,7 @@ export default function PostRole() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl p-8 shadow-sm"
+          className="bg-white rounded-2xl p-4 md:p-8 shadow-sm"
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -391,6 +391,51 @@ export default function PostRole() {
               )}
             </div>
 
+            {/* FAT Toggle (accent green) */}
+            <div className="pt-2">
+              <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-900">
+                    FAT included?
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    (food, accommodation, travel)
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={fatAdded}
+                  aria-label="Toggle enforcing certificates"
+                  onClick={() => setFatAdded((v) => !v)}
+                  className={`relative inline-flex items-center h-7 w-18 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                    fatAdded ? "bg-[#76FF82]" : "bg-gray-200"
+                  }`}
+                >
+                  {/* moving knob */}
+                  <motion.span
+                    className="absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-sm"
+                    animate={{ x: fatAdded ? 44 : 0 }}
+                    transition={{ type: "spring", stiffness: 360, damping: 28 }}
+                  />
+                  {/* on/off label */}
+                  <motion.span
+                    key={fatAdded ? "on" : "off"}
+                    initial={{ opacity: 0, y: 3 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 0 }}
+                    className={`w-full text-center text-sm font-semibold ${
+                      fatAdded ? "text-black" : "text-gray-600"
+                    }`}
+                  >
+                    {fatAdded ? "yes" : "no"}
+                  </motion.span>
+                </button>
+              </div>
+            </div>
+            {/* end FAT Toggle */}
+
             {/* Work Duration */}
             <div className="space-y-3">
               <label className="text-sm font-medium text-gray-700">
@@ -483,7 +528,7 @@ export default function PostRole() {
 
               {/* Pay Range Toggle */}
               <div className="flex bg-gray-100 rounded-lg p-1 w-fit mt-2">
-                {["Per Hour", "Annually"].map((option) => (
+                {["Daily", "Monthly"].map((option) => (
                   <button
                     key={option}
                     onClick={() => setActivePayRange(option)}
