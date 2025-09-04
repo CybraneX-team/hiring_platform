@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Star, Plus, ArrowLeft, X } from "lucide-react";
+import { Star, Plus, ArrowLeft, X, Pencil } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ResumeManager from "../../components/Company/ResumeManager";
+import { useToast } from "@/hooks/use-toast";
 
 const tabs = [
   { id: "profile", label: "Profile" },
@@ -78,7 +79,6 @@ const profileData = {
   ],
 };
 
-// Animation variants
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -122,12 +122,12 @@ const skillVariants = {
 export default function ProfileTab() {
   const [activeTab, setActiveTab] = useState("profile");
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [companyName, setCompanyName] = useState("Riverleaf.Inc");
-  const [companyDescription, setCompanyDescription] = useState(
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu."
-  );
-  const [orgSize, setOrgSize] = useState("12 - 600");
-  const [locationText, setLocationText] = useState("USA, Michigan");
+  const [companyName, setCompanyName] = useState("");
+  const [companyDescription, setCompanyDescription] = useState("");
+  const [orgSize, setOrgSize] = useState("");
+  const [locationText, setLocationText] = useState("");
+  const [companyLogo, setCompanyLogo] = useState("");
+  const [isLogoUploadOpen, setIsLogoUploadOpen] = useState(false);
   const [formState, setFormState] = useState({
     companyName: "",
     companyDescription: "",
@@ -135,6 +135,28 @@ export default function ProfileTab() {
     locationText: "",
   });
   const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const router = useRouter(); // Declare the router variable here
+
+  useEffect(() => {
+    const hasShownToast = localStorage.getItem("profileToastShown");
+    const isProfileEmpty =
+      !companyName && !companyDescription && !orgSize && !locationText;
+
+    if (!hasShownToast && isProfileEmpty) {
+      toast({
+        title: "Complete Your Profile",
+        description: "Please complete your profile to get started.",
+        duration: 5000,
+      });
+      localStorage.setItem("profileToastShown", "true");
+    }
+  }, [toast, companyName, companyDescription, orgSize, locationText]);
+
+  const isProfileComplete = () => {
+    return companyName && companyDescription && orgSize && locationText;
+  };
 
   useEffect(() => {
     const activeIndex = tabs.findIndex((tab) => tab.id === activeTab);
@@ -149,6 +171,57 @@ export default function ProfileTab() {
   }, [activeTab]);
 
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setCompanyLogo(e.target?.result as string);
+        setIsLogoUploadOpen(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setCompanyLogo("");
+    setIsLogoUploadOpen(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const renderCompanyLogo = (size: string) => {
+    const sizeClasses =
+      size === "large"
+        ? "w-12 h-12 sm:w-16 sm:h-16"
+        : "w-12 h-12 sm:w-16 sm:h-16";
+
+    if (companyLogo) {
+      return (
+        <div
+          className={`${sizeClasses} flex items-center justify-center relative group`}
+        >
+          <img
+            src={companyLogo}
+            alt="Company Logo"
+            className="max-w-full max-h-full object-contain"
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className={`${sizeClasses} rounded-full bg-black flex items-center justify-center flex-shrink-0`}
+      >
+        <span className="text-white font-bold text-lg sm:text-xl">
+          {companyName?.charAt(0) || "?"}
+        </span>
+      </div>
+    );
+  };
 
   const renderStars = () => {
     return (
@@ -195,16 +268,27 @@ export default function ProfileTab() {
                 </h3>
 
                 <div className="flex flex-col items-center space-y-3 sm:space-y-4">
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center"
-                  >
-                    <span className="text-white font-bold text-lg sm:text-xl">
-                      {companyName?.charAt(0) || "Z"}
-                    </span>
-                  </motion.div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-                    {companyName || "Unnamed Company"}
+                  <div className="relative">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {renderCompanyLogo("large")}
+                    </motion.div>
+
+                    {/* Pencil Icon */}
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setIsLogoUploadOpen(true)}
+                      className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-5 sm:h-5 p-1 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
+                    >
+                      <Pencil className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                    </motion.button>
+                  </div>
+
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 truncate">
+                    {formState.companyName || companyName || "Company Name"}
                   </h2>
                 </div>
               </motion.div>
@@ -217,8 +301,7 @@ export default function ProfileTab() {
                   Company description
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-600 leading-relaxed border border-[#A6ACA6] p-3 sm:p-4 rounded-lg">
-                  {companyDescription ||
-                    "Add a brief description about your company..."}
+                  {companyDescription || "Enter company description..."}
                 </p>
               </motion.div>
 
@@ -252,48 +335,55 @@ export default function ProfileTab() {
                 <input
                   type="text"
                   value={locationText}
+                  placeholder="Enter location..."
                   readOnly
                   className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-xs sm:text-sm"
                 />
 
                 <div className="relative bg-gray-900 rounded-lg overflow-hidden h-48 sm:h-64">
                   <div className="absolute inset-0 bg-gradient-to-b from-blue-900 to-gray-900">
-                    {/* North America */}
-                    <path
-                      d="M50 60 Q80 40 120 50 L140 80 Q100 100 60 90 Z"
-                      fill="#4ade80"
-                      opacity="0.8"
-                    />
-                    {/* Europe */}
-                    <path
-                      d="M160 45 Q180 35 200 45 L210 65 Q190 75 170 65 Z"
-                      fill="#4ade80"
-                      opacity="0.8"
-                    />
-                    {/* Asia */}
-                    <path
-                      d="M220 40 Q280 30 320 50 L340 80 Q300 90 240 75 Z"
-                      fill="#4ade80"
-                      opacity="0.8"
-                    />
-                    {/* Africa */}
-                    <path
-                      d="M170 80 Q190 70 210 85 L220 130 Q200 140 180 125 Z"
-                      fill="#4ade80"
-                      opacity="0.8"
-                    />
-                    {/* Australia */}
-                    <path
-                      d="M280 130 Q300 125 320 135 L325 150 Q305 155 285 145 Z"
-                      fill="#4ade80"
-                      opacity="0.8"
-                    />
-                    {/* South America */}
-                    <path
-                      d="M80 110 Q100 105 115 120 L120 160 Q100 170 85 155 Z"
-                      fill="#4ade80"
-                      opacity="0.8"
-                    />
+                    <svg
+                      className="w-full h-full"
+                      viewBox="0 0 400 200"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      {/* North America */}
+                      <path
+                        d="M50 60 Q80 40 120 50 L140 80 Q100 100 60 90 Z"
+                        fill="#4ade80"
+                        opacity="0.8"
+                      />
+                      {/* Europe */}
+                      <path
+                        d="M160 45 Q180 35 200 45 L210 65 Q190 75 170 65 Z"
+                        fill="#4ade80"
+                        opacity="0.8"
+                      />
+                      {/* Asia */}
+                      <path
+                        d="M220 40 Q280 30 320 50 L340 80 Q300 90 240 75 Z"
+                        fill="#4ade80"
+                        opacity="0.8"
+                      />
+                      {/* Africa */}
+                      <path
+                        d="M170 80 Q190 70 210 85 L220 130 Q200 140 180 125 Z"
+                        fill="#4ade80"
+                        opacity="0.8"
+                      />
+                      {/* Australia */}
+                      <path
+                        d="M280 130 Q300 125 320 135 L325 150 Q305 155 285 145 Z"
+                        fill="#4ade80"
+                        opacity="0.8"
+                      />
+                      {/* South America */}
+                      <path
+                        d="M80 110 Q100 105 115 120 L120 160 Q100 170 85 155 Z"
+                        fill="#4ade80"
+                        opacity="0.8"
+                      />
+                    </svg>
                   </div>
                   <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex gap-1 sm:gap-2">
                     <button className="px-2 sm:px-3 py-1 bg-gray-800 text-white text-xs rounded-full border border-gray-600 hover:bg-gray-700 transition-colors">
@@ -399,7 +489,6 @@ export default function ProfileTab() {
         return null;
     }
   };
-  const router = useRouter();
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] overflow-x-hidden">
@@ -433,22 +522,30 @@ export default function ProfileTab() {
             className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 sm:mb-12 gap-4 sm:gap-6"
           >
             <div className="flex items-center gap-4 sm:gap-6">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.2 }}
-                className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0"
-              >
-                <span className="text-white font-bold text-lg sm:text-xl">
-                  {companyName?.charAt(0) || "Z"}
-                </span>
-              </motion.div>
+              <div className="relative">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {renderCompanyLogo("large")}
+                </motion.div>
+
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setIsLogoUploadOpen(true)}
+                  className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-5 sm:h-5 bg-blue-600 p-1 hover:bg-blue-700 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
+                >
+                  <Pencil className="w-3 h-3 sm:w-3 sm:h-3 text-white" />
+                </motion.button>
+              </div>
 
               <div className="min-w-0">
                 <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 truncate">
-                  {formState.companyName || companyName}
+                  {formState.companyName || companyName || "Company Name"}
                 </h2>
                 <p className="text-gray-500 text-sm sm:text-base">
-                  {formState.locationText || locationText}
+                  {formState.locationText || locationText || "Location"}
                 </p>
               </div>
             </div>
@@ -470,7 +567,7 @@ export default function ProfileTab() {
                 }}
                 className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 border border-[#12372B] text-gray-700 bg-transparent hover:bg-gray-50 transition-colors text-sm sm:text-base whitespace-nowrap"
               >
-                Edit Profile
+                {isProfileComplete() ? "Edit Profile" : "Add Profile"}
               </motion.button>
             </div>
           </motion.div>
@@ -517,6 +614,105 @@ export default function ProfileTab() {
           </div>
         </div>
       </div>
+
+      {/* Logo Upload Modal */}
+      <AnimatePresence>
+        {isLogoUploadOpen && (
+          <motion.div
+            key="logo-upload-modal"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            aria-modal="true"
+            role="dialog"
+            aria-labelledby="logo-upload-title"
+          >
+            {/* Backdrop */}
+            <motion.div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsLogoUploadOpen(false)}
+            />
+
+            {/* Dialog */}
+            <motion.div
+              className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6"
+              initial={{ y: 24, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 24, opacity: 0, scale: 0.98 }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2
+                  id="logo-upload-title"
+                  className="text-lg font-semibold text-gray-900"
+                >
+                  Company Logo
+                </h2>
+                <button
+                  onClick={() => setIsLogoUploadOpen(false)}
+                  aria-label="Close"
+                  className="p-2 rounded-full hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-center mb-4">
+                  <div className="w-20 h-20 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg">
+                    {companyLogo ? (
+                      <img
+                        src={companyLogo}
+                        alt="Company Logo Preview"
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    ) : (
+                      <span className="text-gray-400 text-sm">No logo</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+                  >
+                    Upload Logo
+                  </motion.button>
+
+                  {companyLogo && (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleRemoveLogo}
+                      className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium"
+                    >
+                      Remove Logo
+                    </motion.button>
+                  )}
+                </div>
+
+                <p className="text-xs text-gray-500 text-center">
+                  Supported formats: JPG, PNG, SVG. Max size: 5MB
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {isEditOpen && (
