@@ -14,6 +14,7 @@ import {
   Search,
   FileText,
   Eye,
+  Pencil,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CalendarSection from "./calender";
@@ -32,9 +33,9 @@ const tabs = [
 
 const initialProfileData = {
   profile: {
-    bio: "Experienced software developer with a passion for creating innovative solutions. Specialized in full-stack development with expertise in React, Node.js, and cloud technologies.",
-    skills: ["JavaScript", "React", "Node.js", "Python", "AWS", "Docker"],
-    languages: ["English (Native)", "Spanish (Intermediate)", "French (Basic)"],
+    bio: "",
+    skills: [],
+    languages: [],
   },
   education: [
     {
@@ -148,6 +149,30 @@ export default function ProfileTab() {
     type?: string;
   } | null>(null);
 
+  // New state for profile management
+  const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
+  const [profilePicture, setProfilePicture] = useState("");
+  const [isProfilePictureModalOpen, setIsProfilePictureModalOpen] = useState(false);
+  const [profileFormData, setProfileFormData] = useState({
+    name: "",
+    location: "",
+    bio: "",
+    skills: "",
+    languages: "",
+  });
+  const profileFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check if profile is complete
+  const isProfileComplete = () => {
+    return (
+      profileFormData.name &&
+      profileFormData.location &&
+      profileData.profile.bio &&
+      profileData.profile.skills.length > 0 &&
+      profileData.profile.languages.length > 0
+    );
+  };
+
   useEffect(() => {
     const activeIndex = tabs.findIndex((tab) => tab.id === activeTab);
     const activeTabElement = tabsRef.current[activeIndex];
@@ -159,6 +184,80 @@ export default function ProfileTab() {
       });
     }
   }, [activeTab]);
+
+  // Profile picture handling
+  const handleProfilePictureUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProfilePicture(e.target?.result as string);
+        setIsProfilePictureModalOpen(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveProfilePicture = () => {
+    setProfilePicture("");
+    setIsProfilePictureModalOpen(false);
+    if (profileFileInputRef.current) {
+      profileFileInputRef.current.value = "";
+    }
+  };
+
+  const renderProfilePicture = () => {
+    if (profilePicture) {
+      return (
+        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden relative group">
+          <img
+            src={profilePicture}
+            alt="Profile"
+            className="w-full h-full object-cover"
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
+        <span className="text-white font-bold text-lg sm:text-xl">
+          {profileFormData.name?.charAt(0) || "R"}
+        </span>
+      </div>
+    );
+  };
+
+  const handleProfileSave = () => {
+  const skillsArray: string[] = profileFormData.skills
+    ? profileFormData.skills.split(',').map(skill => skill.trim()).filter(skill => skill)
+    : [];
+  const languagesArray: string[] = profileFormData.languages
+    ? profileFormData.languages.split(',').map(lang => lang.trim()).filter(lang => lang)
+    : [];
+
+  setProfileData(prev => ({
+    ...prev,
+    profile: {
+      bio: profileFormData.bio,
+      skills: skillsArray,
+      languages: languagesArray,
+    }
+  }));
+
+  setIsProfileEditOpen(false);
+};
+
+  const openProfileEditModal = () => {
+    setProfileFormData({
+      name: profileFormData.name || "",
+      location: profileFormData.location || "",
+      bio: profileData.profile.bio || "",
+      skills: profileData.profile.skills.join(', ') || "",
+      languages: profileData.profile.languages.join(', ') || "",
+    });
+    setIsProfileEditOpen(true);
+  };
 
   const renderStars = () => {
     return (
@@ -594,66 +693,90 @@ export default function ProfileTab() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="space-y-8 sm:space-y-12 text-black"
           >
-            <motion.div
-              variants={itemVariants}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-              <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-black">
-                About
-              </h3>
-              <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
-                {profileData.profile.bio}
-              </p>
-            </motion.div>
-            <motion.div
-              variants={itemVariants}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-              <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
-                Skills
-              </h3>
+            {!isProfileComplete() ? (
               <motion.div
-                className="flex flex-wrap gap-2 sm:gap-3"
-                variants={containerVariants}
-                transition={{ staggerChildren: 0.1 }}
+                variants={itemVariants}
+                className="text-center py-12"
               >
-                {profileData.profile.skills.map((skill, index) => (
-                  <motion.span
-                    key={index}
-                    variants={skillVariants}
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
-                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-100 text-blue-800 rounded-full text-xs sm:text-sm font-medium cursor-default"
-                  >
-                    {skill}
-                  </motion.span>
-                ))}
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  Complete Your Profile
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Add your information to get started
+                </p>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={openProfileEditModal}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full transition-colors"
+                >
+                  Add Profile Information
+                </motion.button>
               </motion.div>
-            </motion.div>
-            <motion.div
-              variants={itemVariants}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-              <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
-                Languages
-              </h3>
-              <motion.ul
-                className="space-y-2 sm:space-y-3"
-                variants={containerVariants}
-                transition={{ staggerChildren: 0.1 }}
-              >
-                {profileData.profile.languages.map((language, index) => (
-                  <motion.li
-                    key={index}
-                    variants={itemVariants}
-                    transition={{ duration: 0.4, ease: "easeOut" }}
-                    className="text-gray-600 text-sm sm:text-base"
+            ) : (
+              <>
+                <motion.div
+                  variants={itemVariants}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-black">
+                    About
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
+                    {profileData.profile.bio}
+                  </p>
+                </motion.div>
+                <motion.div
+                  variants={itemVariants}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
+                    Skills
+                  </h3>
+                  <motion.div
+                    className="flex flex-wrap gap-2 sm:gap-3"
+                    variants={containerVariants}
+                    transition={{ staggerChildren: 0.1 }}
                   >
-                    {language}
-                  </motion.li>
-                ))}
-              </motion.ul>
-            </motion.div>
+                    {profileData.profile.skills.map((skill, index) => (
+                      <motion.span
+                        key={index}
+                        variants={skillVariants}
+                        whileHover={{ scale: 1.05, y: -2 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-100 text-blue-800 rounded-full text-xs sm:text-sm font-medium cursor-default"
+                      >
+                        {skill}
+                      </motion.span>
+                    ))}
+                  </motion.div>
+                </motion.div>
+                <motion.div
+                  variants={itemVariants}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
+                    Languages
+                  </h3>
+                  <motion.ul
+                    className="space-y-2 sm:space-y-3"
+                    variants={containerVariants}
+                    transition={{ staggerChildren: 0.1 }}
+                  >
+                    {profileData.profile.languages.map((language, index) => (
+                      <motion.li
+                        key={index}
+                        variants={itemVariants}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className="text-gray-600 text-sm sm:text-base"
+                      >
+                        {language}
+                      </motion.li>
+                    ))}
+                  </motion.ul>
+                </motion.div>
+              </>
+            )}
           </motion.div>
         );
 
@@ -1023,22 +1146,31 @@ export default function ProfileTab() {
             className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 sm:mb-12 gap-4 sm:gap-6"
           >
             <div className="flex items-center gap-4 sm:gap-6">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.2 }}
-                className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0"
-              >
-                <span className="text-white font-bold text-lg sm:text-xl">
-                  Z
-                </span>
-              </motion.div>
+              <div className="relative">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {renderProfilePicture()}
+                </motion.div>
+
+                {/* Pencil Icon for Profile Picture */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setIsProfilePictureModalOpen(true)}
+                  className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-5 sm:h-5 p-1 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
+                >
+                  <Pencil className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </motion.button>
+              </div>
 
               <div className="min-w-0">
                 <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 truncate">
-                  Ryan Edgar
+                  {profileFormData.name || "Ryan Edgar"}
                 </h2>
                 <p className="text-gray-500 text-sm sm:text-base">
-                  USA, Michigan
+                  {profileFormData.location || "USA, Michigan"}
                 </p>
               </div>
             </div>
@@ -1048,10 +1180,17 @@ export default function ProfileTab() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveTab("resume")}
+                onClick={() => {
+                  if (isProfileComplete()) {
+                    openProfileEditModal();
+                  } else {
+                    setActiveTab("profile");
+                    openProfileEditModal();
+                  }
+                }}
                 className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 border border-[#12372B] text-gray-700 bg-transparent hover:bg-gray-50 transition-colors text-sm sm:text-base whitespace-nowrap"
               >
-                Resume & Jobs
+                {isProfileComplete() ? "Edit Profile" : "Add Profile"}
               </motion.button>
             </div>
           </motion.div>
@@ -1098,6 +1237,263 @@ export default function ProfileTab() {
           </div>
         </div>
       </div>
+
+      {/* Profile Picture Upload Modal */}
+      <AnimatePresence>
+        {isProfilePictureModalOpen && (
+          <motion.div
+            key="profile-picture-modal"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            aria-modal="true"
+            role="dialog"
+            aria-labelledby="profile-picture-title"
+          >
+            {/* Backdrop */}
+            <motion.div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsProfilePictureModalOpen(false)}
+            />
+
+            {/* Dialog */}
+            <motion.div
+              className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6"
+              initial={{ y: 24, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 24, opacity: 0, scale: 0.98 }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2
+                  id="profile-picture-title"
+                  className="text-lg font-semibold text-gray-900"
+                >
+                  Profile Picture
+                </h2>
+                <button
+                  onClick={() => setIsProfilePictureModalOpen(false)}
+                  aria-label="Close"
+                  className="p-2 rounded-full hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-center mb-4">
+                  <div className="w-20 h-20 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-full overflow-hidden">
+                    {profilePicture ? (
+                      <img
+                        src={profilePicture}
+                        alt="Profile Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-gray-400 text-sm">No photo</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <input
+                    ref={profileFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProfilePictureUpload}
+                    className="hidden"
+                  />
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => profileFileInputRef.current?.click()}
+                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+                  >
+                    Upload Photo
+                  </motion.button>
+
+                  {profilePicture && (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleRemoveProfilePicture}
+                      className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium"
+                    >
+                      Remove Photo
+                    </motion.button>
+                  )}
+                </div>
+
+                <p className="text-xs text-gray-500 text-center">
+                  Supported formats: JPG, PNG, SVG. Max size: 5MB
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Profile Edit Modal */}
+      <AnimatePresence>
+        {isProfileEditOpen && (
+          <motion.div
+            key="profile-edit-modal"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            aria-modal="true"
+            role="dialog"
+            aria-labelledby="profile-edit-title"
+          >
+            {/* Backdrop */}
+            <motion.div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsProfileEditOpen(false)}
+            />
+
+            {/* Dialog */}
+            <motion.div
+              className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 text-gray-500 max-h-[90vh] overflow-y-auto"
+              initial={{ y: 24, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 24, opacity: 0, scale: 0.98 }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2
+                  id="profile-edit-title"
+                  className="text-xl font-semibold text-gray-900"
+                >
+                  {isProfileComplete() ? "Edit Profile" : "Add Profile Information"}
+                </h2>
+                <button
+                  onClick={() => setIsProfileEditOpen(false)}
+                  aria-label="Close"
+                  className="p-2 rounded-full hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="space-y-5">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={profileFormData.name}
+                    onChange={(e) =>
+                      setProfileFormData(prev => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g., John Doe"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={profileFormData.location}
+                    onChange={(e) =>
+                      setProfileFormData(prev => ({
+                        ...prev,
+                        location: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g., USA, Michigan"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    About
+                  </label>
+                  <textarea
+                    value={profileFormData.bio}
+                    onChange={(e) =>
+                      setProfileFormData(prev => ({
+                        ...prev,
+                        bio: e.target.value,
+                      }))
+                    }
+                    placeholder="Tell us about yourself..."
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Skills
+                  </label>
+                  <input
+                    type="text"
+                    value={profileFormData.skills}
+                    onChange={(e) =>
+                      setProfileFormData(prev => ({
+                        ...prev,
+                        skills: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g., JavaScript, React, Python (comma separated)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Languages
+                  </label>
+                  <input
+                    type="text"
+                    value={profileFormData.languages}
+                    onChange={(e) =>
+                      setProfileFormData(prev => ({
+                        ...prev,
+                        languages: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g., English (Native), Spanish (Intermediate) (comma separated)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex items-center justify-end gap-3">
+                <button
+                  className="px-4 py-2 rounded-full border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setIsProfileEditOpen(false)}
+                >
+                  Cancel
+                </button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm"
+                  onClick={handleProfileSave}
+                >
+                  Save
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
