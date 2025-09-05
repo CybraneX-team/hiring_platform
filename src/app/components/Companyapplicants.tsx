@@ -47,7 +47,6 @@ interface CompanyApplicantsProps {
 
 export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsProps) {
   const applicant = itemId; // The actual profile data passed from parent
-  console.log("applicant is : ", applicant);
 
   // Generate avatar initials from name
   const getInitials = (name: string) => {

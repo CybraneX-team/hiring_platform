@@ -201,7 +201,6 @@ export default function ProfileTab() {
       }
 
       const data = await response.json();
-      // console.log("data is  : ", data);
       setApplications(data.jobs || []);
     } catch (error: any) {
       console.error("Error fetching applications:", error);

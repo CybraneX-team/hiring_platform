@@ -38,10 +38,18 @@ export default function SignupPage() {
     gstNumber: "",
     password: "",
   });
+  const [shouldNavigate, setShouldNavigate] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
+
+  useEffect(() => {
+  if (shouldNavigate) {
+    router.push("/otp");
+    setShouldNavigate(false);
+  }
+}, [shouldNavigate, router]);
 
   const handleSignup = async () => {
     try {
@@ -75,6 +83,7 @@ export default function SignupPage() {
       });
       setmode("company");
       router.push("/otp"); // go to OTP page
+      setShouldNavigate(true); 
     } catch (err: any) {
       toast.info(err.message);
     } finally {

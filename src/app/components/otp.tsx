@@ -18,6 +18,7 @@ export default function Otp() {
   const { userCreds, setuser, setUserCreds, mode, loginCreds } = useUser();
   const [loggingIn, setloggingIn] = useState(false);
 
+  const finalMode = mode
   const handleOtpChange = (index: number, value: string) => {
     if (value.length <= 1) {
       const newOtp = [...otp];

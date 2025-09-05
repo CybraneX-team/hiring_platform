@@ -87,12 +87,8 @@ export default function JobMatching({ resumeId, userId }: JobMatchingProps) {
       setMatches(response.data.matches);
       
       // Show processing time if available
-      if (response.data.processingTime) {
-        console.log(`Job matching completed in ${response.data.processingTime}ms`);
-      }
       
     } catch (error: any) {
-      console.error('Error fetching job matches:', error);
       
       let errorMessage = 'Failed to find job matches';
       

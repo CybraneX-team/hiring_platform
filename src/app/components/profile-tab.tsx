@@ -423,7 +423,6 @@ const updateProfileAPI = async (updatedData: any) => {
     const formData = new FormData();
 
     // Add userId
-    console.log(user, user?.id)
     formData.append("userId", user ? user?.id : "");
     // formData.append("user", user ? user?.id : "");
 
@@ -520,7 +519,6 @@ const updateProfileAPI = async (updatedData: any) => {
     }
 
     const result = await response.json();
-    console.log("Profile updated successfully:", result);
 
     if (result.profile && updateProfile) {
       updateProfile(result.profile);

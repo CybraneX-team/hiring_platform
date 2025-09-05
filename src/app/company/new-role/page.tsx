@@ -65,6 +65,7 @@ export default function PostRole() {
   const [isPosting, setIsPosting] = useState(false);
 
   const [fatAdded, setFatAdded] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
@@ -97,10 +98,8 @@ export default function PostRole() {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
-          console.log("[v0] Got coordinates:", latitude, longitude);
 
           const address = await reverseGeocode(latitude, longitude);
-          console.log("[v0] Converted to address:", address);
 
           setWorkLocation(address);
           setLocationMethod("auto");
@@ -123,7 +122,6 @@ export default function PostRole() {
   };
 
   const addPerk = () => {
-    console.log("[v0] Adding perk:", companyPerksInput);
     if (
       companyPerksInput.trim() &&
       !companyPerks.includes(companyPerksInput.trim())
@@ -138,7 +136,6 @@ export default function PostRole() {
   };
 
   const addSkill = () => {
-    console.log("[v0] Adding skill:", requiredSkillsetInput);
     if (
       requiredSkillsetInput.trim() &&
       !requiredSkillset.includes(requiredSkillsetInput.trim())
@@ -155,7 +152,6 @@ export default function PostRole() {
   };
 
   const addCertificate = () => {
-    console.log("[v0] Adding certificate:", mandatoryCertificatesInput);
     if (
       mandatoryCertificatesInput.trim() &&
       !mandatoryCertificates.includes(mandatoryCertificatesInput.trim())
@@ -175,7 +171,6 @@ export default function PostRole() {
   };
 
   const addOptionToCurrentQuestion = () => {
-    console.log("[v0] Adding option:", currentOption);
     if (
       currentOption.trim() &&
       !currentOptions.includes(currentOption.trim())
@@ -192,11 +187,6 @@ export default function PostRole() {
   };
 
   const addCustomQuestion = () => {
-    console.log(
-      "[v0] Adding custom question:",
-      currentQuestion,
-      currentOptions
-    );
     if (currentQuestion.trim() && currentOptions.length > 0) {
       const newQuestion = {
         id: Date.now(),
@@ -234,10 +224,6 @@ export default function PostRole() {
   };
   // Education Qualifications functions
   const addEducationQualification = () => {
-    console.log(
-      "[v0] Adding education qualification:",
-      educationQualificationInput
-    );
     if (educationQualificationInput.trim()) {
       // Split only on bullet points, pipes, semicolons, and clear line breaks
       const splitQualifications = educationQualificationInput
@@ -280,7 +266,6 @@ export default function PostRole() {
   // Responsibilities functions
   // Responsibilities functions
   const addResponsibility = () => {
-    console.log("[v0] Adding responsibility:", responsibilityInput);
     if (responsibilityInput.trim()) {
       // Smart splitting for responsibilities - split on bullet points, pipes, semicolons, and clear line breaks
       const splitResponsibilities = responsibilityInput
@@ -374,6 +359,135 @@ export default function PostRole() {
       toast.error("An error occurred. Please try again later.");
     } finally {
       setIsPosting(false);
+    }
+  };
+
+  const handleAIAssist = async () => {
+    if (!aboutJob.trim()) {
+      toast.error("Please enter a job description first");
+      return;
+    }
+
+    if (aboutJob.length < 50) {
+      toast.error(
+        "Please provide a more detailed job description for better analysis"
+      );
+      return;
+    }
+
+    try {
+      setIsAnalyzing(true);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs/ai-assist`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            description: aboutJob.trim(),
+            jobTitle: jobTittle.trim(),
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        const { data } = result;
+
+
+        // Auto-fill job title if not already filled
+        if (data.jobTitle && !jobTittle.trim()) {
+          setjobTittle(data.jobTitle);
+        }
+
+        // Auto-fill work location if not already filled
+        if (data.location && !workLocation.trim()) {
+          setWorkLocation(data.location);
+        }
+
+        // Auto-fill form fields with extracted data
+        if (data.companyPerks.length > 0) {
+          setCompanyPerks((prev) => [
+            ...new Set([...prev, ...data.companyPerks]),
+          ]);
+        }
+
+        if (data.requiredSkillset.length > 0) {
+          setRequiredSkillset((prev) => [
+            ...new Set([...prev, ...data.requiredSkillset]),
+          ]);
+        }
+
+        if (data.mandatoryCertificates.length > 0) {
+          setMandatoryCertificates((prev) => [
+            ...new Set([...prev, ...data.mandatoryCertificates]),
+          ]);
+        }
+
+        if (data.educationQualifications.length > 0) {
+          setEducationQualifications((prev) => [
+            ...new Set([...prev, ...data.educationQualifications]),
+          ]);
+        }
+
+        if (data.responsibilities.length > 0) {
+          setResponsibilities((prev) => [
+            ...new Set([...prev, ...data.responsibilities]),
+          ]);
+        }
+
+        // Handle FAT toggle - set it based on AI detection
+        if (data.fatIncluded !== undefined) {
+          setFatAdded(data.fatIncluded);
+        }
+
+        // Auto-fill suggested pay range
+        if (data.suggestedPayRange) {
+          // Check if the current payRange is the default value
+          if (payRange === "₹12,000-60,000" || !payRange.trim()) {
+            setPayRange(data.suggestedPayRange);
+          }
+        }
+
+        // Scroll to top after successful analysis
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+
+        // Enhanced success message
+        const extractedItems = [];
+        if (data.jobTitle && !jobTittle.trim())
+          extractedItems.push("job title");
+        if (data.location && !workLocation.trim())
+          extractedItems.push("location");
+        if (data.suggestedPayRange) extractedItems.push("pay range");
+
+        const autoFillMessage =
+          extractedItems.length > 0
+            ? ` Auto-filled: ${extractedItems.join(", ")}.`
+            : "";
+
+        const fatMessage = data.fatIncluded
+          ? " 🍽️ FAT benefits detected and toggle enabled!"
+          : "";
+
+        toast.success(
+          ` AI Analysis Complete! Added ${data.companyPerks.length} perks, ${data.requiredSkillset.length} skills, ${data.educationQualifications.length} qualifications, and ${data.responsibilities.length} responsibilities.${autoFillMessage}${fatMessage}`
+        );
+      } else {
+        toast.error(result.message || "Failed to analyze job description");
+      }
+    } catch (error) {
+      console.error("Error calling AI assist:", error);
+      toast.error(
+        "Network error occurred during analysis. Please check your connection."
+      );
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -488,7 +602,42 @@ export default function PostRole() {
                 </div>
               )}
             </div>
-
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">
+                  About Job
+                </label>
+                <button
+                  type="button"
+                  onClick={handleAIAssist}
+                  disabled={
+                    isAnalyzing || !aboutJob.trim() || aboutJob.length < 50
+                  }
+                  className="flex items-center gap-2"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-black text-black border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-black"> Analyzing... </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xs text-gray-500">AI Assist</span>
+                      <div className="w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center">
+                        <Bot className="w-3 h-3 text-white" />
+                      </div>
+                    </>
+                  )}
+                </button>
+              </div>
+              <textarea
+                value={aboutJob}
+                onChange={(e) => setAboutJob(e.target.value)}
+                placeholder="Description and requirements about this role..."
+                rows={12}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm placeholder-gray-400 text-black resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
             {/* Required Skillset */}
             <div className="space-y-3">
               <label className="text-sm font-medium text-gray-700">
@@ -582,10 +731,7 @@ export default function PostRole() {
               <label className="text-sm font-medium text-gray-700">
                 Education Qualifications
               </label>
-              <div className="text-xs text-gray-500">
-                💡 Tip: You can paste multiple qualifications separated by • - |
-                or line breaks, and we'll split them automatically
-              </div>
+
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -607,50 +753,67 @@ export default function PostRole() {
                 </button>
               </div>
 
-            {/* FAT Toggle (accent green) */}
-            <div className="pt-2">
-              <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-gray-900">
-                    FAT included?
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    (food, accommodation, travel)
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={fatAdded}
-                  aria-label="Toggle enforcing certificates"
-                  onClick={() => setFatAdded((v) => !v)}
-                  className={`relative inline-flex items-center h-7 w-18 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                    fatAdded ? "bg-[#76FF82]" : "bg-gray-200"
+              {/* FAT Toggle (accent green) */}
+              {/* FAT Toggle (accent green) */}
+              <div className="pt-2">
+                <div
+                  className={`flex items-center justify-between border rounded-xl p-4 ${
+                    fatAdded
+                      ? "bg-green-50 border-green-200"
+                      : "bg-gray-50 border-gray-200"
                   }`}
                 >
-                  {/* moving knob */}
-                  <motion.span
-                    className="absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-sm"
-                    animate={{ x: fatAdded ? 44 : 0 }}
-                    transition={{ type: "spring", stiffness: 360, damping: 28 }}
-                  />
-                  {/* on/off label */}
-                  <motion.span
-                    key={fatAdded ? "on" : "off"}
-                    initial={{ opacity: 0, y: 3 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 0 }}
-                    className={`w-full text-center text-sm font-semibold ${
-                      fatAdded ? "text-black" : "text-gray-600"
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-gray-900">
+                      FAT included?
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      (food, accommodation, travel)
+                    </span>
+                    {fatAdded && (
+                      <span className="text-xs text-green-600 mt-1">
+                        ✨ Detected by AI Assistant
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={fatAdded}
+                    aria-label="Toggle FAT inclusion"
+                    onClick={() => setFatAdded((v) => !v)}
+                    className={`relative inline-flex items-center h-7 w-18 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                      fatAdded ? "bg-[#76FF82]" : "bg-gray-200"
                     }`}
                   >
-                    {fatAdded ? "yes" : "no"}
-                  </motion.span>
-                </button>
+                    {/* moving knob */}
+                    <motion.span
+                      className="absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-sm"
+                      animate={{ x: fatAdded ? 44 : 0 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 360,
+                        damping: 28,
+                      }}
+                    />
+                    {/* on/off label */}
+                    <motion.span
+                      key={fatAdded ? "on" : "off"}
+                      initial={{ opacity: 0, y: 3 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 0 }}
+                      className={`w-full text-center text-sm font-semibold ${
+                        fatAdded ? "text-black" : "text-gray-600"
+                      }`}
+                    >
+                      {fatAdded ? "yes" : "no"}
+                    </motion.span>
+                  </button>
+                </div>
               </div>
-            </div>
-            {/* end FAT Toggle */}
+
+              {/* end FAT Toggle */}
 
               {/* Display Added Education Qualifications */}
               {educationQualifications.length > 0 && (
@@ -728,10 +891,6 @@ export default function PostRole() {
               <label className="text-sm font-medium text-gray-700">
                 Job Responsibilities
               </label>
-              <div className="text-xs text-gray-500">
-                💡 Tip: You can paste multiple responsibilities separated by • |
-                ; or line breaks, and we'll split them automatically
-              </div>
               <div className="flex gap-2">
                 <textarea
                   value={responsibilityInput}
@@ -938,26 +1097,6 @@ export default function PostRole() {
             </div>
 
             {/* About Job */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">
-                  About Job
-                </label>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">AI Assist</span>
-                  <div className="w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center">
-                    <Bot className="w-3 h-3 text-white" />
-                  </div>
-                </div>
-              </div>
-              <textarea
-                value={aboutJob}
-                onChange={(e) => setAboutJob(e.target.value)}
-                placeholder="Description and requirements about this role..."
-                rows={12}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm placeholder-gray-400 text-black resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
 
             {/* Custom Question */}
             <div className="space-y-4">
@@ -973,7 +1112,6 @@ export default function PostRole() {
                     <button
                       key={type}
                       onClick={() => {
-                        console.log("[v0] Changing question type to:", type);
                         setCurrentQuestionType(type);
                       }}
                       className={`px-4 py-1 text-sm font-medium rounded-md transition-all ${
@@ -1096,7 +1234,6 @@ export default function PostRole() {
             {/* Add Another Question Button */}
             <button
               onClick={() => {
-                console.log("[v0] Resetting question form for new question");
                 setCurrentQuestion("");
                 setCurrentOptions([]);
                 setCurrentOption("");

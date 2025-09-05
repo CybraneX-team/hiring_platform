@@ -66,7 +66,6 @@ export default function ResumeManager() {
       // API returns {jobs: [...]} so we need to access .jobs
       const jobsData = response.data.jobs || response.data;
       setJobs(Array.isArray(jobsData) ? jobsData : []);
-      console.log("Fetched jobs:", jobsData.length); // Debug log
     } catch (error) {
       console.error("Error fetching jobs:", error);
       setJobs([]); // Set empty array on error
