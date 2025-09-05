@@ -5,6 +5,8 @@ import { ArrowLeft, Bot, Plus, X, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import JobHeader from "@/app/components/jobHeader";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/app/context/UserContext";
+import { toast } from "react-toastify";
 
 export default function PostRole() {
   const [activePayRange, setActivePayRange] = useState("Daily");
@@ -17,8 +19,10 @@ export default function PostRole() {
   const [mandatoryCertificates, setMandatoryCertificates] = useState<string[]>(
     []
   );
+
   const [payRange, setPayRange] = useState("₹12,000-60,000");
   const [aboutJob, setAboutJob] = useState("");
+  const [jobTittle, setjobTittle] = useState("");
 
   const [workStartDate, setWorkStartDate] = useState("2025-08-04");
   const [workEndDate, setWorkEndDate] = useState("2025-08-11");
@@ -41,6 +45,24 @@ export default function PostRole() {
   >("MCQ");
   const [currentOption, setCurrentOption] = useState("");
   const [currentOptions, setCurrentOptions] = useState<string[]>([]);
+  const [educationQualificationInput, setEducationQualificationInput] =
+    useState("");
+  const [educationQualifications, setEducationQualifications] = useState<
+    string[]
+  >([]);
+  const [responsibilityInput, setResponsibilityInput] = useState("");
+  const [responsibilities, setResponsibilities] = useState<string[]>([]);
+
+  const [pendingQualifications, setPendingQualifications] = useState<string[]>(
+    []
+  );
+  const [showSplitPreview, setShowSplitPreview] = useState(false);
+  const [pendingResponsibilities, setPendingResponsibilities] = useState<
+    string[]
+  >([]);
+  const [showResponsibilitySplitPreview, setShowResponsibilitySplitPreview] =
+    useState(false);
+  const [isPosting, setIsPosting] = useState(false);
 
   const [fatAdded, setFatAdded] = useState(false);
 
@@ -210,8 +232,150 @@ export default function PostRole() {
 
     return `${day}${suffix} ${month} ${year}`;
   };
+  // Education Qualifications functions
+  const addEducationQualification = () => {
+    console.log(
+      "[v0] Adding education qualification:",
+      educationQualificationInput
+    );
+    if (educationQualificationInput.trim()) {
+      // Split only on bullet points, pipes, semicolons, and clear line breaks
+      const splitQualifications = educationQualificationInput
+        .split(/[•|;]|\n{1,}|(?:\s*•\s*)/)
+        .map((q) => q.trim())
+        .filter((q) => q.length > 0)
+        .filter((q) => !educationQualifications.includes(q));
+
+      if (splitQualifications.length > 0) {
+        setEducationQualifications([
+          ...educationQualifications,
+          ...splitQualifications,
+        ]);
+        setEducationQualificationInput("");
+      }
+    }
+  };
+
+  const confirmSplitQualifications = () => {
+    const newQualifications = pendingQualifications.filter(
+      (q) => !educationQualifications.includes(q)
+    );
+    setEducationQualifications([
+      ...educationQualifications,
+      ...newQualifications,
+    ]);
+    setEducationQualificationInput("");
+    setShowSplitPreview(false);
+    setPendingQualifications([]);
+  };
+
+  const removeEducationQualification = (qualificationToRemove: string) => {
+    setEducationQualifications(
+      educationQualifications.filter(
+        (qualification) => qualification !== qualificationToRemove
+      )
+    );
+  };
+
+  // Responsibilities functions
+  // Responsibilities functions
+  const addResponsibility = () => {
+    console.log("[v0] Adding responsibility:", responsibilityInput);
+    if (responsibilityInput.trim()) {
+      // Smart splitting for responsibilities - split on bullet points, pipes, semicolons, and clear line breaks
+      const splitResponsibilities = responsibilityInput
+        .split(/[•|;]|\n{1,}|(?:\s*•\s*)/)
+        .map((r) => r.trim())
+        .filter((r) => r.length > 0)
+        .filter((r) => !responsibilities.includes(r));
+
+      if (splitResponsibilities.length > 0) {
+        setResponsibilities([...responsibilities, ...splitResponsibilities]);
+        setResponsibilityInput("");
+      }
+    }
+  };
+
+  const removeResponsibility = (responsibilityToRemove: string) => {
+    setResponsibilities(
+      responsibilities.filter(
+        (responsibility) => responsibility !== responsibilityToRemove
+      )
+    );
+  };
+
+  const confirmSplitResponsibilities = () => {
+    const newResponsibilities = pendingResponsibilities.filter(
+      (r) => !responsibilities.includes(r)
+    );
+    setResponsibilities([...responsibilities, ...newResponsibilities]);
+    setResponsibilityInput("");
+    setShowResponsibilitySplitPreview(false);
+    setPendingResponsibilities([]);
+  };
 
   const router = useRouter();
+  const { user } = useUser();
+  const handleSubmit = async () => {
+    // Basic validation
+    if (!jobTittle.trim()) {
+      toast.error("Job title is required");
+      return;
+    }
+
+    // if (!user?.id) {
+    //   toast.error("User not authenticated");
+    //   return;
+    // }
+
+    setIsPosting(true);
+
+    try {
+      const jobData = {
+        company: `${user?.id}`,
+        userId: `${user?.id}`,
+        title: jobTittle,
+        jobType: "Part-time",
+        companyPerks,
+        requiredSkillset,
+        mandatoryCertificates,
+        educationQualifications,
+        responsibilities,
+        payRange,
+        payRangeType: activePayRange,
+        workStartDate,
+        workEndDate,
+        workLocation,
+        description: aboutJob,
+        customQuestions,
+      };
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(jobData),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("Job posted successfully!");
+        router.push("/company/profile");
+      } else {
+        toast.error(data.message || "Failed to post job");
+      }
+    } catch (error) {
+      console.error("Error posting job:", error);
+      toast.error("An error occurred. Please try again later.");
+    } finally {
+      setIsPosting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] ">
@@ -249,13 +413,37 @@ export default function PostRole() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="rounded-full text-black font-medium text-sm px-10 py-2 bg-[#76FF82] hover:bg-green-300"
+              onClick={handleSubmit}
+              disabled={isPosting}
+              className={`rounded-full text-black font-medium text-sm px-10 py-2 transition-colors ${
+                isPosting
+                  ? "bg-gray-300 cursor-not-allowed"
+                  : "bg-[#76FF82] hover:bg-green-300"
+              }`}
             >
-              Post
+              {isPosting ? "Posting..." : "Post"}
             </motion.button>
           </div>
 
           {/* Form Fields */}
+          <div className="space-y-3 my-3">
+            <label className="text-sm font-medium text-gray-700">
+              Job Tittle
+            </label>
+
+            {/* Location Input */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={jobTittle}
+                onChange={(e) => setjobTittle(e.target.value)}
+                placeholder="Enter Job Tittle"
+                className="w-48 px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* World Map Interface */}
+          </div>
           <div className="space-y-8">
             {/* Company Perks */}
             <div className="space-y-3">
@@ -390,6 +578,34 @@ export default function PostRole() {
                 </div>
               )}
             </div>
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-gray-700">
+                Education Qualifications
+              </label>
+              <div className="text-xs text-gray-500">
+                💡 Tip: You can paste multiple qualifications separated by • - |
+                or line breaks, and we'll split them automatically
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={educationQualificationInput}
+                  onChange={(e) =>
+                    setEducationQualificationInput(e.target.value)
+                  }
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && addEducationQualification()
+                  }
+                  placeholder="Enter education qualification (e.g., BE Mechanical Engineer)"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <button
+                  onClick={addEducationQualification}
+                  className="w-10 h-10 border border-gray-300 rounded-md flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
 
             {/* FAT Toggle (accent green) */}
             <div className="pt-2">
@@ -436,6 +652,175 @@ export default function PostRole() {
             </div>
             {/* end FAT Toggle */}
 
+              {/* Display Added Education Qualifications */}
+              {educationQualifications.length > 0 && (
+                <div className="space-y-2 mt-3">
+                  {educationQualifications.map((qualification, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-medium">
+                          {index + 1}
+                        </div>
+                        <span className="text-blue-800 text-sm font-medium">
+                          {qualification}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() =>
+                          removeEducationQualification(qualification)
+                        }
+                        className="w-6 h-6 flex items-center justify-center text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-full transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+
+              {/* Split Preview Modal */}
+              {showSplitPreview && (
+                <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="text-sm font-medium text-blue-800 mb-2">
+                    We detected multiple qualifications. Split them into
+                    separate items?
+                  </div>
+                  <div className="space-y-1 mb-3">
+                    {pendingQualifications.map((qual, index) => (
+                      <div key={index} className="text-sm text-blue-700 pl-4">
+                        • {qual}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={confirmSplitQualifications}
+                      className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                    >
+                      Yes, Split Them
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEducationQualifications([
+                          ...educationQualifications,
+                          educationQualificationInput.trim(),
+                        ]);
+                        setEducationQualificationInput("");
+                        setShowSplitPreview(false);
+                      }}
+                      className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
+                    >
+                      Keep as One Item
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Job Responsibilities - ADD THIS HERE */}
+            {/* Job Responsibilities */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-gray-700">
+                Job Responsibilities
+              </label>
+              <div className="text-xs text-gray-500">
+                💡 Tip: You can paste multiple responsibilities separated by • |
+                ; or line breaks, and we'll split them automatically
+              </div>
+              <div className="flex gap-2">
+                <textarea
+                  value={responsibilityInput}
+                  onChange={(e) => setResponsibilityInput(e.target.value)}
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && !e.shiftKey && addResponsibility()
+                  }
+                  placeholder="Enter responsibilities (e.g., Review and preparing ITP • Coordinate with site team • Attending inspection calls)"
+                  rows={3}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 text-black resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <button
+                  onClick={addResponsibility}
+                  className="w-10 h-10 border border-gray-300 rounded-md flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors self-start"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Split Preview Modal for Responsibilities */}
+              {showResponsibilitySplitPreview && (
+                <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="text-sm font-medium text-green-800 mb-2">
+                    We detected multiple responsibilities. Split them into
+                    separate items?
+                  </div>
+                  <div className="space-y-1 mb-3">
+                    {pendingResponsibilities.map((resp, index) => (
+                      <div key={index} className="text-sm text-green-700 pl-4">
+                        • {resp}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={confirmSplitResponsibilities}
+                      className="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600"
+                    >
+                      Yes, Split Them
+                    </button>
+                    <button
+                      onClick={() => {
+                        setResponsibilities([
+                          ...responsibilities,
+                          responsibilityInput.trim(),
+                        ]);
+                        setResponsibilityInput("");
+                        setShowResponsibilitySplitPreview(false);
+                      }}
+                      className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
+                    >
+                      Keep as One Item
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Display Added Responsibilities */}
+              {responsibilities.length > 0 && (
+                <div className="space-y-2 mt-3">
+                  {responsibilities.map((responsibility, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex items-start justify-between p-3 bg-green-50 border border-green-200 rounded-lg"
+                    >
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
+                          {index + 1}
+                        </div>
+                        <span className="text-green-800 text-sm font-medium leading-relaxed">
+                          {responsibility}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => removeResponsibility(responsibility)}
+                        className="w-6 h-6 flex items-center justify-center text-green-500 hover:text-green-700 hover:bg-green-100 rounded-full transition-colors flex-shrink-0 ml-2"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Work Duration */}
+            {/* ... continue with existing sections ... */}
             {/* Work Duration */}
             <div className="space-y-3">
               <label className="text-sm font-medium text-gray-700">

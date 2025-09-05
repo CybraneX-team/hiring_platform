@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [usePhone, setUsePhone] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const { loginCreds, setLoginCreds, mode, setmode, setuser, setUserCreds } = useUser();
+  const { loginCreds, setLoginCreds, mode, setmode, setuser, setUserCreds, setprofile } = useUser();
   
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -53,6 +53,7 @@ export default function LoginPage() {
     if (makeReq.ok) {
       const response = await makeReq.json();
       setuser(response.user);
+      setprofile(response.profile)
       setUserCreds({
         name: "",
         email: "",
@@ -60,6 +61,7 @@ export default function LoginPage() {
       });
       localStorage.setItem("token", response.token);
       localStorage.setItem("user", JSON.stringify(response.user));
+      localStorage.setItem("profile", JSON.stringify(response.profile));
       router.push("/profile");
     }
   };

@@ -21,6 +21,8 @@ import CalendarSection from "./calender";
 import { useRouter } from "next/navigation";
 import ResumeUpload from "./ResumeUpload";
 import JobMatching from "./JobMatching";
+import { useUser } from "../context/UserContext";
+import { toast } from "react-toastify";
 
 const tabs = [
   { id: "profile", label: "Profile" },
@@ -37,49 +39,9 @@ const initialProfileData = {
     skills: [],
     languages: [],
   },
-  education: [
-    {
-      id: 1,
-      type: "Graduation",
-      period: "2022-2024",
-      institution: "University of Michigan",
-    },
-    {
-      id: 2,
-      type: "Highschool",
-      period: "2019-2021",
-      institution: "Inter State school of Michigan",
-    },
-  ],
-  experiences: [
-    {
-      id: 1,
-      title: "Senior Software Engineer",
-      company: "Tech Solutions Inc.",
-      period: "2023-Present",
-      description:
-        "Lead development of scalable web applications using React and Node.js",
-    },
-    {
-      id: 2,
-      title: "Full Stack Developer",
-      company: "Digital Innovations LLC",
-      period: "2021-2023",
-      description:
-        "Developed and maintained multiple client projects using modern web technologies",
-    },
-  ],
-  certifications: [
-    {
-      id: 1,
-      name: "Certified Kubernetes Administrator",
-      issuer: "Cloud Native Computing Foundation",
-      date: "March 2023",
-      certificateUrl: "https://example.com/certificate.pdf",
-      certificateMime: "application/pdf",
-      certificateFileName: "certificate.pdf",
-    },
-  ],
+  education: [],
+  experiences: [],
+  certifications: [],
   schedule: {
     availability: "Monday - Friday, 9:00 AM - 6:00 PM EST",
     timezone: "Eastern Standard Time",
@@ -129,30 +91,150 @@ const skillVariants = {
 
 export default function ProfileTab() {
   const [activeTab, setActiveTab] = useState("resume");
+  const { user, profile, updateProfile } = useUser();
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [httpMethod, sethttpMethod] = useState<string>("PUT");
   const [modalType, setModalType] = useState<
     "education" | "experience" | "certificate" | null
   >(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [profileData, setProfileData] = useState(initialProfileData);
+  // Add this near the top with other useRef declarations
+
+  const [profileData, setProfileData] = useState(() => {
+    try {
+      // First check if profile from context exists and has data
+      if (profile && profile._id && profile.name) {
+        // Transform the profile data to match expected structure
+        const transformedProfile = {
+          profile: {
+            bio: profile.bio || "",
+            skills: profile.skills || [],
+            languages: ["English (Native)"], // Default since not in API response
+          },
+          education:
+            profile.education?.map((edu : any , index : any) => ({
+              id: index + 1,
+              type: edu.Degree || "Degree",
+              period: edu.Graduation
+                ? new Date(edu.Graduation).getFullYear().toString()
+                : "",
+              institution: edu.institure || edu.institute || "",
+              description: edu.GPA ? `GPA: ${edu.GPA}` : "",
+            })) || [],
+          experiences:
+            profile.WorkExperience?.map((exp : any, index : any) => ({
+              id: index + 1,
+              title: exp.title || "",
+              company: exp.company || "",
+              period: "", // Not available in API response
+              description: exp.description || "",
+            })) || [],
+          schedule: {
+            availability: "Monday - Friday, 9:00 AM - 6:00 PM EST",
+            timezone: "Eastern Standard Time",
+            preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
+          },
+          certifications:
+            profile.certificates?.map((cert : any, index : any) => ({
+              id: index + 1,
+              name: cert.name || "",
+              issuer: cert.issuer || "",
+              date: cert.date || "",
+              description: cert.description || "",
+              certificateUrl: cert.fileUrl || "",
+              certificateFileName: cert.fileName || "",
+              certificateMime: cert.mimeType || "",
+            })) || [],
+        };
+        return transformedProfile;
+      }
+
+      // If no profile from context, try localStorage
+      const savedProfile = localStorage.getItem("profileData");
+      if (savedProfile) {
+        const parsedProfile = JSON.parse(savedProfile);
+        return parsedProfile;
+      }
+
+      // If no data anywhere, return initial data
+      return initialProfileData;
+    } catch (error) {
+      console.error("Error parsing profile data:", error);
+      return initialProfileData;
+    }
+  });
+
+  // Update profileData when profile from context changes
+  useEffect(() => {
+    if (profile) {
+      const transformedProfile = {
+        profile: {
+          bio: profile.bio || "",
+          skills: profile.skills || [],
+          languages: ["English (Native)"],
+        },
+        education:
+          profile.education?.map((edu : any, index : any) => ({
+            id: index + 1,
+            type: edu.Degree || "Degree",
+            period: edu.Graduation
+              ? new Date(edu.Graduation).getFullYear().toString()
+              : "",
+            institution: edu.institure || edu.institute || "",
+            description: edu.GPA ? `GPA: ${edu.GPA}` : "",
+          })) || [],
+        experiences:
+          profile.WorkExperience?.map((exp : any, index : any) => ({
+            id: index + 1,
+            title: exp.title || "",
+            company: exp.company || "",
+            period: "", // You might want to add start/end dates to your API
+            description: exp.description || "",
+          })) || [],
+        certifications:
+          profile.certificates?.map((cert : any, index : any) => ({
+            id: index + 1,
+            name: cert.name || "",
+            issuer: cert.issuer || "",
+            date: cert.date || "",
+            description: cert.description || "",
+            certificateUrl: cert.fileUrl || "",
+            certificateFileName: cert.fileName || "",
+            certificateMime: cert.mimeType || "",
+          })) || [],
+
+        schedule: {
+          availability: "Monday - Friday, 9:00 AM - 6:00 PM EST",
+          timezone: "Eastern Standard Time",
+          preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
+        },
+      };
+
+      setProfileData(transformedProfile);
+    }
+  }, [profile]);
+
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [formData, setFormData] = useState<any>({});
   const [currentResumeId, setCurrentResumeId] = useState<string | null>(null);
   const [showJobMatching, setShowJobMatching] = useState(false);
-  const [userId] = useState("user123"); // In a real app, this would come from authentication
-  const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  // const [userId] = useState("user123"); // In a real app, this would come from authentication
+  // const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const [previewCert, setPreviewCert] = useState<{
     url: string;
     name?: string;
     type?: string;
   } | null>(null);
+  const router = useRouter();
 
   // New state for profile management
   const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
   const [profilePicture, setProfilePicture] = useState("");
-  const [isProfilePictureModalOpen, setIsProfilePictureModalOpen] = useState(false);
+  const [isProfilePictureModalOpen, setIsProfilePictureModalOpen] =
+    useState(false);
   const [profileFormData, setProfileFormData] = useState({
     name: "",
     location: "",
@@ -173,6 +255,10 @@ export default function ProfileTab() {
     );
   };
 
+  // const [userId] = useState("user123"); // In a real app, this would come from authentication
+
+  const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  const userId = user?.id;
   useEffect(() => {
     const activeIndex = tabs.findIndex((tab) => tab.id === activeTab);
     const activeTabElement = tabsRef.current[activeIndex];
@@ -186,7 +272,9 @@ export default function ProfileTab() {
   }, [activeTab]);
 
   // Profile picture handling
-  const handleProfilePictureUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfilePictureUpload = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -209,55 +297,254 @@ export default function ProfileTab() {
   const renderProfilePicture = () => {
     if (profilePicture) {
       return (
-        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden relative group">
-          <img
-            src={profilePicture}
-            alt="Profile"
-            className="w-full h-full object-cover"
-          />
+             <>
+        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
+          <span className="text-white font-bold text-lg sm:text-xl">
+            {profile?.name
+              ? profile?.name.charAt(0)
+              : user?.name
+              ? user?.name.charAt(0)
+              : ""}
+          </span>
         </div>
+        <div className="min-w-0">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 truncate">
+            {profile?.name ? profile?.name : user?.name ? user?.name : ""}
+          </h2>
+          <p className="text-gray-500 text-sm sm:text-base">
+            {profile?.location ? profile?.location : ""}
+          </p>
+        </div>
+      </>
       );
     }
 
     return (
-      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-        <span className="text-white font-bold text-lg sm:text-xl">
-          {profileFormData.name?.charAt(0) || "R"}
-        </span>
-      </div>
+      <>
+        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
+          <span className="text-white font-bold text-lg sm:text-xl">
+            {profile?.name
+              ? profile?.name.charAt(0)
+              : user?.name
+              ? user?.name.charAt(0)
+              : ""}
+          </span>
+        </div>
+        <div className="min-w-0">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 truncate">
+            {profile?.name ? profile?.name : user?.name ? user?.name : ""}
+          </h2>
+          <p className="text-gray-500 text-sm sm:text-base">
+            {profile?.location ? profile?.location : ""}
+          </p>
+        </div>
+      </>
     );
   };
 
-  const handleProfileSave = () => {
-  const skillsArray: string[] = profileFormData.skills
-    ? profileFormData.skills.split(',').map(skill => skill.trim()).filter(skill => skill)
-    : [];
-  const languagesArray: string[] = profileFormData.languages
-    ? profileFormData.languages.split(',').map(lang => lang.trim()).filter(lang => lang)
-    : [];
+const handleProfileSave = async () => {
+  try {
+    setIsLoading(true);
+    
+    const skillsArray: string[] = profileFormData.skills
+      ? profileFormData.skills
+          .split(",")
+          .map((skill) => skill.trim())
+          .filter((skill) => skill)
+      : [];
+    const languagesArray: string[] = profileFormData.languages
+      ? profileFormData.languages
+          .split(",")
+          .map((lang) => lang.trim())
+          .filter((lang) => lang)
+      : [];
 
-  setProfileData(prev => ({
-    ...prev,
-    profile: {
-      bio: profileFormData.bio,
-      skills: skillsArray,
-      languages: languagesArray,
-    }
-  }));
+    const updatedProfileData = {
+      ...profileData,
+      profile: {
+        bio: profileFormData.bio,
+        skills: skillsArray,
+        languages: languagesArray,
+      },
+    };
 
-  setIsProfileEditOpen(false);
+    // Update local state first (optimistic update)
+    setProfileData(updatedProfileData);
+
+    // Call API to update profile
+    await updateProfileAPI(updatedProfileData);
+    
+    // Update localStorage
+    localStorage.setItem("profileData", JSON.stringify(updatedProfileData));
+    
+    toast.success("Profile updated successfully!");
+    setIsProfileEditOpen(false);
+    
+  } catch (error) {
+    console.error("Failed to update profile:", error);
+    // Revert local state on API failure
+    setProfileData(profileData);
+    toast.error("Failed to update profile. Please try again.");
+  } finally {
+    setIsLoading(false);
+  }
 };
 
-  const openProfileEditModal = () => {
-    setProfileFormData({
-      name: profileFormData.name || "",
-      location: profileFormData.location || "",
-      bio: profileData.profile.bio || "",
-      skills: profileData.profile.skills.join(', ') || "",
-      languages: profileData.profile.languages.join(', ') || "",
+
+const openProfileEditModal = () => {
+  setProfileFormData({
+    name: profile?.name || user?.name || "",
+    location: profile?.location || "",
+    bio: profileData.profile.bio || "",
+    skills: profileData.profile.skills.join(", ") || "",
+    languages: profileData.profile.languages.join(", ") || "",
+  });
+  setIsProfileEditOpen(true);
+};
+
+const updateProfileAPI = async (updatedData: any) => {
+  try {
+    setIsLoading(true);
+    const profileId = profile?._id;
+    const hasRealProfileData = profile && profile._id && profile.name;
+
+    let apiUrl: string;
+    let method: string;
+
+    if (!profileId) {
+      apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/create-profile`;
+      method = "POST";
+    } else {
+      apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/edit-profile/${profileId}`;
+      method = "PUT";
+    }
+
+    // Create FormData for file uploads
+    const formData = new FormData();
+
+    // Add userId
+    console.log(user, user?.id)
+    formData.append("userId", user ? user?.id : "");
+    // formData.append("user", user ? user?.id : "");
+
+    // Handle basic profile fields
+    if (updatedData.profile) {
+      if (updatedData.profile.bio) {
+        formData.append("bio", updatedData.profile.bio);
+      }
+      if (updatedData.profile.skills) {
+        formData.append("skills", JSON.stringify(updatedData.profile.skills));
+      }
+      if (updatedData.profile.languages) {
+        formData.append("languages", JSON.stringify(updatedData.profile.languages));
+      }
+    }
+
+    // Handle name and location from form
+    if (profileFormData.name) {
+      formData.append("name", profileFormData.name);
+    }
+    if (profileFormData.location) {
+      formData.append("location", profileFormData.location);
+    }
+
+    // Handle education (existing code)
+    if (updatedData.education) {
+      formData.append(
+        "education",
+        JSON.stringify(
+          updatedData.education
+            .map((edu: any) => ({
+              institure: edu.institution || edu.institure || "",
+              Graduation: edu.period
+                ? new Date(`${edu.period}-12-31`).toISOString()
+                : undefined,
+              Degree: edu.type || edu.Degree || "",
+              GPA: edu.description?.includes("GPA:")
+                ? edu.description.replace("GPA: ", "")
+                : edu.GPA || "",
+            }))
+            .filter((edu: any) => edu.institure)
+        )
+      );
+    }
+
+    // Handle work experience (existing code)
+    if (updatedData.experiences) {
+      formData.append(
+        "WorkExperience",
+        JSON.stringify(
+          updatedData.experiences
+            .map((exp: any) => ({
+              company: exp.company || "",
+              title: exp.title || "",
+              description: exp.description || "",
+            }))
+            .filter((exp: any) => exp.company)
+        )
+      );
+    }
+
+    // Handle certificates (existing code)
+    if (updatedData.certifications) {
+      const certData = updatedData.certifications.map((cert: any) => ({
+        name: cert.name || "Unknown Certificate",
+        issuer: cert.issuer || "Unknown Issuer",
+        date: cert.date || "Unknown Date",
+        description: cert.description || "",
+      }));
+
+      formData.append("certificates", JSON.stringify(certData));
+    }
+
+    // Add certificate files if any (existing code)
+    updatedData.certifications?.forEach((cert: any) => {
+      if (cert.certificateFile instanceof File) {
+        formData.append("certificateFiles", cert.certificateFile);
+      }
     });
-    setIsProfileEditOpen(true);
-  };
+
+    const response = await fetch(apiUrl, {
+      method: method,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("API Error Response:", errorData);
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${
+          errorData.message || "Unknown error"
+        }`
+      );
+    }
+
+    const result = await response.json();
+    console.log("Profile updated successfully:", result);
+
+    if (result.profile && updateProfile) {
+      updateProfile(result.profile);
+    }
+    return result;
+  } catch (error: any) {
+    toast.error(error.message);
+    console.error("Error updating profile:", error);
+    throw error;
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+  useEffect(() => {
+    if (user && user.signedUpAs === "Company") {
+      // Show toast notification (you can replace this with your preferred toast library)
+      toast.info(
+        "You are signed up as a company. Redirecting to company profile..."
+      );
+      router.push("/company/profile");
+    }
+  }, [user, router]);
 
   const renderStars = () => {
     return (
@@ -372,17 +659,22 @@ export default function ProfileTab() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Modified handleSubmit function
+  // Modified handleSubmit function
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    let updatedProfileData;
+
     if (isEditMode && editingItem && modalType) {
-      setProfileData((prev) => ({
-        ...prev,
+      // Update existing item
+      updatedProfileData = {
+        ...profileData,
         [modalType === "certificate"
           ? "certifications"
           : modalType === "education"
           ? "education"
-          : "experiences"]: prev[
+          : "experiences"]: profileData[
           modalType === "certificate"
             ? "certifications"
             : modalType === "education"
@@ -393,7 +685,6 @@ export default function ProfileTab() {
             ? {
                 ...item,
                 ...formData,
-                // keep previous certificate file if not changed
                 certificateUrl: formData.certificateUrl ?? item.certificateUrl,
                 certificateMime:
                   formData.certificateMime ?? item.certificateMime,
@@ -402,21 +693,22 @@ export default function ProfileTab() {
               }
             : item
         ),
-      }));
+      };
     } else if (modalType) {
+      // Add new item
       const newItem = {
         ...formData,
         id: Date.now(),
       };
 
-      setProfileData((prev) => ({
-        ...prev,
+      updatedProfileData = {
+        ...profileData,
         [modalType === "certificate"
           ? "certifications"
           : modalType === "education"
           ? "education"
           : "experiences"]: [
-          ...prev[
+          ...profileData[
             modalType === "certificate"
               ? "certifications"
               : modalType === "education"
@@ -425,10 +717,51 @@ export default function ProfileTab() {
           ],
           newItem,
         ],
-      }));
+      };
+    }
+
+    if (updatedProfileData) {
+      try {
+        // Update local state first (optimistic update)
+        setProfileData(updatedProfileData);
+
+        // Call API to update profile
+        const result = await updateProfileAPI(updatedProfileData);
+
+        // Only update localStorage if API call was successful
+        localStorage.setItem("profileData", JSON.stringify(updatedProfileData));
+
+        toast.success("Profile updated successfully!");
+      } catch (error) {
+        console.error("Failed to update profile:", error);
+
+        // Revert local state on API failure
+        setProfileData(profileData);
+
+        // Don't update localStorage on error
+      }
     }
 
     closeModal();
+  };
+
+  const handleProfileFieldUpdate = async (field: string, value: any) => {
+    try {
+      const updatedProfileData = {
+        ...profileData,
+        profile: {
+          ...profileData.profile,
+          [field]: value,
+        },
+      };
+
+      setProfileData(updatedProfileData);
+      await updateProfileAPI(updatedProfileData);
+      localStorage.setItem("profileData", JSON.stringify(updatedProfileData));
+    } catch (error) {
+      console.error("Failed to update profile field:", error);
+      alert("Failed to update profile. Please try again.");
+    }
   };
 
   const renderModal = () => {
@@ -517,6 +850,7 @@ export default function ProfileTab() {
         certificateUrl: url,
         certificateMime: file.type,
         certificateFileName: file.name,
+        certificateFile: file, // Store the actual file for upload
       }));
     };
 
@@ -682,6 +1016,7 @@ export default function ProfileTab() {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      // Replace the entire profile case with this corrected version:
       case "profile":
         return (
           <motion.div
@@ -693,11 +1028,10 @@ export default function ProfileTab() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="space-y-8 sm:space-y-12 text-black"
           >
-            {!isProfileComplete() ? (
-              <motion.div
-                variants={itemVariants}
-                className="text-center py-12"
-              >
+            {/* Check if profile is incomplete */}
+            {!profileData.profile.bio ||
+            profileData.profile.skills.length === 0 ? (
+              <motion.div variants={itemVariants} className="text-center py-12">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
                   Complete Your Profile
                 </h3>
@@ -715,10 +1049,7 @@ export default function ProfileTab() {
               </motion.div>
             ) : (
               <>
-                <motion.div
-                  variants={itemVariants}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                >
+                <motion.div variants={itemVariants}>
                   <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-black">
                     About
                   </h3>
@@ -726,10 +1057,8 @@ export default function ProfileTab() {
                     {profileData.profile.bio}
                   </p>
                 </motion.div>
-                <motion.div
-                  variants={itemVariants}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                >
+
+                <motion.div variants={itemVariants}>
                   <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
                     Skills
                   </h3>
@@ -738,23 +1067,23 @@ export default function ProfileTab() {
                     variants={containerVariants}
                     transition={{ staggerChildren: 0.1 }}
                   >
-                    {profileData.profile.skills.map((skill, index) => (
-                      <motion.span
-                        key={index}
-                        variants={skillVariants}
-                        whileHover={{ scale: 1.05, y: -2 }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
-                        className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-100 text-blue-800 rounded-full text-xs sm:text-sm font-medium cursor-default"
-                      >
-                        {skill}
-                      </motion.span>
-                    ))}
+                    {profileData.profile.skills.map(
+                      (skill: string, index: number) => (
+                        <motion.span
+                          key={index}
+                          variants={skillVariants}
+                          whileHover={{ scale: 1.05, y: -2 }}
+                          transition={{ duration: 0.3, ease: "easeOut" }}
+                          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-100 text-blue-800 rounded-full text-xs sm:text-sm font-medium cursor-default"
+                        >
+                          {skill}
+                        </motion.span>
+                      )
+                    )}
                   </motion.div>
                 </motion.div>
-                <motion.div
-                  variants={itemVariants}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                >
+
+                <motion.div variants={itemVariants}>
                   <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
                     Languages
                   </h3>
@@ -763,16 +1092,18 @@ export default function ProfileTab() {
                     variants={containerVariants}
                     transition={{ staggerChildren: 0.1 }}
                   >
-                    {profileData.profile.languages.map((language, index) => (
-                      <motion.li
-                        key={index}
-                        variants={itemVariants}
-                        transition={{ duration: 0.4, ease: "easeOut" }}
-                        className="text-gray-600 text-sm sm:text-base"
-                      >
-                        {language}
-                      </motion.li>
-                    ))}
+                    {profileData.profile.languages.map(
+                      (language: string, index: number) => (
+                        <motion.li
+                          key={index}
+                          variants={itemVariants}
+                          transition={{ duration: 0.4, ease: "easeOut" }}
+                          className="text-gray-600 text-sm sm:text-base"
+                        >
+                          {language}
+                        </motion.li>
+                      )
+                    )}
                   </motion.ul>
                 </motion.div>
               </>
@@ -791,7 +1122,7 @@ export default function ProfileTab() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="space-y-4 sm:space-y-5"
           >
-            {profileData.education.map((edu, index) => (
+            {profileData.education.map((edu  : any, index : any) => (
               <motion.div
                 key={edu.id}
                 variants={cardVariants}
@@ -845,7 +1176,7 @@ export default function ProfileTab() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="space-y-4 sm:space-y-5"
           >
-            {profileData.experiences.map((exp, index) => (
+            {profileData.experiences.map((exp: any, index: number) => (
               <motion.div
                 key={exp.id}
                 variants={cardVariants}
@@ -927,14 +1258,19 @@ export default function ProfileTab() {
                   {cert.name}
                 </h3>
                 <p className="text-gray-600 text-sm sm:text-base">
-                  {cert.issuer}
+                  Issued by: {cert.issuer}
                 </p>
                 <p className="text-gray-500 text-sm sm:text-base">
-                  Issued: {cert.date}
+                  Date: {cert.date}
                 </p>
+                {cert.description && (
+                  <p className="text-gray-600 text-sm sm:text-base">
+                    {cert.description}
+                  </p>
+                )}
 
                 {cert.certificateUrl && (
-                  <div className="pt-2">
+                  <div className="pt-2 flex gap-2">
                     <button
                       onClick={() =>
                         setPreviewCert({
@@ -946,8 +1282,17 @@ export default function ProfileTab() {
                       className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
                     >
                       <Eye className="w-4 h-4" />
-                      See Certificate
+                      View Certificate
                     </button>
+                    <a
+                      href={cert.certificateUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Download
+                    </a>
                   </div>
                 )}
               </motion.div>
@@ -1058,7 +1403,7 @@ export default function ProfileTab() {
                   </div>
 
                   <ResumeUpload
-                    userId={userId}
+                    userId={userId ? userId : "" }
                     onUploadComplete={(data) => {
                       setCurrentResumeId(data.resumeId);
                     }}
@@ -1097,7 +1442,7 @@ export default function ProfileTab() {
                 </div>
 
                 {currentResumeId && (
-                  <JobMatching resumeId={currentResumeId} userId={userId} />
+                  <JobMatching resumeId={currentResumeId} userId={userId ? userId : "" } />
                 )}
               </div>
             )}
@@ -1108,8 +1453,6 @@ export default function ProfileTab() {
         return null;
     }
   };
-
-  const router = useRouter();
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] overflow-x-hidden">
@@ -1159,22 +1502,13 @@ export default function ProfileTab() {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setIsProfilePictureModalOpen(true)}
-                  className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-5 sm:h-5 p-1 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
+                  className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-5 sm:h-5 p-1 bg-blue-600
+                   hover:bg-blue-700 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
                 >
                   <Pencil className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </motion.button>
               </div>
-
-              <div className="min-w-0">
-                <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 truncate">
-                  {profileFormData.name || "Ryan Edgar"}
-                </h2>
-                <p className="text-gray-500 text-sm sm:text-base">
-                  {profileFormData.location || "USA, Michigan"}
-                </p>
-              </div>
             </div>
-
             <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-8">
               {renderStars()}
               <motion.button
@@ -1371,7 +1705,9 @@ export default function ProfileTab() {
                   id="profile-edit-title"
                   className="text-xl font-semibold text-gray-900"
                 >
-                  {isProfileComplete() ? "Edit Profile" : "Add Profile Information"}
+                  {isProfileComplete()
+                    ? "Edit Profile"
+                    : "Add Profile Information"}
                 </h2>
                 <button
                   onClick={() => setIsProfileEditOpen(false)}
@@ -1391,7 +1727,7 @@ export default function ProfileTab() {
                     type="text"
                     value={profileFormData.name}
                     onChange={(e) =>
-                      setProfileFormData(prev => ({
+                      setProfileFormData((prev) => ({
                         ...prev,
                         name: e.target.value,
                       }))
@@ -1409,7 +1745,7 @@ export default function ProfileTab() {
                     type="text"
                     value={profileFormData.location}
                     onChange={(e) =>
-                      setProfileFormData(prev => ({
+                      setProfileFormData((prev) => ({
                         ...prev,
                         location: e.target.value,
                       }))
@@ -1426,7 +1762,7 @@ export default function ProfileTab() {
                   <textarea
                     value={profileFormData.bio}
                     onChange={(e) =>
-                      setProfileFormData(prev => ({
+                      setProfileFormData((prev) => ({
                         ...prev,
                         bio: e.target.value,
                       }))
@@ -1445,7 +1781,7 @@ export default function ProfileTab() {
                     type="text"
                     value={profileFormData.skills}
                     onChange={(e) =>
-                      setProfileFormData(prev => ({
+                      setProfileFormData((prev) => ({
                         ...prev,
                         skills: e.target.value,
                       }))
@@ -1463,7 +1799,7 @@ export default function ProfileTab() {
                     type="text"
                     value={profileFormData.languages}
                     onChange={(e) =>
-                      setProfileFormData(prev => ({
+                      setProfileFormData((prev) => ({
                         ...prev,
                         languages: e.target.value,
                       }))

@@ -4,6 +4,8 @@ import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, FileText, X, Check, Loader2, Eye } from "lucide-react";
 import apiClient from "../utils/api";
+import { toast } from "react-toastify";
+import { useUser } from "../context/UserContext";
 
 
 interface ResumeUploadProps {
@@ -39,6 +41,7 @@ export default function ResumeUpload({ userId, onUploadComplete, onClose }: Resu
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const {user, profile, setprofile} = useUser()
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -94,57 +97,47 @@ export default function ResumeUpload({ userId, onUploadComplete, onClose }: Resu
     setUploadedFiles([newFile]);
     setIsProcessing(true);
 
-    try {
+
       // Upload and parse the resume
       const formData = new FormData();
       formData.append('resume', file);
-      formData.append('userId', userId);
+      formData.append('userId', user ? user.id : "");
+        try {
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/profile/resume`,
+            {
+              method: "POST",
+              body: formData,
+            }
+          );
+      
+          if (!res.ok) toast.error("Upload failed");
+  
+          // ✅ resume uploaded + profile created
+          const data = await res.json();
+          setprofile(data.profile)
+          localStorage.setItem("profile", JSON.stringify(data.profile))
+          // 🔹 REMOVE the file from the list after successful upload
+          setUploadedFiles((prev) => prev.filter((f) => f.name !== file.name));
+  
+          // Clean up the blob URL to prevent memory leaks
 
-      const response : any = await apiClient.post('/api/resume/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        onUploadProgress : (progressEvent: any) => {
-          const progress = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
-          setUploadedFiles(prev => 
-            prev.map(f => 
-              f.name === file.name 
-                ? { ...f, uploadProgress: progress }
+          toast.success("profile created")
+        } catch (err) {
+          console.error("Upload failed", err);
+  
+          // 🔹 On error, mark as failed or remove from list
+          setUploadedFiles((prev) =>
+            prev.map((f) =>
+              f.name === file.name
+                ? { ...f, isUploading: false, uploadProgress: 0 }
                 : f
             )
           );
-        },
-      } as any);
-
-      // Update file status
-      setUploadedFiles(prev => 
-        prev.map(f => 
-          f.name === file.name 
-            ? { ...f, isUploading: false, uploadProgress: 100 }
-            : f
-        )
-      );
-
-      // Set analysis result
-      setAnalysisResult(response.data.analysis);
-      
-      // Call completion callback
-      if (onUploadComplete) {
-        onUploadComplete({
-          resumeId: response.data.resumeId,
-          analysis: response.data.analysis
-        });
-      }
-
-    } catch (error: any) {
-      console.error('Upload error:', error);
-      setError(error.response?.data?.message || 'Failed to upload and parse resume');
-      setUploadedFiles([]);
-    } finally {
+       }finally {
       setIsProcessing(false);
+      }
     }
-  };
-
   const removeFile = (fileName: string) => {
     setUploadedFiles(prev => prev.filter(f => f.name !== fileName));
     setAnalysisResult(null);

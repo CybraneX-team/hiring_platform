@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ResumeManager from "../../components/Company/ResumeManager";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/app/context/UserContext";
 
 const tabs = [
   { id: "profile", label: "Profile" },
@@ -157,6 +158,65 @@ export default function ProfileTab() {
   const isProfileComplete = () => {
     return companyName && companyDescription && orgSize && locationText;
   };
+  const [applications, setApplications] = useState([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
+  const [applicationsError, setApplicationsError] = useState<any>(null);
+
+  const { user } = useUser(); // Get user from context
+
+  // Add this useEffect for authentication check
+  useEffect(() => {
+    // Check if user is not logged in or not signed up as company
+    if (!user) {
+      // User is not logged in at all
+      router.push("/profile");
+      return;
+    }
+
+    // Check if user is not signed up as a company
+    if (user.signedUpAs !== "Company") {
+      // User is logged in but not as a company
+      router.push("/profile");
+      return;
+    }
+  }, [user, router]);
+
+  // Add this function inside your component
+  const fetchApplications = async () => {
+    if (!user?.id) {
+      setApplicationsError("User not found");
+      return;
+    }
+
+    setApplicationsLoading(true);
+    setApplicationsError(null);
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs/getAllJobsByCompany?userId=${user.id}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch applications");
+      }
+
+      const data = await response.json();
+      // console.log("data is  : ", data);
+      setApplications(data.jobs || []);
+    } catch (error: any) {
+      console.error("Error fetching applications:", error);
+      setApplicationsError(error.message || "Failed to fetch applications");
+    } finally {
+      setApplicationsLoading(false);
+    }
+  };
+
+  // Add useEffect to fetch data when component mounts or user changes
+  useEffect(() => {
+    if (user?.id && activeTab === "jobs") {
+      fetchApplications();
+    }
+  }, [user?.id, activeTab]);
 
   useEffect(() => {
     const activeIndex = tabs.findIndex((tab) => tab.id === activeTab);
@@ -433,39 +493,138 @@ export default function ProfileTab() {
                 </h3>
               </motion.div>
 
-              {/* Job Role Cards */}
-              {(profileData.applications || []).map((job, index) => (
+              {/* Loading State */}
+              {applicationsLoading && (
                 <motion.div
-                  key={index}
                   variants={cardVariants}
-                  whileHover={{ y: -4, scale: 1.02 }}
-                  className="bg-white rounded-lg p-4 sm:p-6 min-h-[200px] sm:min-h-[250px] flex flex-col justify-between"
+                  className="bg-white rounded-lg p-6 sm:p-8 flex flex-col items-center justify-center text-center min-h-[200px] sm:min-h-[250px]"
                 >
-                  <div>
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
-                      {job.title}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
-                      {job.applicants} Applicants
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-                    <span className="text-xs text-gray-400 order-2 sm:order-1">
-                      {job.date}
-                    </span>
-                    <Link href="/company/applications">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="px-3 sm:px-4 py-1.5 sm:py-2 bg-[#76FF82] hover:bg-green-400 text-black text-xs sm:text-sm rounded-full transition-colors order-1 sm:order-2 self-start sm:self-auto"
-                      >
-                        View Applicants
-                      </motion.button>
-                    </Link>
-                  </div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                  <p className="text-gray-600">Loading jobs...</p>
                 </motion.div>
-              ))}
+              )}
+
+              {/* Error State */}
+              {applicationsError && !applicationsLoading && (
+                <motion.div
+                  variants={cardVariants}
+                  className="bg-white rounded-lg p-6 sm:p-8 flex flex-col items-center justify-center text-center min-h-[200px] sm:min-h-[250px]"
+                >
+                  <div className="text-red-500 mb-4">⚠️</div>
+                  <p className="text-red-600 text-sm">{applicationsError}</p>
+                  <button
+                    onClick={fetchApplications}
+                    className="mt-3 px-4 py-2 bg-blue-600 text-white text-xs rounded-full hover:bg-blue-700 transition-colors"
+                  >
+                    Try Again
+                  </button>
+                </motion.div>
+              )}
+
+              {/* No Jobs State */}
+              {!applicationsLoading &&
+                !applicationsError &&
+                applications.length === 0 && (
+                  <motion.div
+                    variants={cardVariants}
+                    className="bg-white rounded-lg p-6 sm:p-8 flex flex-col items-center justify-center text-center min-h-[200px] sm:min-h-[250px]"
+                  >
+                    <div className="text-gray-400 mb-4">📝</div>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
+                      No Job Posts Yet
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      Create your first job posting to get started!
+                    </p>
+                  </motion.div>
+                )}
+
+              {/* Actual Job Applications */}
+              {!applicationsLoading &&
+                !applicationsError &&
+                applications.length > 0 &&
+                applications.map((job: any, index: number) => (
+                  <motion.div
+                    key={job._id || index}
+                    variants={cardVariants}
+                    whileHover={{ y: -4, scale: 1.02 }}
+                    className="bg-white rounded-lg p-4 sm:p-6 min-h-[200px] sm:min-h-[250px] flex flex-col justify-between"
+                  >
+                    <div>
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+                        {job.title || "Untitled Job"}
+                      </h3>
+
+                      <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
+                        0 Applicants{" "}
+                        {/* Since applicants count is not in your response */}
+                      </p>
+
+                      {/* Job Type */}
+                      {job.jobType && (
+                        <div className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full mb-2">
+                          {job.jobType}
+                        </div>
+                      )}
+
+                      {/* Job Details */}
+                      <div className="space-y-1 mb-3">
+                        {job.salaryRange?.currency && (
+                          <p className="text-xs text-gray-400">
+                            💰 {job.salaryRange.currency}
+                          </p>
+                        )}
+
+                        {job.requiredSkills &&
+                          job.requiredSkills.length > 0 && (
+                            <p className="text-xs text-gray-400">
+                              🛠️ {job.requiredSkills.length} Skills Required
+                            </p>
+                          )}
+
+                        {job.isActive !== undefined && (
+                          <p className="text-xs text-gray-400">
+                            📊 Status: {job.isActive ? "Active" : "Inactive"}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Job Description (truncated) */}
+                      {job.description && (
+                        <p className="text-xs text-gray-600 line-clamp-2 mb-2">
+                          {job.description
+                            .replace(/\n/g, " ")
+                            .substring(0, 100)}
+                          {job.description.length > 100 ? "..." : ""}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mt-auto">
+                      <span className="text-xs text-gray-400 order-2 sm:order-1">
+                        {job.postedDate
+                          ? new Date(job.postedDate).toLocaleDateString(
+                              "en-US",
+                              {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              }
+                            )
+                          : "No date"}
+                      </span>
+                      <Link href={`/company/applications?jobId=${job._id}`}>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-[#76FF82] hover:bg-green-400 text-black text-xs sm:text-sm rounded-full transition-colors order-1 sm:order-2 self-start sm:self-auto"
+                        >
+                          View Applications
+                        </motion.button>
+                      </Link>
+                    </div>
+                  </motion.div>
+                ))}
             </motion.div>
           </motion.div>
         );

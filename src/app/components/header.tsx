@@ -30,7 +30,29 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const { user } = useUser();
+  const { user, setuser, setprofile } = useUser();
+  // Add this function in your component or create a custom hook
+  const handleLogout = () => {
+    // Clear token
+    setToken(null);
+
+    // Clear user context data
+    setuser(null);
+    setprofile(null);
+
+    // Clear all localStorage items
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("profile");
+    localStorage.removeItem("profileData");
+
+    // Optional: Clear any other session data
+    sessionStorage.clear();
+
+    // Redirect to signin
+    router.push("/signin");
+  };
+
   return (
     <nav
       className={`flex items-center justify-between px-8 md:px-16 py-3 fixed w-full transition-colors duration-300 z-50
@@ -71,11 +93,9 @@ export default function Header() {
           <button
             className="bg-[#D2FFD6] text-black p-3 rounded-xl font-medium hover:bg-[#c5f2ca] 
             transition-colors w-40 hidden md:block"
-            onClick={() => {
-              setToken(null);
-              localStorage.removeItem("token");
-              router.push("/signin");
-            }}
+            onClick={
+             handleLogout
+            }
           >
             Logout
           </button>

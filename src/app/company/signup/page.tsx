@@ -66,6 +66,7 @@ export default function SignupPage() {
       // Store signup data in session/localStorage to use later in OTP verification
       localStorage.setItem("signupData", JSON.stringify(formData));
       setUserCreds({
+        id : data.id,
         name: formData.fullName,
         email: formData.organizationEmail,
         password: formData.password,
