@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import type React from "react";
+import type React from "react"
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react"
 import {
   Star,
   Upload,
@@ -15,14 +15,559 @@ import {
   FileText,
   Eye,
   Pencil,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import CalendarSection from "./calender";
-import { useRouter } from "next/navigation";
-import ResumeUpload from "./ResumeUpload";
-import JobMatching from "./JobMatching";
-import { useUser } from "../context/UserContext";
-import { toast } from "react-toastify";
+  MapPin,
+  Calendar,
+  Clock,
+  Plus,
+} from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import CalendarSection from "./calender"
+import { useRouter } from "next/navigation"
+import ResumeUpload from "./ResumeUpload"
+import JobMatching from "./JobMatching"
+import { useUser } from "../context/UserContext"
+import { toast } from "react-toastify"
+
+// OlaMaps integration
+let OlaMaps: any = null
+let olaMaps: any = null
+
+const initializeOlaMaps = async () => {
+  if (typeof window !== "undefined" && !OlaMaps) {
+    try {
+      const module = await import("olamaps-web-sdk")
+      OlaMaps = module.OlaMaps
+      olaMaps = new OlaMaps({
+        apiKey: process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY || "",
+      })
+    } catch (error) {
+      console.error("Failed to initialize OlaMaps:", error)
+    }
+  }
+}
+
+const OlaMapComponent = ({
+  location,
+  onLocationSelect,
+  searchQuery,
+}: {
+  location?: { lat: number; lng: number; address?: string }
+  onLocationSelect?: (location: { lat: number; lng: number; address: string }) => void
+  searchQuery?: string
+}) => {
+  const mapRef = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<any>(null)
+  const markerRef = useRef<any>(null)
+  const [isMapLoaded, setIsMapLoaded] = useState(false)
+  const [isDetecting, setIsDetecting] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<string>("")
+
+  useEffect(() => {
+    const loadMap = async () => {
+      await initializeOlaMaps()
+
+      if (mapRef.current && olaMaps && !mapInstanceRef.current) {
+        try {
+          // Validate location data before using it
+          let mapCenter = { lat: 12.9716, lng: 77.5946 } // Default to Bengaluru
+
+          if (location) {
+            // Check if location has valid coordinates
+            if (
+              typeof location.lat === "number" &&
+              typeof location.lng === "number" &&
+              !isNaN(location.lat) &&
+              !isNaN(location.lng) &&
+              isFinite(location.lat) &&
+              isFinite(location.lng)
+            ) {
+              mapCenter = { lat: location.lat, lng: location.lng }
+              console.log("Using provided location:", mapCenter)
+            } else {
+              console.warn("Invalid location coordinates provided:", location)
+              setDebugInfo("Invalid location coordinates, using default location")
+            }
+          }
+
+          console.log("Initializing map with location:", mapCenter)
+
+          mapInstanceRef.current = olaMaps.init({
+            style: "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
+            container: mapRef.current,
+            center: [mapCenter.lng, mapCenter.lat], // [longitude, latitude]
+            zoom: 12,
+          })
+
+          mapInstanceRef.current.on("load", () => {
+            setIsMapLoaded(true)
+            setDebugInfo("")
+
+            // Add marker if valid location exists
+            if (
+              location &&
+              typeof location.lat === "number" &&
+              typeof location.lng === "number" &&
+              !isNaN(location.lat) &&
+              !isNaN(location.lng)
+            ) {
+              console.log("Adding initial marker:", location)
+              addMarker(location.lat, location.lng, location.address || "Selected Location")
+            }
+          })
+
+          // Add click event listener
+          mapInstanceRef.current.on("click", (e: any) => {
+            const { lat, lng } = e.lngLat
+            console.log("Map clicked at:", lat, lng)
+            reverseGeocode(lat, lng)
+          })
+
+          // Add error handling
+          mapInstanceRef.current.on("error", (e: any) => {
+            console.error("Map error:", e)
+            setDebugInfo("Map loading error")
+          })
+        } catch (error) {
+          console.error("Error initializing map:", error)
+          setDebugInfo("Failed to initialize map")
+        }
+      }
+    }
+
+    loadMap()
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove()
+        mapInstanceRef.current = null
+      }
+    }
+  }, []) // Remove location from dependencies to prevent re-initialization
+
+  // Handle location updates separately
+  useEffect(() => {
+    if (
+      mapInstanceRef.current &&
+      location &&
+      typeof location.lat === "number" &&
+      typeof location.lng === "number" &&
+      !isNaN(location.lat) &&
+      !isNaN(location.lng)
+    ) {
+      console.log("Updating map location:", location)
+
+      // Fly to new location
+      mapInstanceRef.current.flyTo({
+        center: [location.lng, location.lat],
+        zoom: 15,
+        duration: 1000,
+      })
+
+      // Add marker
+      setTimeout(() => {
+        addMarker(location.lat, location.lng, location.address || "Selected Location")
+      }, 200)
+    }
+  }, [location])
+
+  // Handle search when searchQuery changes
+  useEffect(() => {
+    if (searchQuery && searchQuery.trim() && isMapLoaded) {
+      console.log("Triggering search for:", searchQuery)
+      handleAddressSearch(searchQuery)
+    }
+  }, [searchQuery, isMapLoaded])
+
+  const geocodeAddress = async (address: string) => {
+    if (!address.trim()) return
+
+    console.log("Geocoding address:", address)
+
+    try {
+      const response = await fetch(
+        `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(address)}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`,
+      )
+
+      console.log("Geocoding response status:", response.status)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log("Geocoding data:", data)
+
+        if (data.geocodingResults && data.geocodingResults.length > 0) {
+          const result = data.geocodingResults[0]
+          const { lat, lng } = result.geometry.location
+
+          // Validate coordinates before using them
+          if (
+            typeof lat === "number" &&
+            typeof lng === "number" &&
+            !isNaN(lat) &&
+            !isNaN(lng) &&
+            isFinite(lat) &&
+            isFinite(lng)
+          ) {
+            const formattedAddress = result.formatted_address || address
+
+            console.log("Found location:", { lat, lng, formattedAddress })
+
+            // Update map center and add marker
+            if (mapInstanceRef.current) {
+              console.log("Flying to location:", lng, lat)
+              mapInstanceRef.current.flyTo({
+                center: [lng, lat],
+                zoom: 15,
+                duration: 2000,
+              })
+            }
+
+            // Add marker with delay to ensure map has moved
+            setTimeout(() => {
+              addMarker(lat, lng, formattedAddress)
+            }, 500)
+
+            if (onLocationSelect) {
+              onLocationSelect({ lat, lng, address: formattedAddress })
+            }
+
+            return { lat, lng, address: formattedAddress }
+          } else {
+            console.error("Invalid coordinates from geocoding:", lat, lng)
+            throw new Error("Invalid coordinates received")
+          }
+        } else {
+          console.log("No geocoding results found")
+          throw new Error("Location not found")
+        }
+      } else {
+        const errorText = await response.text()
+        console.error("Geocoding API error:", response.status, errorText)
+        throw new Error(`Geocoding failed: ${response.status}`)
+      }
+    } catch (error) {
+      console.error("Geocoding failed:", error)
+      setDebugInfo("Search failed - please try a different location")
+      throw error
+    }
+  }
+
+  const handleAddressSearch = async (address: string) => {
+    setIsSearching(true)
+    setDebugInfo("Searching...")
+    try {
+      await geocodeAddress(address)
+      setDebugInfo("")
+    } catch (error) {
+      console.error("Address search failed:", error)
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  const addMarker = (lat: number, lng: number, title: string) => {
+    if (!mapInstanceRef.current) {
+      console.error("Cannot add marker: map not initialized")
+      return
+    }
+
+    // Validate coordinates
+    if (
+      typeof lat !== "number" ||
+      typeof lng !== "number" ||
+      isNaN(lat) ||
+      isNaN(lng) ||
+      !isFinite(lat) ||
+      !isFinite(lng)
+    ) {
+      console.error("Invalid coordinates for marker:", lat, lng)
+      return
+    }
+
+    console.log("Adding marker at:", lat, lng, title)
+
+    try {
+      // Remove existing marker
+      if (markerRef.current) {
+        console.log("Removing existing marker")
+        markerRef.current.remove()
+        markerRef.current = null
+      }
+
+      // Create marker element
+      const markerElement = document.createElement("div")
+      markerElement.className = "custom-marker"
+      markerElement.style.cssText = `
+        width: 30px; 
+        height: 30px; 
+        background-color: #3b82f6; 
+        border: 3px solid white; 
+        border-radius: 50%; 
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 1000;
+        position: relative;
+      `
+
+      const innerDot = document.createElement("div")
+      innerDot.style.cssText = `
+        width: 12px; 
+        height: 12px; 
+        background-color: white; 
+        border-radius: 50%;
+      `
+      markerElement.appendChild(innerDot)
+
+      console.log("Created marker element:", markerElement)
+
+      // Ensure we have the Marker constructor
+      if (!olaMaps || !olaMaps.Marker) {
+        console.error("OlaMaps Marker not available")
+        return
+      }
+
+      // Add marker to map
+      markerRef.current = new olaMaps.Marker({
+        element: markerElement,
+      })
+        .setLngLat([lng, lat])
+        .addTo(mapInstanceRef.current)
+
+      console.log("Marker added successfully:", markerRef.current)
+
+      // Add popup if available
+      if (olaMaps.Popup) {
+        const popup = new olaMaps.Popup({
+          offset: 25,
+        }).setHTML(`<div style="padding: 8px; font-size: 14px; font-weight: 500;">${title}</div>`)
+
+        markerRef.current.setPopup(popup)
+        console.log("Popup added to marker")
+      }
+    } catch (error) {
+      console.error("Error adding marker:", error)
+      setDebugInfo("Error adding marker")
+    }
+  }
+
+  const reverseGeocode = async (lat: number, lng: number) => {
+    // Validate coordinates
+    if (
+      typeof lat !== "number" ||
+      typeof lng !== "number" ||
+      isNaN(lat) ||
+      isNaN(lng) ||
+      !isFinite(lat) ||
+      !isFinite(lng)
+    ) {
+      console.error("Invalid coordinates for reverse geocoding:", lat, lng)
+      return
+    }
+
+    console.log("Reverse geocoding:", lat, lng)
+
+    try {
+      const response = await fetch(
+        `https://api.olamaps.io/places/v1/reverse-geocode?latlng=${lat},${lng}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`,
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log("Reverse geocoding data:", data)
+        const address = data.results?.[0]?.formatted_address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+
+        addMarker(lat, lng, address)
+
+        if (onLocationSelect) {
+          onLocationSelect({ lat, lng, address })
+        }
+      } else {
+        console.error("Reverse geocoding failed:", response.status)
+        const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+        addMarker(lat, lng, address)
+
+        if (onLocationSelect) {
+          onLocationSelect({ lat, lng, address })
+        }
+      }
+    } catch (error) {
+      console.error("Reverse geocoding failed:", error)
+      const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+      addMarker(lat, lng, address)
+
+      if (onLocationSelect) {
+        onLocationSelect({ lat, lng, address })
+      }
+    }
+  }
+
+  const autoDetectLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by this browser.")
+      return
+    }
+
+    setIsDetecting(true)
+    console.log("Starting geolocation detection")
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        console.log("Geolocation detected:", latitude, longitude)
+
+        // Validate detected coordinates
+        if (
+          typeof latitude === "number" &&
+          typeof longitude === "number" &&
+          !isNaN(latitude) &&
+          !isNaN(longitude) &&
+          isFinite(latitude) &&
+          isFinite(longitude)
+        ) {
+          // Fly to detected location
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.flyTo({
+              center: [longitude, latitude],
+              zoom: 15,
+              duration: 2000,
+            })
+          }
+
+          reverseGeocode(latitude, longitude)
+          setDebugInfo("")
+        } else {
+          console.error("Invalid coordinates from geolocation:", latitude, longitude)
+          setDebugInfo("Invalid location detected")
+        }
+        setIsDetecting(false)
+      },
+      (error) => {
+        console.error("Geolocation error:", error)
+        setDebugInfo("Location detection failed")
+        alert("Unable to detect location. Please try again or select manually.")
+        setIsDetecting(false)
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      },
+    )
+  }
+
+  return (
+    <div className="relative bg-gray-900 rounded-lg overflow-hidden h-48 sm:h-64">
+      <div ref={mapRef} className="w-full h-full" style={{ minHeight: "200px" }} />
+
+      {!isMapLoaded && (
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-900 to-gray-900 flex items-center justify-center">
+          <div className="text-white text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+            <p className="text-sm">Loading map...</p>
+          </div>
+        </div>
+      )}
+
+      {isSearching && (
+        <div className="absolute top-2 left-2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs">Searching...</div>
+      )}
+
+      {/* Debug info */}
+      {debugInfo && (
+        <div className="absolute top-2 left-2 right-2 bg-red-600/90 text-white px-2 py-1 rounded text-xs max-h-8 overflow-hidden">
+          {debugInfo}
+        </div>
+      )}
+
+      <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex gap-1 sm:gap-2">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={autoDetectLocation}
+          disabled={isDetecting}
+          className="px-2 sm:px-3 py-1 bg-gray-800 text-white text-xs rounded-full border border-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+        >
+          {isDetecting ? (
+            <>
+              <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+              Detecting...
+            </>
+          ) : (
+            <>
+              <MapPin className="w-3 h-3" />
+              Auto Detect
+            </>
+          )}
+        </motion.button>
+
+        <div className="px-2 sm:px-3 py-1 bg-gray-700 text-white text-xs rounded-full">Click to pin</div>
+      </div>
+    </div>
+  )
+}
+
+// Enhanced location input field component
+const LocationInputWithSearch = ({
+  value,
+  onChange,
+  onLocationSelect,
+  selectedLocation,
+}: {
+  value: string
+  onChange: (value: string) => void
+  onLocationSelect: (location: { lat: number; lng: number; address: string }) => void
+  selectedLocation?: { lat: number; lng: number; address?: string }
+}) => {
+  const [searchTrigger, setSearchTrigger] = useState("")
+  const [isSearching, setIsSearching] = useState(false)
+
+  const handleSearch = async () => {
+    if (!value.trim()) return
+
+    setIsSearching(true)
+    setSearchTrigger(value) // This will trigger the map to search
+
+    // Reset after a short delay
+    setTimeout(() => {
+      setIsSearching(false)
+    }, 2000)
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      handleSearch()
+    }
+  }
+
+  return (
+    <div className="space-y-3 sm:space-y-4">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Enter address or click on map to select location..."
+          className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleSearch}
+          disabled={!value.trim() || isSearching}
+          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
+        >
+          {isSearching ? "Searching..." : "Search"}
+        </motion.button>
+      </div>
+
+      <OlaMapComponent location={selectedLocation} onLocationSelect={onLocationSelect} searchQuery={searchTrigger} />
+    </div>
+  )
+}
 
 const tabs = [
   { id: "profile", label: "Profile" },
@@ -31,13 +576,15 @@ const tabs = [
   { id: "certifications", label: "Certifications" },
   { id: "schedule", label: "Schedule" },
   { id: "resume", label: "Resume & Jobs" },
-];
+]
 
 const initialProfileData = {
   profile: {
     bio: "",
     skills: [],
     languages: [],
+    availability: [],
+    location: null,
   },
   education: [],
   experiences: [],
@@ -47,7 +594,7 @@ const initialProfileData = {
     timezone: "Eastern Standard Time",
     preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
   },
-};
+}
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -62,7 +609,7 @@ const containerVariants = {
     opacity: 0,
     transition: { duration: 0.2 },
   },
-};
+}
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -70,7 +617,7 @@ const itemVariants = {
     opacity: 1,
     y: 0,
   },
-};
+}
 
 const cardVariants = {
   hidden: { opacity: 0, y: 30, scale: 0.95 },
@@ -79,7 +626,7 @@ const cardVariants = {
     y: 0,
     scale: 1,
   },
-};
+}
 
 const skillVariants = {
   hidden: { opacity: 0, scale: 0.8 },
@@ -87,48 +634,43 @@ const skillVariants = {
     opacity: 1,
     scale: 1,
   },
-};
+}
 
 export default function ProfileTab() {
-  const [activeTab, setActiveTab] = useState("resume");
-  const { user, profile, updateProfile } = useUser();
-  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [httpMethod, sethttpMethod] = useState<string>("PUT");
-  const [modalType, setModalType] = useState<
-    "education" | "experience" | "certificate" | null
-  >(null);
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  // Add this near the top with other useRef declarations
+  const [activeTab, setActiveTab] = useState("resume")
+  const { user, profile, updateProfile } = useUser()
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 })
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [httpMethod, sethttpMethod] = useState<string>("PUT")
+  const [modalType, setModalType] = useState<"education" | "experience" | "certificate" | null>(null)
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
 
   const [profileData, setProfileData] = useState(() => {
     try {
-      // First check if profile from context exists and has data
       if (profile && profile._id && profile.name) {
-        // Transform the profile data to match expected structure
         const transformedProfile = {
           profile: {
             bio: profile.bio || "",
             skills: profile.skills || [],
-            languages: ["English (Native)"], // Default since not in API response
+            languages: [],
+            availability: [],
+            location: null,
           },
           education:
-            profile.education?.map((edu : any , index : any) => ({
+            profile.education?.map((edu: any, index: any) => ({
               id: index + 1,
               type: edu.Degree || "Degree",
-              period: edu.Graduation
-                ? new Date(edu.Graduation).getFullYear().toString()
-                : "",
+              period: edu.Graduation ? new Date(edu.Graduation).getFullYear().toString() : "",
               institution: edu.institure || edu.institute || "",
               description: edu.GPA ? `GPA: ${edu.GPA}` : "",
             })) || [],
           experiences:
-            profile.WorkExperience?.map((exp : any, index : any) => ({
+            profile.WorkExperience?.map((exp: any, index: any) => ({
               id: index + 1,
               title: exp.title || "",
               company: exp.company || "",
-              period: "", // Not available in API response
+              period: "",
               description: exp.description || "",
             })) || [],
           schedule: {
@@ -137,7 +679,7 @@ export default function ProfileTab() {
             preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
           },
           certifications:
-            profile.certificates?.map((cert : any, index : any) => ({
+            profile.certificates?.map((cert: any, index: any) => ({
               id: index + 1,
               name: cert.name || "",
               issuer: cert.issuer || "",
@@ -147,26 +689,23 @@ export default function ProfileTab() {
               certificateFileName: cert.fileName || "",
               certificateMime: cert.mimeType || "",
             })) || [],
-        };
-        return transformedProfile;
+        }
+        return transformedProfile
       }
 
-      // If no profile from context, try localStorage
-      const savedProfile = localStorage.getItem("profileData");
+      const savedProfile = localStorage.getItem("profileData")
       if (savedProfile) {
-        const parsedProfile = JSON.parse(savedProfile);
-        return parsedProfile;
+        const parsedProfile = JSON.parse(savedProfile)
+        return parsedProfile
       }
 
-      // If no data anywhere, return initial data
-      return initialProfileData;
+      return initialProfileData
     } catch (error) {
-      console.error("Error parsing profile data:", error);
-      return initialProfileData;
+      console.error("Error parsing profile data:", error)
+      return initialProfileData
     }
-  });
+  })
 
-  // Update profileData when profile from context changes
   useEffect(() => {
     if (profile) {
       const transformedProfile = {
@@ -174,27 +713,27 @@ export default function ProfileTab() {
           bio: profile.bio || "",
           skills: profile.skills || [],
           languages: ["English (Native)"],
+          availability: profile.availability || [],
+          location: profile.location || null,
         },
         education:
-          profile.education?.map((edu : any, index : any) => ({
+          profile.education?.map((edu: any, index: any) => ({
             id: index + 1,
             type: edu.Degree || "Degree",
-            period: edu.Graduation
-              ? new Date(edu.Graduation).getFullYear().toString()
-              : "",
+            period: edu.Graduation ? new Date(edu.Graduation).getFullYear().toString() : "",
             institution: edu.institure || edu.institute || "",
             description: edu.GPA ? `GPA: ${edu.GPA}` : "",
           })) || [],
         experiences:
-          profile.WorkExperience?.map((exp : any, index : any) => ({
+          profile.WorkExperience?.map((exp: any, index: any) => ({
             id: index + 1,
             title: exp.title || "",
             company: exp.company || "",
-            period: "", // You might want to add start/end dates to your API
+            period: "",
             description: exp.description || "",
           })) || [],
         certifications:
-          profile.certificates?.map((cert : any, index : any) => ({
+          profile.certificates?.map((cert: any, index: any) => ({
             id: index + 1,
             name: cert.name || "",
             issuer: cert.issuer || "",
@@ -204,45 +743,57 @@ export default function ProfileTab() {
             certificateFileName: cert.fileName || "",
             certificateMime: cert.mimeType || "",
           })) || [],
-
         schedule: {
           availability: "Monday - Friday, 9:00 AM - 6:00 PM EST",
           timezone: "Eastern Standard Time",
           preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
         },
-      };
+      }
 
-      setProfileData(transformedProfile);
+      setProfileData(transformedProfile)
     }
-  }, [profile]);
+  }, [profile])
 
-  const [editingItem, setEditingItem] = useState<any>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [formData, setFormData] = useState<any>({});
-  const [currentResumeId, setCurrentResumeId] = useState<string | null>(null);
-  const [showJobMatching, setShowJobMatching] = useState(false);
-  // const [userId] = useState("user123"); // In a real app, this would come from authentication
-  // const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  const [editingItem, setEditingItem] = useState<any>(null)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [formData, setFormData] = useState<any>({})
+  const [currentResumeId, setCurrentResumeId] = useState<string | null>(null)
+  const [showJobMatching, setShowJobMatching] = useState(false)
   const [previewCert, setPreviewCert] = useState<{
-    url: string;
-    name?: string;
-    type?: string;
-  } | null>(null);
-  const router = useRouter();
+    url: string
+    name?: string
+    type?: string
+  } | null>(null)
+  const router = useRouter()
 
   // New state for profile management
-  const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
-  const [profilePicture, setProfilePicture] = useState("");
-  const [isProfilePictureModalOpen, setIsProfilePictureModalOpen] =
-    useState(false);
+  const [isProfileEditOpen, setIsProfileEditOpen] = useState(false)
+  const [profilePicture, setProfilePicture] = useState("")
+  const [isProfilePictureModalOpen, setIsProfilePictureModalOpen] = useState(false)
   const [profileFormData, setProfileFormData] = useState({
     name: "",
     location: "",
     bio: "",
     skills: "",
     languages: "",
-  });
-  const profileFileInputRef = useRef<HTMLInputElement>(null);
+    availability: "",
+    locationData: null as { lat: number; lng: number; address: string } | null,
+  })
+  const profileFileInputRef = useRef<HTMLInputElement>(null)
+
+  const [showAvailabilityCalendar, setShowAvailabilityCalendar] = useState(false)
+  const [selectedAvailabilitySlots, setSelectedAvailabilitySlots] = useState<string[]>([])
+  const [showLocationMap, setShowLocationMap] = useState(false)
+
+  // New state for availability slot management
+  const [availabilitySlots, setAvailabilitySlots] = useState<string[]>(profileData.profile.availability || [])
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
+  const [newAvailabilityDate, setNewAvailabilityDate] = useState("")
+  const [newAvailabilityStartTime, setNewAvailabilityStartTime] = useState("")
+  const [newAvailabilityEndTime, setNewAvailabilityEndTime] = useState("")
+
+  // Map search query state
+  const [mapSearchQuery, setMapSearchQuery] = useState("")
 
   // Check if profile is complete
   const isProfileComplete = () => {
@@ -252,326 +803,339 @@ export default function ProfileTab() {
       profileData.profile.bio &&
       profileData.profile.skills.length > 0 &&
       profileData.profile.languages.length > 0
-    );
-  };
+    )
+  }
 
-  // const [userId] = useState("user123"); // In a real app, this would come from authentication
+  const tabsRef = useRef<(HTMLButtonElement | null)[]>([])
+  const userId = user?.id
 
-  const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
-  const userId = user?.id;
   useEffect(() => {
-    const activeIndex = tabs.findIndex((tab) => tab.id === activeTab);
-    const activeTabElement = tabsRef.current[activeIndex];
+    const activeIndex = tabs.findIndex((tab) => tab.id === activeTab)
+    const activeTabElement = tabsRef.current[activeIndex]
 
     if (activeTabElement) {
       setIndicatorStyle({
         left: activeTabElement.offsetLeft,
         width: activeTabElement.offsetWidth,
-      });
+      })
     }
-  }, [activeTab]);
+  }, [activeTab])
+
+  // Initialize availability slots from profile data
+  useEffect(() => {
+    if (profileData.profile.availability) {
+      setAvailabilitySlots(profileData.profile.availability)
+    }
+  }, [profileData.profile.availability])
 
   // Profile picture handling
-  const handleProfilePictureUpload = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
+  const handleProfilePictureUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
     if (file) {
-      const reader = new FileReader();
+      const reader = new FileReader()
       reader.onload = (e) => {
-        setProfilePicture(e.target?.result as string);
-        setIsProfilePictureModalOpen(false);
-      };
-      reader.readAsDataURL(file);
+        setProfilePicture(e.target?.result as string)
+        setIsProfilePictureModalOpen(false)
+      }
+      reader.readAsDataURL(file)
     }
-  };
+  }
 
   const handleRemoveProfilePicture = () => {
-    setProfilePicture("");
-    setIsProfilePictureModalOpen(false);
+    setProfilePicture("")
+    setIsProfilePictureModalOpen(false)
     if (profileFileInputRef.current) {
-      profileFileInputRef.current.value = "";
+      profileFileInputRef.current.value = ""
     }
-  };
+  }
 
   const renderProfilePicture = () => {
     if (profilePicture) {
       return (
-             <>
-        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-          <span className="text-white font-bold text-lg sm:text-xl">
-            {profile?.name
-              ? profile?.name.charAt(0)
-              : user?.name
-              ? user?.name.charAt(0)
-              : ""}
-          </span>
-        </div>
-        <div className="min-w-0">
-          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 truncate">
-            {profile?.name ? profile?.name : user?.name ? user?.name : ""}
-          </h2>
-          <p className="text-gray-500 text-sm sm:text-base">
-            {profile?.location ? profile?.location : ""}
-          </p>
-        </div>
-      </>
-      );
+        <>
+          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
+            <span className="text-white font-bold text-lg sm:text-xl">
+              {profile?.name ? profile?.name.charAt(0) : user?.name ? user?.name.charAt(0) : ""}
+            </span>
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 truncate">
+              {profile?.name ? profile?.name : user?.name ? user?.name : ""}
+            </h2>
+            <p className="text-gray-500 text-sm sm:text-base">{profile?.location ? profile?.location : ""}</p>
+          </div>
+        </>
+      )
     }
 
     return (
       <>
         <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
           <span className="text-white font-bold text-lg sm:text-xl">
-            {profile?.name
-              ? profile?.name.charAt(0)
-              : user?.name
-              ? user?.name.charAt(0)
-              : ""}
+            {profile?.name ? profile?.name.charAt(0) : user?.name ? user?.name.charAt(0) : ""}
           </span>
         </div>
         <div className="min-w-0">
           <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 truncate">
             {profile?.name ? profile?.name : user?.name ? user?.name : ""}
           </h2>
-          <p className="text-gray-500 text-sm sm:text-base">
-            {profile?.location ? profile?.location : ""}
-          </p>
+          <p className="text-gray-500 text-sm sm:text-base">{profile?.location ? profile?.location : ""}</p>
         </div>
       </>
-    );
-  };
-
-const handleProfileSave = async () => {
-  try {
-    setIsLoading(true);
-    
-    const skillsArray: string[] = profileFormData.skills
-      ? profileFormData.skills
-          .split(",")
-          .map((skill) => skill.trim())
-          .filter((skill) => skill)
-      : [];
-    const languagesArray: string[] = profileFormData.languages
-      ? profileFormData.languages
-          .split(",")
-          .map((lang) => lang.trim())
-          .filter((lang) => lang)
-      : [];
-
-    const updatedProfileData = {
-      ...profileData,
-      profile: {
-        bio: profileFormData.bio,
-        skills: skillsArray,
-        languages: languagesArray,
-      },
-    };
-
-    // Update local state first (optimistic update)
-    setProfileData(updatedProfileData);
-
-    // Call API to update profile
-    await updateProfileAPI(updatedProfileData);
-    
-    // Update localStorage
-    localStorage.setItem("profileData", JSON.stringify(updatedProfileData));
-    
-    toast.success("Profile updated successfully!");
-    setIsProfileEditOpen(false);
-    
-  } catch (error) {
-    console.error("Failed to update profile:", error);
-    // Revert local state on API failure
-    setProfileData(profileData);
-    toast.error("Failed to update profile. Please try again.");
-  } finally {
-    setIsLoading(false);
+    )
   }
-};
 
+  // Availability slot management functions
+  const addAvailabilitySlot = () => {
+    if (newAvailabilityDate && newAvailabilityStartTime && newAvailabilityEndTime) {
+      const formattedDate = new Date(newAvailabilityDate).toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
 
-const openProfileEditModal = () => {
-  setProfileFormData({
-    name: profile?.name || user?.name || "",
-    location: profile?.location || "",
-    bio: profileData.profile.bio || "",
-    skills: profileData.profile.skills.join(", ") || "",
-    languages: profileData.profile.languages.join(", ") || "",
-  });
-  setIsProfileEditOpen(true);
-};
+      const newSlot = `${formattedDate}, ${newAvailabilityStartTime} - ${newAvailabilityEndTime}`
 
-const updateProfileAPI = async (updatedData: any) => {
-  try {
-    setIsLoading(true);
-    const profileId = profile?._id;
-    const hasRealProfileData = profile && profile._id && profile.name;
-
-    let apiUrl: string;
-    let method: string;
-
-    if (!profileId) {
-      apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/create-profile`;
-      method = "POST";
-    } else {
-      apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/edit-profile/${profileId}`;
-      method = "PUT";
-    }
-
-    // Create FormData for file uploads
-    const formData = new FormData();
-
-    // Add userId
-    formData.append("userId", user ? user?.id : "");
-    // formData.append("user", user ? user?.id : "");
-
-    // Handle basic profile fields
-    if (updatedData.profile) {
-      if (updatedData.profile.bio) {
-        formData.append("bio", updatedData.profile.bio);
+      if (!availabilitySlots.includes(newSlot)) {
+        setAvailabilitySlots([...availabilitySlots, newSlot])
       }
-      if (updatedData.profile.skills) {
-        formData.append("skills", JSON.stringify(updatedData.profile.skills));
-      }
-      if (updatedData.profile.languages) {
-        formData.append("languages", JSON.stringify(updatedData.profile.languages));
-      }
+
+      // Reset form
+      setNewAvailabilityDate("")
+      setNewAvailabilityStartTime("")
+      setNewAvailabilityEndTime("")
+      setShowAvailabilityModal(false)
     }
-
-    // Handle name and location from form
-    if (profileFormData.name) {
-      formData.append("name", profileFormData.name);
-    }
-    if (profileFormData.location) {
-      formData.append("location", profileFormData.location);
-    }
-
-    // Handle education (existing code)
-    if (updatedData.education) {
-      formData.append(
-        "education",
-        JSON.stringify(
-          updatedData.education
-            .map((edu: any) => ({
-              institure: edu.institution || edu.institure || "",
-              Graduation: edu.period
-                ? new Date(`${edu.period}-12-31`).toISOString()
-                : undefined,
-              Degree: edu.type || edu.Degree || "",
-              GPA: edu.description?.includes("GPA:")
-                ? edu.description.replace("GPA: ", "")
-                : edu.GPA || "",
-            }))
-            .filter((edu: any) => edu.institure)
-        )
-      );
-    }
-
-    // Handle work experience (existing code)
-    if (updatedData.experiences) {
-      formData.append(
-        "WorkExperience",
-        JSON.stringify(
-          updatedData.experiences
-            .map((exp: any) => ({
-              company: exp.company || "",
-              title: exp.title || "",
-              description: exp.description || "",
-            }))
-            .filter((exp: any) => exp.company)
-        )
-      );
-    }
-
-    // Handle certificates (existing code)
-    if (updatedData.certifications) {
-      const certData = updatedData.certifications.map((cert: any) => ({
-        name: cert.name || "Unknown Certificate",
-        issuer: cert.issuer || "Unknown Issuer",
-        date: cert.date || "Unknown Date",
-        description: cert.description || "",
-      }));
-
-      formData.append("certificates", JSON.stringify(certData));
-    }
-
-    // Add certificate files if any (existing code)
-    updatedData.certifications?.forEach((cert: any) => {
-      if (cert.certificateFile instanceof File) {
-        formData.append("certificateFiles", cert.certificateFile);
-      }
-    });
-
-    const response = await fetch(apiUrl, {
-      method: method,
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("API Error Response:", errorData);
-      throw new Error(
-        `HTTP error! status: ${response.status}, message: ${
-          errorData.message || "Unknown error"
-        }`
-      );
-    }
-
-    const result = await response.json();
-
-    if (result.profile && updateProfile) {
-      updateProfile(result.profile);
-    }
-    return result;
-  } catch (error: any) {
-    toast.error(error.message);
-    console.error("Error updating profile:", error);
-    throw error;
-  } finally {
-    setIsLoading(false);
   }
-};
 
+  const removeAvailabilitySlot = (slotToRemove: string) => {
+    setAvailabilitySlots(availabilitySlots.filter((slot) => slot !== slotToRemove))
+  }
+
+  // Handle map location selection
+  const handleMapLocationSelect = (location: { lat: number; lng: number; address: string }) => {
+    setProfileFormData((prev) => ({
+      ...prev,
+      location: location.address,
+      locationData: location,
+    }))
+  }
+
+  const handleProfileSave = async () => {
+    try {
+      setIsLoading(true)
+
+      const skillsArray: string[] = profileFormData.skills
+        ? profileFormData.skills
+            .split(",")
+            .map((skill) => skill.trim())
+            .filter((skill) => skill)
+        : []
+      const languagesArray: string[] = profileFormData.languages
+        ? profileFormData.languages
+            .split(",")
+            .map((lang) => lang.trim())
+            .filter((lang) => lang)
+        : []
+
+      const updatedProfileData = {
+        ...profileData,
+        profile: {
+          ...profileData.profile,
+          bio: profileFormData.bio,
+          skills: skillsArray,
+          languages: languagesArray,
+          availability: availabilitySlots,
+          location: profileFormData.locationData,
+        },
+      }
+
+      await updateProfileAPI(updatedProfileData)
+      localStorage.setItem("profileData", JSON.stringify(updatedProfileData))
+
+      setProfileData(updatedProfileData)
+
+      toast.success("Profile updated successfully!")
+      setIsProfileEditOpen(false)
+    } catch (error) {
+      console.error("Failed to update profile:", error)
+      setProfileData(profileData)
+      toast.error("Failed to update profile. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const openProfileEditModal = () => {
+    // Correctly sync internal state with current profile data
+    setProfileFormData({
+      name: profile?.name || user?.name || "",
+      location: profile?.location || "",
+      bio: profileData.profile.bio || "",
+      skills: profileData.profile.skills.join(", ") || "",
+      languages: profileData.profile.languages.join(", ") || "",
+      availability: profileData.profile.availability?.join(", ") || "",
+      locationData: profileData.profile.location || null,
+    })
+
+    // Initialize availability slots
+    setAvailabilitySlots(profileData.profile.availability || [])
+
+    // Clear map search query
+    setMapSearchQuery("")
+
+    setIsProfileEditOpen(true)
+  }
+
+  const updateProfileAPI = async (updatedData: any) => {
+    try {
+      setIsLoading(true)
+      const profileId = profile?._id
+
+      let apiUrl: string
+      let method: string
+
+      if (!profileId) {
+        apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/create-profile`
+        method = "POST"
+      } else {
+        apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/edit-profile/${profileId}`
+        method = "PUT"
+      }
+
+      const formData = new FormData()
+
+      formData.append("userId", user ? user?.id : "")
+
+      if (updatedData.profile) {
+        if (updatedData.profile.bio) {
+          formData.append("bio", updatedData.profile.bio)
+        }
+        if (updatedData.profile.skills) {
+          formData.append("skills", JSON.stringify(updatedData.profile.skills))
+        }
+        if (updatedData.profile.languages) {
+          formData.append("languages", JSON.stringify(updatedData.profile.languages))
+        }
+        if (updatedData.profile.availability) {
+          formData.append("availability", JSON.stringify(updatedData.profile.availability))
+        }
+        if (updatedData.profile.location) {
+          formData.append("profileLocation", JSON.stringify(updatedData.profile.location))
+        }
+      }
+
+      if (profileFormData.name) {
+        formData.append("name", profileFormData.name)
+      }
+      if (profileFormData.location) {
+        formData.append("location", profileFormData.location)
+      }
+
+      if (updatedData.education) {
+        formData.append(
+          "education",
+          JSON.stringify(
+            updatedData.education
+              .map((edu: any) => ({
+                institure: edu.institution || edu.institure || "",
+                Graduation: edu.period ? new Date(`${edu.period}-12-31`).toISOString() : undefined,
+                Degree: edu.type || edu.Degree || "",
+                GPA: edu.description?.includes("GPA:") ? edu.description.replace("GPA: ", "") : edu.GPA || "",
+              }))
+              .filter((edu: any) => edu.institure),
+          ),
+        )
+      }
+
+      if (updatedData.experiences) {
+        formData.append(
+          "WorkExperience",
+          JSON.stringify(
+            updatedData.experiences
+              .map((exp: any) => ({
+                company: exp.company || "",
+                title: exp.title || "",
+                description: exp.description || "",
+              }))
+              .filter((exp: any) => exp.company),
+          ),
+        )
+      }
+
+      if (updatedData.certifications) {
+        const certData = updatedData.certifications.map((cert: any) => ({
+          name: cert.name || "Unknown Certificate",
+          issuer: cert.issuer || "Unknown Issuer",
+          date: cert.date || "Unknown Date",
+          description: cert.description || "",
+        }))
+
+        formData.append("certificates", JSON.stringify(certData))
+      }
+
+      updatedData.certifications?.forEach((cert: any) => {
+        if (cert.certificateFile instanceof File) {
+          formData.append("certificateFiles", cert.certificateFile)
+        }
+      })
+
+      const response = await fetch(apiUrl, {
+        method: method,
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error("API Error Response:", errorData)
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || "Unknown error"}`)
+      }
+
+      const result = await response.json()
+
+      if (result.profile && updateProfile) {
+        updateProfile(result.profile)
+      }
+      return result
+    } catch (error: any) {
+      toast.error(error.message)
+      console.error("Error updating profile:", error)
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (user && user.signedUpAs === "Company") {
-      // Show toast notification (you can replace this with your preferred toast library)
-      toast.info(
-        "You are signed up as a company. Redirecting to company profile..."
-      );
-      router.push("/company/profile");
+      toast.info("You are signed up as a company. Redirecting to company profile...")
+      router.push("/company/profile")
     }
-  }, [user, router]);
+  }, [user, router])
 
   const renderStars = () => {
     return (
       <div className="flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
-          <motion.div
-            key={star}
-            whileHover={{ scale: 1.1 }}
-            transition={{ duration: 0.2 }}
-          >
+          <motion.div key={star} whileHover={{ scale: 1.1 }} transition={{ duration: 0.2 }}>
             <Star
               className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                star <= 3
-                  ? "fill-yellow-400 text-yellow-400"
-                  : "fill-gray-300 text-gray-300"
+                star <= 3 ? "fill-yellow-400 text-yellow-400" : "fill-gray-300 text-gray-300"
               }`}
             />
           </motion.div>
         ))}
       </div>
-    );
-  };
+    )
+  }
 
   const renderAddCard = (
     title: string,
     description: string,
     buttonText: string,
     icon: React.ReactNode,
-    type: "education" | "experience" | "certificate"
+    type: "education" | "experience" | "certificate",
   ) => {
     return (
       <motion.div
@@ -619,129 +1183,95 @@ const updateProfileAPI = async (updatedData: any) => {
           {buttonText}
         </motion.button>
       </motion.div>
-    );
-  };
+    )
+  }
 
-  const openEditModal = (
-    type: "education" | "experience" | "certificate",
-    item: any
-  ) => {
-    setModalType(type);
-    setEditingItem(item);
-    setIsEditMode(true);
-    setFormData(item);
-    setIsModalOpen(true);
-  };
+  const openEditModal = (type: "education" | "experience" | "certificate", item: any) => {
+    setModalType(type)
+    setEditingItem(item)
+    setIsEditMode(true)
+    setFormData(item)
+    setIsModalOpen(true)
+  }
 
   const openModal = (type: "education" | "experience" | "certificate") => {
-    setModalType(type);
-    setEditingItem(null);
-    setIsEditMode(false);
-    setFormData({});
-    setIsModalOpen(true);
-  };
+    setModalType(type)
+    setEditingItem(null)
+    setIsEditMode(false)
+    setFormData({})
+    setIsModalOpen(true)
+  }
 
   const closeModal = () => {
-    setIsModalOpen(false);
-    setModalType(null);
-    setEditingItem(null);
-    setIsEditMode(false);
-    setFormData({});
-    setPreviewCert(null);
-  };
+    setIsModalOpen(false)
+    setModalType(null)
+    setEditingItem(null)
+    setIsEditMode(false)
+    setFormData({})
+    setPreviewCert(null)
+  }
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev: any) => ({
       ...prev,
       [field]: value,
-    }));
-  };
+    }))
+  }
 
-  // Modified handleSubmit function
-  // Modified handleSubmit function
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
-    let updatedProfileData;
+    let updatedProfileData
 
     if (isEditMode && editingItem && modalType) {
-      // Update existing item
       updatedProfileData = {
         ...profileData,
-        [modalType === "certificate"
-          ? "certifications"
-          : modalType === "education"
-          ? "education"
-          : "experiences"]: profileData[
-          modalType === "certificate"
-            ? "certifications"
-            : modalType === "education"
-            ? "education"
-            : "experiences"
-        ].map((item: any) =>
-          item.id === editingItem.id
-            ? {
-                ...item,
-                ...formData,
-                certificateUrl: formData.certificateUrl ?? item.certificateUrl,
-                certificateMime:
-                  formData.certificateMime ?? item.certificateMime,
-                certificateFileName:
-                  formData.certificateFileName ?? item.certificateFileName,
-              }
-            : item
-        ),
-      };
+        [modalType === "certificate" ? "certifications" : modalType === "education" ? "education" : "experiences"]:
+          profileData[
+            modalType === "certificate" ? "certifications" : modalType === "education" ? "education" : "experiences"
+          ].map((item: any) =>
+            item.id === editingItem.id
+              ? {
+                  ...item,
+                  ...formData,
+                  certificateUrl: formData.certificateUrl ?? item.certificateUrl,
+                  certificateMime: formData.certificateMime ?? item.certificateMime,
+                  certificateFileName: formData.certificateFileName ?? item.certificateFileName,
+                }
+              : item,
+          ),
+      }
     } else if (modalType) {
-      // Add new item
       const newItem = {
         ...formData,
         id: Date.now(),
-      };
+      }
 
       updatedProfileData = {
         ...profileData,
-        [modalType === "certificate"
-          ? "certifications"
-          : modalType === "education"
-          ? "education"
-          : "experiences"]: [
+        [modalType === "certificate" ? "certifications" : modalType === "education" ? "education" : "experiences"]: [
           ...profileData[
-            modalType === "certificate"
-              ? "certifications"
-              : modalType === "education"
-              ? "education"
-              : "experiences"
+            modalType === "certificate" ? "certifications" : modalType === "education" ? "education" : "experiences"
           ],
           newItem,
         ],
-      };
+      }
     }
 
     if (updatedProfileData) {
       try {
-        // Update local state first (optimistic update)
-        setProfileData(updatedProfileData);
-
-        // Call API to update profile
-        const result = await updateProfileAPI(updatedProfileData);
-
-        // Only update localStorage if API call was successful
-        localStorage.setItem("profileData", JSON.stringify(updatedProfileData));
-
-        toast.success("Profile updated successfully!");
+        setProfileData(updatedProfileData)
+        const result = await updateProfileAPI(updatedProfileData)
+        localStorage.setItem("profileData", JSON.stringify(updatedProfileData))
+        toast.success("Profile updated successfully!")
       } catch (error) {
-        console.error("Failed to update profile:", error);
-
-        // Revert local state on API failure
-        setProfileData(profileData);
-
-        // Don't update localStorage on error
+        console.error("Failed to update profile:", error)
+        setProfileData(profileData)
       }
     }
 
-    closeModal();
-  };
+    closeModal()
+  }
 
   const handleProfileFieldUpdate = async (field: string, value: any) => {
     try {
@@ -751,19 +1281,19 @@ const updateProfileAPI = async (updatedData: any) => {
           ...profileData.profile,
           [field]: value,
         },
-      };
+      }
 
-      setProfileData(updatedProfileData);
-      await updateProfileAPI(updatedProfileData);
-      localStorage.setItem("profileData", JSON.stringify(updatedProfileData));
+      setProfileData(updatedProfileData)
+      await updateProfileAPI(updatedProfileData)
+      localStorage.setItem("profileData", JSON.stringify(updatedProfileData))
     } catch (error) {
-      console.error("Failed to update profile field:", error);
-      alert("Failed to update profile. Please try again.");
+      console.error("Failed to update profile field:", error)
+      alert("Failed to update profile. Please try again.")
     }
-  };
+  }
 
   const renderModal = () => {
-    if (!isModalOpen || !modalType) return null;
+    if (!isModalOpen || !modalType) return null
 
     const modalContent = {
       education: {
@@ -836,25 +1366,24 @@ const updateProfileAPI = async (updatedData: any) => {
           },
         ],
       },
-    };
+    }
 
-    const config = modalContent[modalType];
+    const config = modalContent[modalType]
 
     const handleCertificateFileChange = (file: File | null) => {
-      if (!file) return;
-      const url = URL.createObjectURL(file);
+      if (!file) return
+      const url = URL.createObjectURL(file)
       setFormData((prev: any) => ({
         ...prev,
         certificateUrl: url,
         certificateMime: file.type,
         certificateFileName: file.name,
-        certificateFile: file, // Store the actual file for upload
-      }));
-    };
+        certificateFile: file,
+      }))
+    }
 
     const isPdf = (mime?: string, url?: string) =>
-      (mime && mime.includes("pdf")) ||
-      (url && url.toLowerCase().endsWith(".pdf"));
+      (mime && mime.includes("pdf")) || (url && url.toLowerCase().endsWith(".pdf"))
 
     return (
       <AnimatePresence>
@@ -875,9 +1404,7 @@ const updateProfileAPI = async (updatedData: any) => {
             className="bg-white rounded-xl p-4 sm:p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">
-                {config.title}
-              </h2>
+              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">{config.title}</h2>
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -897,16 +1424,12 @@ const updateProfileAPI = async (updatedData: any) => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1, duration: 0.3 }}
                 >
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {field.label}
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{field.label}</label>
                   {field.type === "textarea" ? (
                     <textarea
                       placeholder={field.placeholder}
                       value={formData[field.name] || ""}
-                      onChange={(e) =>
-                        handleInputChange(field.name, e.target.value)
-                      }
+                      onChange={(e) => handleInputChange(field.name, e.target.value)}
                       className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none h-20 sm:h-24 text-sm sm:text-base"
                     />
                   ) : (
@@ -914,9 +1437,7 @@ const updateProfileAPI = async (updatedData: any) => {
                       type="text"
                       placeholder={field.placeholder}
                       value={formData[field.name] || ""}
-                      onChange={(e) =>
-                        handleInputChange(field.name, e.target.value)
-                      }
+                      onChange={(e) => handleInputChange(field.name, e.target.value)}
                       className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm sm:text-base"
                     />
                   )}
@@ -939,20 +1460,13 @@ const updateProfileAPI = async (updatedData: any) => {
                   <input
                     type="file"
                     accept="application/pdf,image/*"
-                    onChange={(e) =>
-                      handleCertificateFileChange(e.target.files?.[0] || null)
-                    }
+                    onChange={(e) => handleCertificateFileChange(e.target.files?.[0] || null)}
                     className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
                   {formData.certificateUrl && (
                     <div className="mt-3 border border-gray-200 rounded-lg p-2">
-                      <p className="text-xs text-gray-500 mb-2">
-                        {formData.certificateFileName || "Selected file"}
-                      </p>
-                      {isPdf(
-                        formData.certificateMime,
-                        formData.certificateUrl
-                      ) ? (
+                      <p className="text-xs text-gray-500 mb-2">{formData.certificateFileName || "Selected file"}</p>
+                      {isPdf(formData.certificateMime, formData.certificateUrl) ? (
                         <iframe
                           src={formData.certificateUrl}
                           title="Certificate preview"
@@ -1000,8 +1514,8 @@ const updateProfileAPI = async (updatedData: any) => {
                         modalType === "certificate"
                           ? "Certificate"
                           : modalType === "education"
-                          ? "Education"
-                          : "Experience"
+                            ? "Education"
+                            : "Experience"
                       }`}
                 </motion.button>
               </motion.div>
@@ -1009,12 +1523,11 @@ const updateProfileAPI = async (updatedData: any) => {
           </motion.div>
         </motion.div>
       </AnimatePresence>
-    );
-  };
+    )
+  }
 
   const renderTabContent = () => {
     switch (activeTab) {
-      // Replace the entire profile case with this corrected version:
       case "profile":
         return (
           <motion.div
@@ -1026,16 +1539,10 @@ const updateProfileAPI = async (updatedData: any) => {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="space-y-8 sm:space-y-12 text-black"
           >
-            {/* Check if profile is incomplete */}
-            {!profileData.profile.bio ||
-            profileData.profile.skills.length === 0 ? (
+            {!profileData.profile.bio || profileData.profile.skills.length === 0 ? (
               <motion.div variants={itemVariants} className="text-center py-12">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  Complete Your Profile
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Add your information to get started
-                </p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Complete Your Profile</h3>
+                <p className="text-gray-600 mb-6">Add your information to get started</p>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -1048,66 +1555,93 @@ const updateProfileAPI = async (updatedData: any) => {
             ) : (
               <>
                 <motion.div variants={itemVariants}>
-                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-black">
-                    About
-                  </h3>
-                  <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
-                    {profileData.profile.bio}
-                  </p>
+                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-black">About</h3>
+                  <p className="text-gray-600 leading-relaxed text-sm sm:text-base">{profileData.profile.bio}</p>
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
-                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
-                    Skills
-                  </h3>
+                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Skills</h3>
                   <motion.div
                     className="flex flex-wrap gap-2 sm:gap-3"
                     variants={containerVariants}
                     transition={{ staggerChildren: 0.1 }}
                   >
-                    {profileData.profile.skills.map(
-                      (skill: string, index: number) => (
-                        <motion.span
-                          key={index}
-                          variants={skillVariants}
-                          whileHover={{ scale: 1.05, y: -2 }}
-                          transition={{ duration: 0.3, ease: "easeOut" }}
-                          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-100 text-blue-800 rounded-full text-xs sm:text-sm font-medium cursor-default"
-                        >
-                          {skill}
-                        </motion.span>
-                      )
-                    )}
+                    {profileData.profile.skills.map((skill: string, index: number) => (
+                      <motion.span
+                        key={index}
+                        variants={skillVariants}
+                        whileHover={{ scale: 1.05, y: -2 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-100 text-blue-800 rounded-full text-xs sm:text-sm font-medium cursor-default"
+                      >
+                        {skill}
+                      </motion.span>
+                    ))}
                   </motion.div>
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
-                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
-                    Languages
-                  </h3>
+                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Languages</h3>
                   <motion.ul
                     className="space-y-2 sm:space-y-3"
                     variants={containerVariants}
                     transition={{ staggerChildren: 0.1 }}
                   >
-                    {profileData.profile.languages.map(
-                      (language: string, index: number) => (
-                        <motion.li
-                          key={index}
-                          variants={itemVariants}
-                          transition={{ duration: 0.4, ease: "easeOut" }}
-                          className="text-gray-600 text-sm sm:text-base"
-                        >
-                          {language}
-                        </motion.li>
-                      )
-                    )}
+                    {profileData.profile.languages.map((language: string, index: number) => (
+                      <motion.li
+                        key={index}
+                        variants={itemVariants}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className="text-gray-600 text-sm sm:text-base"
+                      >
+                        {language}
+                      </motion.li>
+                    ))}
                   </motion.ul>
                 </motion.div>
+
+                {/* Availability Section */}
+                {profileData.profile.availability.length > 0 && (
+                  <motion.div variants={itemVariants}>
+                    <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Availability</h3>
+                    <motion.div
+                      className="flex flex-wrap gap-2 sm:gap-3"
+                      variants={containerVariants}
+                      transition={{ staggerChildren: 0.1 }}
+                    >
+                      {profileData.profile.availability.map((slot: string, index: number) => (
+                        <motion.div
+                          key={index}
+                          variants={skillVariants}
+                          whileHover={{ scale: 1.05, y: -2 }}
+                          transition={{ duration: 0.3, ease: "easeOut" }}
+                          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm font-medium cursor-default flex items-center gap-2"
+                        >
+                          <Clock className="w-3 h-3" />
+                          {slot}
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  </motion.div>
+                )}
+
+                {/* Location Map Section */}
+                {profileData.profile.location && (
+                  <motion.div variants={itemVariants}>
+                    <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Location</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <MapPin className="w-4 h-4" />
+                        <span className="text-sm sm:text-base">{profileData.profile.location || "Location set"}</span>
+                      </div>
+                      <OlaMapComponent location={profileData.profile.location} searchQuery="" />
+                    </div>
+                  </motion.div>
+                )}
               </>
             )}
           </motion.div>
-        );
+        )
 
       case "education":
         return (
@@ -1120,7 +1654,7 @@ const updateProfileAPI = async (updatedData: any) => {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="space-y-4 sm:space-y-5"
           >
-            {profileData.education.map((edu  : any, index : any) => (
+            {profileData.education.map((edu: any, index: any) => (
               <motion.div
                 key={edu.id}
                 variants={cardVariants}
@@ -1141,15 +1675,9 @@ const updateProfileAPI = async (updatedData: any) => {
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
 
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 pr-10">
-                  {edu.type}
-                </h3>
-                <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">
-                  {edu.period}
-                </p>
-                <p className="text-gray-600 text-sm sm:text-base">
-                  {edu.institution}
-                </p>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 pr-10">{edu.type}</h3>
+                <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">{edu.period}</p>
+                <p className="text-gray-600 text-sm sm:text-base">{edu.institution}</p>
               </motion.div>
             ))}
 
@@ -1158,10 +1686,10 @@ const updateProfileAPI = async (updatedData: any) => {
               "Add your educational background to showcase your qualifications",
               "Add Education",
               <GraduationCap className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto" />,
-              "education"
+              "education",
             )}
           </motion.div>
-        );
+        )
 
       case "experiences":
         return (
@@ -1195,18 +1723,10 @@ const updateProfileAPI = async (updatedData: any) => {
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
 
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 pr-10">
-                  {exp.title}
-                </h3>
-                <p className="text-blue-600 font-medium text-sm sm:text-base mb-2">
-                  {exp.company}
-                </p>
-                <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">
-                  {exp.period}
-                </p>
-                <p className="text-gray-600 text-sm sm:text-base">
-                  {exp.description}
-                </p>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 pr-10">{exp.title}</h3>
+                <p className="text-blue-600 font-medium text-sm sm:text-base mb-2">{exp.company}</p>
+                <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">{exp.period}</p>
+                <p className="text-gray-600 text-sm sm:text-base">{exp.description}</p>
               </motion.div>
             ))}
 
@@ -1215,10 +1735,10 @@ const updateProfileAPI = async (updatedData: any) => {
               "Add your work experience to highlight your professional journey",
               "Add Experience",
               <Briefcase className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto" />,
-              "experience"
+              "experience",
             )}
           </motion.div>
-        );
+        )
 
       case "certifications":
         return (
@@ -1252,20 +1772,10 @@ const updateProfileAPI = async (updatedData: any) => {
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
 
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 pr-10">
-                  {cert.name}
-                </h3>
-                <p className="text-gray-600 text-sm sm:text-base">
-                  Issued by: {cert.issuer}
-                </p>
-                <p className="text-gray-500 text-sm sm:text-base">
-                  Date: {cert.date}
-                </p>
-                {cert.description && (
-                  <p className="text-gray-600 text-sm sm:text-base">
-                    {cert.description}
-                  </p>
-                )}
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 pr-10">{cert.name}</h3>
+                <p className="text-gray-600 text-sm sm:text-base">Issued by: {cert.issuer}</p>
+                <p className="text-gray-500 text-sm sm:text-base">Date: {cert.date}</p>
+                {cert.description && <p className="text-gray-600 text-sm sm:text-base">{cert.description}</p>}
 
                 {cert.certificateUrl && (
                   <div className="pt-2 flex gap-2">
@@ -1301,10 +1811,9 @@ const updateProfileAPI = async (updatedData: any) => {
               "Upload your certificates to showcase your qualifications",
               "Add Certificate",
               <Upload className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto" />,
-              "certificate"
+              "certificate",
             )}
 
-            {/* Certificate Preview Modal */}
             <AnimatePresence>
               {previewCert && (
                 <motion.div
@@ -1353,7 +1862,7 @@ const updateProfileAPI = async (updatedData: any) => {
               )}
             </AnimatePresence>
           </motion.div>
-        );
+        )
 
       case "schedule":
         return (
@@ -1368,7 +1877,7 @@ const updateProfileAPI = async (updatedData: any) => {
           >
             <CalendarSection />
           </motion.div>
-        );
+        )
 
       case "resume":
         return (
@@ -1383,12 +1892,9 @@ const updateProfileAPI = async (updatedData: any) => {
           >
             {!showJobMatching ? (
               <div className="space-y-6">
-                {/* Resume Upload Section */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-semibold text-gray-900">
-                      Resume Management
-                    </h3>
+                    <h3 className="text-xl font-semibold text-gray-900">Resume Management</h3>
                     {currentResumeId && (
                       <button
                         onClick={() => setShowJobMatching(true)}
@@ -1401,9 +1907,9 @@ const updateProfileAPI = async (updatedData: any) => {
                   </div>
 
                   <ResumeUpload
-                    userId={userId ? userId : "" }
+                    userId={userId ? userId : ""}
                     onUploadComplete={(data) => {
-                      setCurrentResumeId(data.resumeId);
+                      setCurrentResumeId(data.resumeId)
                     }}
                   />
 
@@ -1411,13 +1917,10 @@ const updateProfileAPI = async (updatedData: any) => {
                     <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
                       <div className="flex items-center gap-2">
                         <FileText className="w-5 h-5 text-green-600" />
-                        <span className="text-green-800 font-medium">
-                          Resume uploaded successfully!
-                        </span>
+                        <span className="text-green-800 font-medium">Resume uploaded successfully!</span>
                       </div>
                       <p className="text-green-700 text-sm mt-1">
-                        You can now search for matching jobs using our
-                        AI-powered matching system.
+                        You can now search for matching jobs using our AI-powered matching system.
                       </p>
                     </div>
                   )}
@@ -1425,11 +1928,8 @@ const updateProfileAPI = async (updatedData: any) => {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Job Matching Section */}
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-gray-900">
-                    AI-Powered Job Matches
-                  </h3>
+                  <h3 className="text-xl font-semibold text-gray-900">AI-Powered Job Matches</h3>
                   <button
                     onClick={() => setShowJobMatching(false)}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
@@ -1439,18 +1939,16 @@ const updateProfileAPI = async (updatedData: any) => {
                   </button>
                 </div>
 
-                {currentResumeId && (
-                  <JobMatching resumeId={currentResumeId} userId={userId ? userId : "" } />
-                )}
+                {currentResumeId && <JobMatching resumeId={currentResumeId} userId={userId ? userId : ""} />}
               </div>
             )}
           </motion.div>
-        );
+        )
 
       default:
-        return null;
+        return null
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] overflow-x-hidden">
@@ -1462,9 +1960,7 @@ const updateProfileAPI = async (updatedData: any) => {
         transition={{ duration: 0.5 }}
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
-        <h1 className="text-base sm:text-lg font-semibold text-gray-900">
-          Logo
-        </h1>
+        <h1 className="text-base sm:text-lg font-semibold text-gray-900">Logo</h1>
       </motion.div>
 
       <div className="pt-16 sm:pt-24 pb-8 sm:pb-16">
@@ -1488,14 +1984,10 @@ const updateProfileAPI = async (updatedData: any) => {
           >
             <div className="flex items-center gap-4 sm:gap-6">
               <div className="relative">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ duration: 0.2 }}
-                >
+                <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
                   {renderProfilePicture()}
                 </motion.div>
 
-                {/* Pencil Icon for Profile Picture */}
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -1514,10 +2006,10 @@ const updateProfileAPI = async (updatedData: any) => {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   if (isProfileComplete()) {
-                    openProfileEditModal();
+                    openProfileEditModal()
                   } else {
-                    setActiveTab("profile");
-                    openProfileEditModal();
+                    setActiveTab("profile")
+                    openProfileEditModal()
                   }
                 }}
                 className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 border border-[#12372B] text-gray-700 bg-transparent hover:bg-gray-50 transition-colors text-sm sm:text-base whitespace-nowrap"
@@ -1538,15 +2030,13 @@ const updateProfileAPI = async (updatedData: any) => {
                 <motion.button
                   key={tab.id}
                   ref={(el) => {
-                    tabsRef.current[index] = el;
+                    tabsRef.current[index] = el
                   }}
                   onClick={() => setActiveTab(tab.id)}
                   whileHover={{ y: -2 }}
                   whileTap={{ y: 0 }}
                   className={`px-3 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
-                    activeTab === tab.id
-                      ? "text-blue-600"
-                      : "text-gray-500 hover:text-gray-700"
+                    activeTab === tab.id ? "text-blue-600" : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
                   {tab.label}
@@ -1583,7 +2073,6 @@ const updateProfileAPI = async (updatedData: any) => {
             role="dialog"
             aria-labelledby="profile-picture-title"
           >
-            {/* Backdrop */}
             <motion.div
               className="absolute inset-0 bg-black/40 backdrop-blur-sm"
               initial={{ opacity: 0 }}
@@ -1592,7 +2081,6 @@ const updateProfileAPI = async (updatedData: any) => {
               onClick={() => setIsProfilePictureModalOpen(false)}
             />
 
-            {/* Dialog */}
             <motion.div
               className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6"
               initial={{ y: 24, opacity: 0, scale: 0.98 }}
@@ -1600,10 +2088,7 @@ const updateProfileAPI = async (updatedData: any) => {
               exit={{ y: 24, opacity: 0, scale: 0.98 }}
             >
               <div className="flex items-center justify-between mb-6">
-                <h2
-                  id="profile-picture-title"
-                  className="text-lg font-semibold text-gray-900"
-                >
+                <h2 id="profile-picture-title" className="text-lg font-semibold text-gray-900">
                   Profile Picture
                 </h2>
                 <button
@@ -1620,7 +2105,7 @@ const updateProfileAPI = async (updatedData: any) => {
                   <div className="w-20 h-20 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-full overflow-hidden">
                     {profilePicture ? (
                       <img
-                        src={profilePicture}
+                        src={profilePicture || "/placeholder.svg"}
                         alt="Profile Preview"
                         className="w-full h-full object-cover"
                       />
@@ -1660,9 +2145,7 @@ const updateProfileAPI = async (updatedData: any) => {
                   )}
                 </div>
 
-                <p className="text-xs text-gray-500 text-center">
-                  Supported formats: JPG, PNG, SVG. Max size: 5MB
-                </p>
+                <p className="text-xs text-gray-500 text-center">Supported formats: JPG, PNG, SVG. Max size: 5MB</p>
               </div>
             </motion.div>
           </motion.div>
@@ -1682,7 +2165,6 @@ const updateProfileAPI = async (updatedData: any) => {
             role="dialog"
             aria-labelledby="profile-edit-title"
           >
-            {/* Backdrop */}
             <motion.div
               className="absolute inset-0 bg-black/40 backdrop-blur-sm"
               initial={{ opacity: 0 }}
@@ -1691,7 +2173,6 @@ const updateProfileAPI = async (updatedData: any) => {
               onClick={() => setIsProfileEditOpen(false)}
             />
 
-            {/* Dialog */}
             <motion.div
               className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 text-gray-500 max-h-[90vh] overflow-y-auto"
               initial={{ y: 24, opacity: 0, scale: 0.98 }}
@@ -1699,13 +2180,8 @@ const updateProfileAPI = async (updatedData: any) => {
               exit={{ y: 24, opacity: 0, scale: 0.98 }}
             >
               <div className="flex items-center justify-between mb-6">
-                <h2
-                  id="profile-edit-title"
-                  className="text-xl font-semibold text-gray-900"
-                >
-                  {isProfileComplete()
-                    ? "Edit Profile"
-                    : "Add Profile Information"}
+                <h2 id="profile-edit-title" className="text-xl font-semibold text-gray-900">
+                  {isProfileComplete() ? "Edit Profile" : "Add Profile Information"}
                 </h2>
                 <button
                   onClick={() => setIsProfileEditOpen(false)}
@@ -1718,9 +2194,7 @@ const updateProfileAPI = async (updatedData: any) => {
 
               <div className="space-y-5">
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Full Name
-                  </label>
+                  <label className="text-sm font-medium text-gray-700">Full Name</label>
                   <input
                     type="text"
                     value={profileFormData.name}
@@ -1736,27 +2210,24 @@ const updateProfileAPI = async (updatedData: any) => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    value={profileFormData.location}
-                    onChange={(e) =>
-                      setProfileFormData((prev) => ({
-                        ...prev,
-                        location: e.target.value,
-                      }))
-                    }
-                    placeholder="e.g., USA, Michigan"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <label className="text-sm font-medium text-gray-700">Location</label>
+                  <div className="space-y-3">
+                    <LocationInputWithSearch
+                      value={profileFormData.location}
+                      onChange={(value) => {
+                        setProfileFormData((prev) => ({
+                          ...prev,
+                          location: value,
+                        }))
+                      }}
+                      onLocationSelect={handleMapLocationSelect}
+                      selectedLocation={profileFormData.locationData || undefined}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    About
-                  </label>
+                  <label className="text-sm font-medium text-gray-700">About</label>
                   <textarea
                     value={profileFormData.bio}
                     onChange={(e) =>
@@ -1772,9 +2243,7 @@ const updateProfileAPI = async (updatedData: any) => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Skills
-                  </label>
+                  <label className="text-sm font-medium text-gray-700">Skills</label>
                   <input
                     type="text"
                     value={profileFormData.skills}
@@ -1790,9 +2259,7 @@ const updateProfileAPI = async (updatedData: any) => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Languages
-                  </label>
+                  <label className="text-sm font-medium text-gray-700">Languages</label>
                   <input
                     type="text"
                     value={profileFormData.languages}
@@ -1805,6 +2272,51 @@ const updateProfileAPI = async (updatedData: any) => {
                     placeholder="e.g., English (Native), Spanish (Intermediate) (comma separated)"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                </div>
+
+                {/* Availability Section */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">Availability</label>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowAvailabilityModal(true)}
+                      className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-600 rounded-md text-sm hover:bg-blue-100 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Slot
+                    </motion.button>
+                  </div>
+
+                  {/* Display current availability slots */}
+                  {availabilitySlots.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {availabilitySlots.map((slot, index) => (
+                        <motion.div
+                          key={index}
+                          whileHover={{ scale: 1.05 }}
+                          className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium"
+                        >
+                          <Calendar className="w-3 h-3" />
+                          {slot}
+                          <button
+                            onClick={() => removeAvailabilitySlot(slot)}
+                            className="ml-1 p-0.5 rounded-full hover:bg-green-200 transition-colors"
+                            aria-label="Remove slot"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+
+                  {availabilitySlots.length === 0 && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      No availability slots added yet. Click "Add Slot" to get started.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -1820,8 +2332,106 @@ const updateProfileAPI = async (updatedData: any) => {
                   whileTap={{ scale: 0.98 }}
                   className="px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm"
                   onClick={handleProfileSave}
+                  disabled={isLoading}
                 >
-                  Save
+                  {isLoading ? "Saving..." : "Save"}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Availability Slot Modal */}
+      <AnimatePresence>
+        {showAvailabilityModal && (
+          <motion.div
+            key="availability-modal"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            aria-modal="true"
+            role="dialog"
+            aria-labelledby="availability-title"
+          >
+            <motion.div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAvailabilityModal(false)}
+            />
+
+            <motion.div
+              className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6"
+              initial={{ y: 24, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 24, opacity: 0, scale: 0.98 }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 id="availability-title" className="text-xl font-semibold text-gray-900">
+                  Add Availability Slot
+                </h2>
+                <button
+                  onClick={() => setShowAvailabilityModal(false)}
+                  aria-label="Close"
+                  className="p-2 rounded-full hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">Date</label>
+                  <input
+                    type="date"
+                    value={newAvailabilityDate}
+                    onChange={(e) => setNewAvailabilityDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min={new Date().toISOString().split("T")[0]}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <div className="flex-1 flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700">Start Time</label>
+                    <input
+                      type="time"
+                      value={newAvailabilityStartTime}
+                      onChange={(e) => setNewAvailabilityStartTime(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="flex-1 flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700">End Time</label>
+                    <input
+                      type="time"
+                      value={newAvailabilityEndTime}
+                      onChange={(e) => setNewAvailabilityEndTime(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex items-center justify-end gap-3">
+                <button
+                  className="px-4 py-2 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setShowAvailabilityModal(false)}
+                >
+                  Cancel
+                </button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={addAvailabilitySlot}
+                  disabled={!newAvailabilityDate || !newAvailabilityStartTime || !newAvailabilityEndTime}
+                >
+                  Add Slot
                 </motion.button>
               </div>
             </motion.div>
@@ -1829,5 +2439,5 @@ const updateProfileAPI = async (updatedData: any) => {
         )}
       </AnimatePresence>
     </div>
-  );
+  )
 }
