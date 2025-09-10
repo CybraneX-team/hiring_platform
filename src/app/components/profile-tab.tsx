@@ -789,8 +789,8 @@ export default function ProfileTab() {
   const [availabilitySlots, setAvailabilitySlots] = useState<string[]>(profileData.profile.availability || [])
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
   const [newAvailabilityDate, setNewAvailabilityDate] = useState("")
-  const [newAvailabilityStartTime, setNewAvailabilityStartTime] = useState("")
-  const [newAvailabilityEndTime, setNewAvailabilityEndTime] = useState("")
+  const [newAvailabilityStartDate, setNewAvailabilityStartDate] = useState("")
+  const [newAvailabilityEndDate, setNewAvailabilityEndDate] = useState("")
 
   // Map search query state
   const [mapSearchQuery, setMapSearchQuery] = useState("")
@@ -935,15 +935,22 @@ const handleProfileSave = async () => {
 
   // Availability slot management functions
   const addAvailabilitySlot = () => {
-    if (newAvailabilityDate && newAvailabilityStartTime && newAvailabilityEndTime) {
-      const formattedDate = new Date(newAvailabilityDate).toLocaleDateString("en-US", {
+    if (newAvailabilityStartDate && newAvailabilityEndDate) {
+      const startDate = new Date(newAvailabilityStartDate).toLocaleDateString("en-US", {
         weekday: "short",
         month: "short",
         day: "numeric",
         year: "numeric",
       })
 
-      const newSlot = `${formattedDate}, ${newAvailabilityStartTime} - ${newAvailabilityEndTime}`
+      const endDate = new Date(newAvailabilityEndDate).toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+
+      const newSlot = `${startDate} - ${endDate}`
 
       if (!availabilitySlots.includes(newSlot)) {
         setAvailabilitySlots([...availabilitySlots, newSlot])
@@ -951,8 +958,8 @@ const handleProfileSave = async () => {
 
       // Reset form
       setNewAvailabilityDate("")
-      setNewAvailabilityStartTime("")
-      setNewAvailabilityEndTime("")
+      setNewAvailabilityStartDate("")
+      setNewAvailabilityEndDate("")
       setShowAvailabilityModal(false)
     }
   }
@@ -2331,7 +2338,7 @@ const handleProfileSave = async () => {
                 {/* Availability Section */}
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700">Availability</label>
+                    <label className="text-sm font-medium text-gray-700">Unavailability</label>
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -2350,13 +2357,13 @@ const handleProfileSave = async () => {
                         <motion.div
                           key={index}
                           whileHover={{ scale: 1.05 }}
-                          className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium"
+                          className="flex items-center gap-2 px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium"
                         >
                           <Calendar className="w-3 h-3" />
                           {slot}
                           <button
                             onClick={() => removeAvailabilitySlot(slot)}
-                            className="ml-1 p-0.5 rounded-full hover:bg-green-200 transition-colors"
+                            className="ml-1 p-0.5 rounded-full hover:bg-red-200 transition-colors"
                             aria-label="Remove slot"
                           >
                             <X className="w-3 h-3" />
@@ -2368,7 +2375,7 @@ const handleProfileSave = async () => {
 
                   {availabilitySlots.length === 0 && (
                     <p className="text-sm text-gray-500 mt-1">
-                      No availability slots added yet. Click "Add Slot" to get started.
+                      No unavailability slots added yet. Click "Add Slot" to get started.
                     </p>
                   )}
                 </div>
@@ -2425,7 +2432,7 @@ const handleProfileSave = async () => {
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 id="availability-title" className="text-xl font-semibold text-gray-900">
-                  Add Availability Slot
+                  Add Unavailability Slot
                 </h2>
                 <button
                   onClick={() => setShowAvailabilityModal(false)}
@@ -2437,7 +2444,7 @@ const handleProfileSave = async () => {
               </div>
 
               <div className="space-y-4">
-                <div className="flex flex-col gap-2">
+                {/* <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-gray-700">Date</label>
                   <input
                     type="date"
@@ -2446,26 +2453,26 @@ const handleProfileSave = async () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     min={new Date().toISOString().split("T")[0]}
                   />
-                </div>
-
+                </div> */}
+         
                 <div className="flex gap-3">
                   <div className="flex-1 flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">Start Time</label>
+                    <label className="text-sm font-medium text-gray-700">Start Date</label>
                     <input
-                      type="time"
-                      value={newAvailabilityStartTime}
-                      onChange={(e) => setNewAvailabilityStartTime(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      type="date"
+                      value={newAvailabilityStartDate}
+                      onChange={(e) => setNewAvailabilityStartDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
                   <div className="flex-1 flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">End Time</label>
+                    <label className="text-sm font-medium text-gray-700">End Date</label>
                     <input
-                      type="time"
-                      value={newAvailabilityEndTime}
-                      onChange={(e) => setNewAvailabilityEndTime(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      type="date"
+                      value={newAvailabilityEndDate}
+                      onChange={(e) => setNewAvailabilityEndDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -2483,7 +2490,7 @@ const handleProfileSave = async () => {
                   whileTap={{ scale: 0.98 }}
                   className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={addAvailabilitySlot}
-                  disabled={!newAvailabilityDate || !newAvailabilityStartTime || !newAvailabilityEndTime}
+                  disabled={!newAvailabilityStartDate || !newAvailabilityEndDate}
                 >
                   Add Slot
                 </motion.button>
