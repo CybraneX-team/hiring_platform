@@ -8,6 +8,7 @@ import Link from "next/link";
 import ResumeManager from "../../components/Company/ResumeManager";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/app/context/UserContext";
+// import { toast } from "react-toastify";
 
 // OlaMaps integration
 let OlaMaps: any = null;
@@ -606,54 +607,94 @@ const TeamSizeDropdown = ({
 export default function ProfileTab() {
   const [activeTab, setActiveTab] = useState("profile");
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [companyName, setCompanyName] = useState("");
-  const [companyDescription, setCompanyDescription] = useState("");
-  const [orgSize, setOrgSize] = useState("");
-  const [locationText, setLocationText] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<{
     lat: number;
     lng: number;
     address?: string;
   } | null>(null);
-  const [companyLogo, setCompanyLogo] = useState("");
+  // const [companyLogo, setCompanyLogo] = useState("");
   const [isLogoUploadOpen, setIsLogoUploadOpen] = useState(false);
-  const [formState, setFormState] = useState({
-    companyName: "",
-    companyDescription: "",
-    orgSize: "",
-    locationText: "",
-  });
   const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const router = useRouter();
+  // const router = useRouter();
+  const {
+    user,
+    profile,
+    setuser,
+    setprofile,
+    updateProfile: updateProfileContext,
+  } = useUser(); // Get user from context
+  const [companyLogo, setCompanyLogo] = useState(
+    profile ? profile.companyLogo : ""
+  );
+  const handleLocationTextChange = (value: string) => {
+  setFormState(prevState => ({ 
+    ...prevState, 
+    locationText: value 
+  }));
+};
+
+  const router = useRouter(); // Declare the router variable here
+  const [hasLoadedApplications, setHasLoadedApplications] = useState(false);
+  // Add this new state variable
+  const [isLogoUploading, setIsLogoUploading] = useState(false);
+  const [isLogoGettingRemoved, setisLogoGettingRemoved] = useState(false);
+
+  const [formState, setFormState] = useState({
+    companyName: profile?.companyName ? profile?.companyName : "",
+    companyDescription: profile?.companyDescription
+      ? profile?.companyDescription
+      : "",
+    orgSize: profile?.orgSize ? profile?.orgSize : "",
+    locationText: profile?.location ? profile?.location : "",
+  });
+
+  useEffect(() => {
+    if (profile) {
+      setFormState({
+        companyName: profile.companyName || "",
+        companyDescription: profile.companyDescription || "",
+        orgSize: profile.orgSize || "",
+        locationText: profile.location || "",
+      });
+      setCompanyLogo(profile.companyLogo);
+    }
+  }, [profile]);
 
   useEffect(() => {
     const hasShownToast = localStorage.getItem("profileToastShown");
     const isProfileEmpty =
-      !companyName && !companyDescription && !orgSize && !locationText;
+      !formState.companyName &&
+      !formState.companyDescription &&
+      !formState.orgSize &&
+      !formState.locationText;
 
-    if (!hasShownToast && isProfileEmpty) {
+    if (!hasShownToast && isProfileEmpty && profile) {
       toast({
         title: "Complete Your Profile",
         description: "Please complete your profile to get started.",
         duration: 5000,
+        variant : "success"
       });
       localStorage.setItem("profileToastShown", "true");
     }
-  }, [toast, companyName, companyDescription, orgSize, locationText]);
+  }, [toast, formState, profile]);
 
   const isProfileComplete = () => {
-    return companyName && companyDescription && orgSize && locationText;
+    return (
+      formState.companyName &&
+      formState.companyDescription &&
+      formState.orgSize &&
+      formState.locationText
+    );
   };
   
   const [applications, setApplications] = useState([]);
   const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [applicationsError, setApplicationsError] = useState<any>(null);
 
-  const { user } = useUser();
-
-  // Authentication check
+  // Add this useEffect for authentication check
   useEffect(() => {
     if (!user) {
       router.push("/profile");
@@ -694,11 +735,79 @@ export default function ProfileTab() {
     }
   };
 
-  useEffect(() => {
-    if (user?.id && activeTab === "jobs") {
-      fetchApplications();
+  const updateProfile = async () => {
+    if (!user?.id || !profile?._id) {
+      setApplicationsError("User not found");
+      return;
     }
-  }, [user?.id, activeTab]);
+
+    console.log("✅ IDs check passed, making API call...");
+    setApplicationsLoading(true);
+    setApplicationsError(null);
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/company/complete-profile`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            companyId: profile._id,
+            companyName: formState.companyName, // Add this
+            companyDescription: formState.companyDescription,
+            location: formState.locationText,
+            orgSize: formState.orgSize,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update profile");
+      }
+
+      setuser(data.user);
+      updateProfileContext(data.profile);
+
+      // Update form state with the response data
+      setFormState({
+        companyName: data.profile?.companyName || formState.companyName,
+        companyDescription:
+          data.profile?.companyDescription || formState.companyDescription,
+        orgSize: data.profile?.orgSize || formState.orgSize,
+        locationText: data.profile?.location || formState.locationText,
+      });
+
+      toast({
+        title: data.message || "Profile updated successfully",
+        duration: 5000,
+        variant : "success"
+      });
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
+      setApplicationsError(error.message || "Failed to update profile");
+      toast({
+        title: "Error updating profile",
+        description: error.message || "Please try again",
+        duration: 5000,
+        variant : "destructive"
+      });
+    } finally {
+      setApplicationsLoading(false);
+      setIsEditOpen(false);
+    }
+  };
+  // Add useEffect to fetch data when component mounts or user changes
+  useEffect(() => {
+    if (user?.id && activeTab === "jobs" && !hasLoadedApplications) {
+      fetchApplications();
+      setHasLoadedApplications(true);
+    }
+  }, [user?.id, activeTab, hasLoadedApplications]);
 
   useEffect(() => {
     const activeIndex = tabs.findIndex((tab) => tab.id === activeTab);
@@ -714,29 +823,163 @@ export default function ProfileTab() {
 
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
 
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setCompanyLogo(e.target?.result as string);
-        setIsLogoUploadOpen(false);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate file type and size
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/svg+xml",
+      "image/webp",
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a JPG, PNG, SVG, or WebP image.",
+        duration: 5000,
+        variant : "destructive"
+      });
+      return;
+    }
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast({
+        title: "File too large",
+        description: "Please upload an image smaller than 5MB.",
+        duration: 5000,
+        variant : "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Show loading state - use specific logo loading state
+      setIsLogoUploading(true);
+
+      // Create FormData to send file
+      const formData = new FormData();
+      formData.append("logo", file);
+      formData.append("userId", user?.id || "");
+      formData.append("companyId", profile?._id || "");
+
+      // Send to API
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/company/upload-logo`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to upload logo");
+      }
+
+      // Update local state with the returned URL
+      setCompanyLogo(data.logoUrl);
+
+      // Update profile context if needed
+      updateProfileContext(data.company);
+
+      setIsLogoUploadOpen(false);
+
+      toast({
+        title: "Logo uploaded successfully",
+        description: "Your company logo has been updated.",
+        duration: 5000,
+        variant : "success"
+      });
+    } catch (error: any) {
+      console.error("Error uploading logo:", error);
+      toast({
+        title: "Upload failed",
+        description: error.message || "Please try again.",
+        duration: 5000,
+        variant : "destructive"
+      });
+    } finally {
+      setIsLogoUploading(false);
     }
   };
 
-  const handleRemoveLogo = () => {
-    setCompanyLogo("");
-    setIsLogoUploadOpen(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+  const handleRemoveLogo = async () => {
+    if (!user?.id || !profile?._id) {
+      toast({
+        title: "Error",
+        description: "User or profile information missing",
+        duration: 5000,
+        variant : "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Show loading state
+      setisLogoGettingRemoved(true);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/company/remove-logo`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            companyId: profile._id,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to remove logo");
+      }
+
+      // Update local state
+      setCompanyLogo("");
+
+      // Update profile context if needed
+      updateProfileContext(data.company);
+
+      // Clear file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      // Close modal
+      setisLogoGettingRemoved(false);
+
+      toast({
+        title: "Logo removed successfully",
+        description: "Your company logo has been removed.",
+        duration: 5000,
+        variant: "success"
+      });
+    } catch (error: any) {
+      console.error("Error removing logo:", error);
+      toast({
+        title: "Failed to remove logo",
+        description: error.message || "Please try again.",
+        duration: 5000,
+        variant: "destructive"
+      });
+    } finally {
+      setIsLogoUploading(false);
     }
   };
 
   const handleLocationSelect = (location: { lat: number; lng: number; address: string }) => {
     setSelectedLocation(location);
-    setLocationText(location.address);
+    setFormState({ ...formState , locationText: location.address});
   };
 
   // Helper function to get display text for team size
@@ -770,7 +1013,7 @@ export default function ProfileTab() {
         className={`${sizeClasses} rounded-full bg-black flex items-center justify-center flex-shrink-0`}
       >
         <span className="text-white font-bold text-lg sm:text-xl">
-          {companyName?.charAt(0) || "?"}
+          {formState.companyName?.charAt(0) || "?"} {/* Fixed reference */}
         </span>
       </div>
     );
@@ -840,7 +1083,7 @@ export default function ProfileTab() {
                   </div>
 
                   <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 truncate">
-                    {formState.companyName || companyName || "Company Name"}
+                    {formState.companyName || "Company Name"}
                   </h2>
                 </div>
               </motion.div>
@@ -853,7 +1096,8 @@ export default function ProfileTab() {
                   Company description
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-600 leading-relaxed border border-[#A6ACA6] p-3 sm:p-4 rounded-lg">
-                  {companyDescription || "Enter company description..."}
+                  {formState.companyDescription ||
+                    "Enter company description..."}
                 </p>
               </motion.div>
 
@@ -865,7 +1109,7 @@ export default function ProfileTab() {
                   No of People in Organization
                 </h3>
                 <div className="text-lg sm:text-xl max-w-full sm:max-w-sm font-semibold text-gray-900 border border-[#A6ACA6] p-3 sm:p-4 rounded-lg">
-                  {getTeamSizeDisplayText(orgSize)}
+                  {formState.orgSize || "Enter team size"}
                 </div>
               </motion.div>
             </div>
@@ -881,8 +1125,8 @@ export default function ProfileTab() {
               </div>
 
               <LocationInputWithSearch
-                value={locationText}
-                onChange={setLocationText}
+                value={formState.locationText}
+                onChange={handleLocationTextChange }
                 onLocationSelect={handleLocationSelect}
                 selectedLocation={selectedLocation ?? undefined}
               />
@@ -990,27 +1234,7 @@ export default function ProfileTab() {
                         </div>
                       )}
 
-                      <div className="space-y-1 mb-3">
-                        {job.salaryRange?.currency && (
-                          <p className="text-xs text-gray-400">
-                            💰 {job.salaryRange.currency}
-                          </p>
-                        )}
-
-                        {job.requiredSkills &&
-                          job.requiredSkills.length > 0 && (
-                            <p className="text-xs text-gray-400">
-                              🛠️ {job.requiredSkills.length} Skills Required
-                            </p>
-                          )}
-
-                        {job.isActive !== undefined && (
-                          <p className="text-xs text-gray-400">
-                            📊 Status: {job.isActive ? "Active" : "Inactive"}
-                          </p>
-                        )}
-                      </div>
-
+                      {/* Job Description (truncated) */}
                       {job.description && (
                         <p className="text-xs text-gray-600 line-clamp-2 mb-2">
                           {job.description
@@ -1122,10 +1346,10 @@ export default function ProfileTab() {
 
               <div className="min-w-0">
                 <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 truncate">
-                  {formState.companyName || companyName || "Company Name"}
+                  {formState.companyName || "Company Name"}
                 </h2>
                 <p className="text-gray-500 text-sm sm:text-base">
-                  {formState.locationText || locationText || "Location"}
+                  {formState.locationText || "Location"}
                 </p>
               </div>
             </div>
@@ -1137,12 +1361,6 @@ export default function ProfileTab() {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   setActiveTab("profile");
-                  setFormState({
-                    companyName: companyName || "",
-                    companyDescription: companyDescription || "",
-                    orgSize: orgSize || "",
-                    locationText: locationText || "",
-                  });
                   setIsEditOpen(true);
                 }}
                 className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 border border-[#12372B] text-gray-700 bg-transparent hover:bg-gray-50 transition-colors text-sm sm:text-base whitespace-nowrap"
@@ -1270,7 +1488,14 @@ export default function ProfileTab() {
                     onClick={() => fileInputRef.current?.click()}
                     className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
                   >
-                    Upload Logo
+                    {isLogoUploading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Uploading...
+                      </>
+                    ) : (
+                      "Upload Logo"
+                    )}
                   </motion.button>
 
                   {companyLogo && (
@@ -1278,9 +1503,17 @@ export default function ProfileTab() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={handleRemoveLogo}
-                      className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium"
+                      disabled={isLogoUploading}
+                      className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2"
                     >
-                      Remove Logo
+                      {isLogoGettingRemoved ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Removing...
+                        </>
+                      ) : (
+                        "Remove Logo"
+                      )}
                     </motion.button>
                   )}
                 </div>
@@ -1416,13 +1649,7 @@ export default function ProfileTab() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm"
-                  onClick={() => {
-                    setCompanyName(formState.companyName.trim());
-                    setCompanyDescription(formState.companyDescription.trim());
-                    setOrgSize(formState.orgSize.trim());
-                    setLocationText(formState.locationText.trim());
-                    setIsEditOpen(false);
-                  }}
+                  onClick={updateProfile}
                 >
                   Save
                 </motion.button>

@@ -882,8 +882,56 @@ export default function ProfileTab() {
           <p className="text-gray-500 text-sm sm:text-base">{profile?.location ? profile?.location : ""}</p>
         </div>
       </>
-    )
+    );
+  };
+
+const handleProfileSave = async () => {
+  try {
+    setIsLoading(true);
+    
+    const skillsArray: string[] = profileFormData.skills
+      ? profileFormData.skills
+          .split(",")
+          .map((skill) => skill.trim())
+          .filter((skill) => skill)
+      : [];
+    const languagesArray: string[] = profileFormData.languages
+      ? profileFormData.languages
+          .split(",")
+          .map((lang) => lang.trim())
+          .filter((lang) => lang)
+      : [];
+
+    const updatedProfileData = {
+      ...profileData,
+      profile: {
+        bio: profileFormData.bio,
+        skills: skillsArray,
+        languages: languagesArray,
+      },
+    };
+
+    // Update local state first (optimistic update)
+    setProfileData(updatedProfileData);
+
+    // Call API to update profile
+    await updateProfileAPI(updatedProfileData);
+    
+    // Update localStorage
+    localStorage.setItem("profile", JSON.stringify(updatedProfileData));
+    
+    toast.success("Profile updated successfully!");
+    setIsProfileEditOpen(false);
+    
+  } catch (error) {
+    console.error("Failed to update profile:", error);
+    // Revert local state on API failure
+    setProfileData(profileData);
+    toast.error("Failed to update profile. Please try again.");
+  } finally {
+    setIsLoading(false);
   }
+}
 
   // Availability slot management functions
   const addAvailabilitySlot = () => {
@@ -922,50 +970,50 @@ export default function ProfileTab() {
     }))
   }
 
-  const handleProfileSave = async () => {
-    try {
-      setIsLoading(true)
+  // const handleProfileSave = async () => {
+  //   try {
+  //     setIsLoading(true)
 
-      const skillsArray: string[] = profileFormData.skills
-        ? profileFormData.skills
-            .split(",")
-            .map((skill) => skill.trim())
-            .filter((skill) => skill)
-        : []
-      const languagesArray: string[] = profileFormData.languages
-        ? profileFormData.languages
-            .split(",")
-            .map((lang) => lang.trim())
-            .filter((lang) => lang)
-        : []
+  //     const skillsArray: string[] = profileFormData.skills
+  //       ? profileFormData.skills
+  //           .split(",")
+  //           .map((skill) => skill.trim())
+  //           .filter((skill) => skill)
+  //       : []
+  //     const languagesArray: string[] = profileFormData.languages
+  //       ? profileFormData.languages
+  //           .split(",")
+  //           .map((lang) => lang.trim())
+  //           .filter((lang) => lang)
+  //       : []
 
-      const updatedProfileData = {
-        ...profileData,
-        profile: {
-          ...profileData.profile,
-          bio: profileFormData.bio,
-          skills: skillsArray,
-          languages: languagesArray,
-          availability: availabilitySlots,
-          location: profileFormData.locationData,
-        },
-      }
+  //     const updatedProfileData = {
+  //       ...profileData,
+  //       profile: {
+  //         ...profileData.profile,
+  //         bio: profileFormData.bio,
+  //         skills: skillsArray,
+  //         languages: languagesArray,
+  //         availability: availabilitySlots,
+  //         location: profileFormData.locationData,
+  //       },
+  //     }
 
-      await updateProfileAPI(updatedProfileData)
-      localStorage.setItem("profileData", JSON.stringify(updatedProfileData))
+  //     await updateProfileAPI(updatedProfileData)
+  //     localStorage.setItem("profileData", JSON.stringify(updatedProfileData))
 
-      setProfileData(updatedProfileData)
+  //     setProfileData(updatedProfileData)
 
-      toast.success("Profile updated successfully!")
-      setIsProfileEditOpen(false)
-    } catch (error) {
-      console.error("Failed to update profile:", error)
-      setProfileData(profileData)
-      toast.error("Failed to update profile. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  //     toast.success("Profile updated successfully!")
+  //     setIsProfileEditOpen(false)
+  //   } catch (error) {
+  //     console.error("Failed to update profile:", error)
+  //     setProfileData(profileData)
+  //     toast.error("Failed to update profile. Please try again.")
+  //   } finally {
+  //     setIsLoading(false)
+  //   }
+  // }
 
   const openProfileEditModal = () => {
     // Correctly sync internal state with current profile data
@@ -1260,10 +1308,16 @@ export default function ProfileTab() {
 
     if (updatedProfileData) {
       try {
-        setProfileData(updatedProfileData)
-        const result = await updateProfileAPI(updatedProfileData)
-        localStorage.setItem("profileData", JSON.stringify(updatedProfileData))
-        toast.success("Profile updated successfully!")
+        // Update local state first (optimistic update)
+        setProfileData(updatedProfileData);
+
+        // Call API to update profile
+        const result = await updateProfileAPI(updatedProfileData);
+
+        // Only update localStorage if API call was successful
+        localStorage.setItem("profile", JSON.stringify(updatedProfileData));
+
+        toast.success("Profile updated successfully!");
       } catch (error) {
         console.error("Failed to update profile:", error)
         setProfileData(profileData)
@@ -1283,9 +1337,9 @@ export default function ProfileTab() {
         },
       }
 
-      setProfileData(updatedProfileData)
-      await updateProfileAPI(updatedProfileData)
-      localStorage.setItem("profileData", JSON.stringify(updatedProfileData))
+      setProfileData(updatedProfileData);
+      await updateProfileAPI(updatedProfileData);
+      localStorage.setItem("profile", JSON.stringify(updatedProfileData));
     } catch (error) {
       console.error("Failed to update profile field:", error)
       alert("Failed to update profile. Please try again.")
