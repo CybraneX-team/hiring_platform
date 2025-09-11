@@ -1,190 +1,595 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { ArrowLeft, Bot, Plus, X, MapPin } from "lucide-react";
-import { motion } from "framer-motion";
-import JobHeader from "@/app/components/jobHeader";
-import { useRouter } from "next/navigation";
-import { useUser } from "@/app/context/UserContext";
-import { toast } from "react-toastify";
+import { useState, useEffect, useRef } from "react"
+import { ArrowLeft, Bot, Plus, X, MapPin, Search } from "lucide-react"
+import { motion } from "framer-motion"
+import JobHeader from "@/app/components/jobHeader"
+import { useRouter } from "next/navigation"
+import { useUser } from "@/app/context/UserContext"
+import { toast } from "react-toastify"
 
-export default function PostRole() {
-  const [activePayRange, setActivePayRange] = useState("Daily");
-  const [companyPerksInput, setCompanyPerksInput] = useState("");
-  const [companyPerks, setCompanyPerks] = useState<string[]>([]);
-  const [requiredSkillsetInput, setRequiredSkillsetInput] = useState("");
-  const [requiredSkillset, setRequiredSkillset] = useState<string[]>([]);
-  const [mandatoryCertificatesInput, setMandatoryCertificatesInput] =
-    useState("");
-  const [mandatoryCertificates, setMandatoryCertificates] = useState<string[]>(
-    []
-  );
+// Ola Maps types
+interface OlaMapsPlace {
+  place_id: string
+  formatted_address: string
+  geometry: {
+    location: {
+      lat: number
+      lng: number
+    }
+  }
+  name: string
+}
 
-  const [payRange, setPayRange] = useState("₹12,000-60,000");
-  const [aboutJob, setAboutJob] = useState("");
-  const [jobTittle, setjobTittle] = useState("");
+// OlaMaps integration
+let OlaMaps: any = null;
+let olaMaps: any = null;
 
-  const [workStartDate, setWorkStartDate] = useState("2025-08-04");
-  const [workEndDate, setWorkEndDate] = useState("2025-08-11");
+const initializeOlaMaps = async () => {
+  if (typeof window !== 'undefined' && !OlaMaps) {
+    try {
+      const module = await import('olamaps-web-sdk');
+      OlaMaps = module.OlaMaps;
+      olaMaps = new OlaMaps({
+        apiKey: process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY || "",
+      });
+    } catch (error) {
+      console.error('Failed to initialize OlaMaps:', error);
+    }
+  }
+};
 
-  const [workLocation, setWorkLocation] = useState("");
-  const [locationMethod, setLocationMethod] = useState("auto"); // 'auto' or 'manual'
-  const [showLocationPicker, setShowLocationPicker] = useState(false);
+const OlaMapComponent = ({ 
+  location, 
+  onLocationSelect,
+  searchQuery
+}: { 
+  location?: { lat: number; lng: number; address?: string }, 
+  onLocationSelect?: (location: { lat: number; lng: number; address: string }) => void,
+  searchQuery?: string
+}) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>("");
 
-  const [customQuestions, setCustomQuestions] = useState<
-    Array<{
-      id: number;
-      question: string;
-      type: "MCQ" | "Single Choice";
-      options: string[];
-    }>
-  >([]);
-  const [currentQuestion, setCurrentQuestion] = useState("");
-  const [currentQuestionType, setCurrentQuestionType] = useState<
-    "MCQ" | "Single Choice"
-  >("MCQ");
-  const [currentOption, setCurrentOption] = useState("");
-  const [currentOptions, setCurrentOptions] = useState<string[]>([]);
-  const [educationQualificationInput, setEducationQualificationInput] =
-    useState("");
-  const [educationQualifications, setEducationQualifications] = useState<
-    string[]
-  >([]);
-  const [responsibilityInput, setResponsibilityInput] = useState("");
-  const [responsibilities, setResponsibilities] = useState<string[]>([]);
+  useEffect(() => {
+    const loadMap = async () => {
+      await initializeOlaMaps();
+      
+      if (mapRef.current && olaMaps && !mapInstanceRef.current) {
+        try {
+          // Default location (Bengaluru)
+          const defaultLocation = location || { lat: 12.9716, lng: 77.5946 };
+          
+          console.log('Initializing map with location:', defaultLocation);
+      
+          
+          mapInstanceRef.current = olaMaps.init({
+            style: "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
+            container: mapRef.current,
+            center: [defaultLocation.lng, defaultLocation.lat],
+            zoom: 12,
+          });
 
-  const [pendingQualifications, setPendingQualifications] = useState<string[]>(
-    []
-  );
-  const [showSplitPreview, setShowSplitPreview] = useState(false);
-  const [pendingResponsibilities, setPendingResponsibilities] = useState<
-    string[]
-  >([]);
-  const [showResponsibilitySplitPreview, setShowResponsibilitySplitPreview] =
-    useState(false);
-  const [isPosting, setIsPosting] = useState(false);
+          mapInstanceRef.current.on('load', () => {
+           
+            setIsMapLoaded(true);
+      
+            
+            // Add marker if location exists
+            if (location) {
+              console.log('Adding initial marker:', location);
+              addMarker(location.lat, location.lng, location.address || "Selected Location");
+            }
+          });
 
-  const [fatAdded, setFatAdded] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+          // Add click event listener
+          mapInstanceRef.current.on('click', (e: any) => {
+            const { lat, lng } = e.lngLat;
+            console.log('Map clicked at:', lat, lng);
+           
+            reverseGeocode(lat, lng);
+          });
 
-  const reverseGeocode = async (lat: number, lng: number) => {
+          // Add error handling
+          mapInstanceRef.current.on('error', (e: any) => {
+            console.error('Map error:', e);
+           
+          });
+
+        } catch (error) {
+          console.error('Error initializing map:', error);
+
+        }
+      }
+    };
+
+    loadMap();
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
+
+  // Handle search when searchQuery changes
+  useEffect(() => {
+    if (searchQuery && searchQuery.trim() && isMapLoaded) {
+      console.log('Triggering search for:', searchQuery);
+      handleAddressSearch(searchQuery);
+    }
+  }, [searchQuery, isMapLoaded]);
+
+  const geocodeAddress = async (address: string) => {
+    if (!address.trim()) return;
+    
+    console.log('Geocoding address:', address);
+
+    
     try {
       const response = await fetch(
-        `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=YOUR_API_KEY`
+        `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(address)}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
       );
+      
+      console.log('Geocoding response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
-        if (data.results && data.results.length > 0) {
-          const result = data.results[0];
-          const city =
-            result.components.city ||
-            result.components.town ||
-            result.components.village;
-          const state = result.components.state;
-          const country = result.components.country;
-          return `${city ? city + ", " : ""}${
-            state ? state + ", " : ""
-          }${country}`;
+        console.log('Geocoding data:', data);
+        
+        if (data.geocodingResults && data.geocodingResults.length > 0) {
+          const result = data.geocodingResults[0];
+          const { lat, lng } = result.geometry.location;
+          const formattedAddress = result.formatted_address || address;
+          
+          console.log('Found location:', { lat, lng, formattedAddress });
+          
+          
+          // Update map center and add marker
+          if (mapInstanceRef.current) {
+            console.log('Flying to location:', lng, lat);
+            mapInstanceRef.current.flyTo({
+              center: [lng, lat],
+              zoom: 15,
+              duration: 2000
+            });
+          }
+          
+          // Add marker with delay to ensure map has moved
+          setTimeout(() => {
+            addMarker(lat, lng, formattedAddress);
+          }, 500);
+          
+          if (onLocationSelect) {
+            onLocationSelect({ lat, lng, address: formattedAddress });
+          }
+          
+          return { lat, lng, address: formattedAddress };
+        } else {
+          console.log('No geocoding results found');
+         
+        }
+      } else {
+        const errorText = await response.text();
+        console.error('Geocoding API error:', response.status, errorText);
+
+      }
+      throw new Error('Location not found');
+    } catch (error) {
+      console.error('Geocoding failed:', error);
+
+      throw error;
+    }
+  };
+
+  const handleAddressSearch = async (address: string) => {
+    setIsSearching(true);
+    try {
+      await geocodeAddress(address);
+    } catch (error) {
+      console.error('Address search failed:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const addMarker = (lat: number, lng: number, title: string) => {
+    if (!mapInstanceRef.current) {
+      console.error('Cannot add marker: map not initialized');
+     
+      return;
+    }
+
+    console.log('Adding marker at:', lat, lng, title);
+  
+
+    try {
+      // Remove existing marker
+      if (markerRef.current) {
+        console.log('Removing existing marker');
+        markerRef.current.remove();
+        markerRef.current = null;
+      }
+
+      // Validate coordinates
+      if (isNaN(lat) || isNaN(lng)) {
+        console.error('Invalid coordinates:', lat, lng);
+        return;
+      }
+
+      // Create marker element
+      const markerElement = document.createElement('div');
+      markerElement.className = 'custom-marker';
+      markerElement.style.cssText = `
+        width: 30px; 
+        height: 30px; 
+        background-color: #3b82f6; 
+        border: 3px solid white; 
+        border-radius: 50%; 
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 1000;
+        position: relative;
+      `;
+      
+      const innerDot = document.createElement('div');
+      innerDot.style.cssText = `
+        width: 12px; 
+        height: 12px; 
+        background-color: white; 
+        border-radius: 50%;
+      `;
+      markerElement.appendChild(innerDot);
+
+      console.log('Created marker element:', markerElement);
+
+      // Ensure we have the Marker constructor
+      if (!olaMaps || !olaMaps.Marker) {
+        console.error('OlaMaps Marker not available');
+      
+        return;
+      }
+
+      // Add marker to map
+      markerRef.current = new olaMaps.Marker({
+        element: markerElement
+      })
+        .setLngLat([lng, lat])
+        .addTo(mapInstanceRef.current);
+
+      console.log('Marker added successfully:', markerRef.current);
+
+      // Add popup if available
+      if (olaMaps.Popup) {
+        const popup = new olaMaps.Popup({
+          offset: 25
+        }).setHTML(`<div style="padding: 8px; font-size: 14px; font-weight: 500;">${title}</div>`);
+
+        markerRef.current.setPopup(popup);
+        console.log('Popup added to marker');
+      }
+
+
+
+    } catch (error) {
+      console.error('Error adding marker:', error);
+  
+    }
+  };
+
+  const reverseGeocode = async (lat: number, lng: number) => {
+    console.log('Reverse geocoding:', lat, lng);
+   
+    
+    try {
+      const response = await fetch(
+        `https://api.olamaps.io/places/v1/reverse-geocode?latlng=${lat},${lng}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Reverse geocoding data:', data);
+        const address = data.results?.[0]?.formatted_address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        
+        addMarker(lat, lng, address);
+        
+        if (onLocationSelect) {
+          onLocationSelect({ lat, lng, address });
+        }
+      } else {
+        console.error('Reverse geocoding failed:', response.status);
+        const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        addMarker(lat, lng, address);
+        
+        if (onLocationSelect) {
+          onLocationSelect({ lat, lng, address });
         }
       }
     } catch (error) {
-      console.error("Reverse geocoding failed:", error);
+      console.error('Reverse geocoding failed:', error);
+      const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      addMarker(lat, lng, address);
+      
+      if (onLocationSelect) {
+        onLocationSelect({ lat, lng, address });
+      }
     }
-    return `Location: ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`;
   };
 
-  const requestLocation = async () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
+  const autoDetectLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by this browser.');
+      return;
+    }
 
-          const address = await reverseGeocode(latitude, longitude);
-
-          setWorkLocation(address);
-          setLocationMethod("auto");
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          alert("Unable to get your location. Please enter manually.");
-          setLocationMethod("manual");
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 60000,
+    setIsDetecting(true);
+    console.log('Starting geolocation detection');
+   
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        console.log('Geolocation detected:', latitude, longitude);
+        
+        // Fly to detected location
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.flyTo({
+            center: [longitude, latitude],
+            zoom: 15,
+            duration: 2000
+          });
         }
-      );
-    } else {
-      alert("Geolocation is not supported by this browser.");
-      setLocationMethod("manual");
+        
+        reverseGeocode(latitude, longitude);
+        setIsDetecting(false);
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+      
+        alert('Unable to detect location. Please try again or select manually.');
+        setIsDetecting(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
+  return (
+    <div className="relative bg-gray-900 rounded-lg overflow-hidden h-48 sm:h-64">
+      <div
+        ref={mapRef}
+        className="w-full h-full"
+        style={{ minHeight: '200px' }}
+      />
+      
+      {!isMapLoaded && (
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-900 to-gray-900 flex items-center justify-center">
+          <div className="text-white text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+            <p className="text-sm">Loading map...</p>
+          </div>
+        </div>
+      )}
+
+      {isSearching && (
+        <div className="absolute top-2 left-2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs">
+          Searching...
+        </div>
+      )}
+
+      {/* Debug info - remove this in production */}
+      {debugInfo && (
+        <div className="absolute top-2 left-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs max-h-8 overflow-hidden">
+          {debugInfo}
+        </div>
+      )}
+
+      <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex gap-1 sm:gap-2">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={autoDetectLocation}
+          disabled={isDetecting}
+          className="px-2 sm:px-3 py-1 bg-gray-800 text-white text-xs rounded-full border border-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+        >
+          {isDetecting ? (
+            <>
+              <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+              Detecting...
+            </>
+          ) : (
+            <>
+              <MapPin className="w-3 h-3" />
+              Auto Detect
+            </>
+          )}
+        </motion.button>
+        
+        <div className="px-2 sm:px-3 py-1 bg-gray-700 text-white text-xs rounded-full">
+          Click to pin
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Enhanced location input field component
+const LocationInputWithSearch = ({ 
+  value, 
+  onChange, 
+  onLocationSelect, 
+  selectedLocation 
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onLocationSelect: (location: { lat: number; lng: number; address: string }) => void;
+  selectedLocation?: { lat: number; lng: number; address?: string };
+}) => {
+  const [searchTrigger, setSearchTrigger] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleSearch = async () => {
+    if (!value.trim()) return;
+    
+    setIsSearching(true);
+    setSearchTrigger(value); // This will trigger the map to search
+    
+    // Reset after a short delay
+    setTimeout(() => {
+      setIsSearching(false);
+    }, 2000);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSearch();
     }
   };
+
+  return (
+    <div className="space-y-3 sm:space-y-4">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={value }
+          onChange={(e) => onChange(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="Enter address or click auto-detect to select location..."
+          className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs text-black sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleSearch}
+          disabled={!value.trim() || isSearching}
+          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
+        >
+          {isSearching ? 'Searching...' : 'Search'}
+        </motion.button>
+      </div>
+
+      <OlaMapComponent 
+        location={selectedLocation}
+        onLocationSelect={onLocationSelect}
+        searchQuery={searchTrigger}
+      />
+    </div>
+  );
+};
+
+export default function PostRole() {
+  const [activePayRange, setActivePayRange] = useState("Daily")
+  const [companyPerksInput, setCompanyPerksInput] = useState("")
+  const [companyPerks, setCompanyPerks] = useState<string[]>([])
+  const [requiredSkillsetInput, setRequiredSkillsetInput] = useState("")
+  const [requiredSkillset, setRequiredSkillset] = useState<string[]>([])
+  const [mandatoryCertificatesInput, setMandatoryCertificatesInput] = useState("")
+  const [mandatoryCertificates, setMandatoryCertificates] = useState<string[]>([])
+
+  const [payRange, setPayRange] = useState("₹12,000-60,000")
+  const [aboutJob, setAboutJob] = useState("")
+  const [jobTittle, setjobTittle] = useState("")
+
+  const [workStartDate, setWorkStartDate] = useState("2025-08-04")
+  const [workEndDate, setWorkEndDate] = useState("2025-08-11")
+
+  const [workLocation, setWorkLocation] = useState("")
+  const [locationSearchQuery, setLocationSearchQuery] = useState("")
+  const [locationSuggestions, setLocationSuggestions] = useState<OlaMapsPlace[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null)
+
+  // Ola Maps related states
+  const mapRef = useRef<HTMLDivElement>(null)
+  const [map, setMap] = useState<any>(null)
+  const [isMapLoading, setIsMapLoading] = useState(true)
+  const [mapError, setMapError] = useState<string | null>(null)
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const [customQuestions, setCustomQuestions] = useState<
+    Array<{
+      id: number
+      question: string
+      type: "MCQ" | "Single Choice"
+      options: string[]
+    }>
+  >([])
+  const [currentQuestion, setCurrentQuestion] = useState("")
+  const [currentQuestionType, setCurrentQuestionType] = useState<"MCQ" | "Single Choice">("MCQ")
+  const [currentOption, setCurrentOption] = useState("")
+  const [currentOptions, setCurrentOptions] = useState<string[]>([])
+  const [educationQualificationInput, setEducationQualificationInput] = useState("")
+  const [educationQualifications, setEducationQualifications] = useState<string[]>([])
+  const [responsibilityInput, setResponsibilityInput] = useState("")
+  const [responsibilities, setResponsibilities] = useState<string[]>([])
+
+  const [pendingQualifications, setPendingQualifications] = useState<string[]>([])
+  const [showSplitPreview, setShowSplitPreview] = useState(false)
+  const [pendingResponsibilities, setPendingResponsibilities] = useState<string[]>([])
+  const [showResponsibilitySplitPreview, setShowResponsibilitySplitPreview] = useState(false)
+  const [isPosting, setIsPosting] = useState(false)
+
+  const [fatAdded, setFatAdded] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+
+
 
   const addPerk = () => {
-    if (
-      companyPerksInput.trim() &&
-      !companyPerks.includes(companyPerksInput.trim())
-    ) {
-      setCompanyPerks([...companyPerks, companyPerksInput.trim()]);
-      setCompanyPerksInput("");
+    if (companyPerksInput.trim() && !companyPerks.includes(companyPerksInput.trim())) {
+      setCompanyPerks([...companyPerks, companyPerksInput.trim()])
+      setCompanyPerksInput("")
     }
-  };
+  }
 
   const removePerk = (perkToRemove: string) => {
-    setCompanyPerks(companyPerks.filter((perk) => perk !== perkToRemove));
-  };
+    setCompanyPerks(companyPerks.filter((perk) => perk !== perkToRemove))
+  }
 
   const addSkill = () => {
-    if (
-      requiredSkillsetInput.trim() &&
-      !requiredSkillset.includes(requiredSkillsetInput.trim())
-    ) {
-      setRequiredSkillset([...requiredSkillset, requiredSkillsetInput.trim()]);
-      setRequiredSkillsetInput("");
+    if (requiredSkillsetInput.trim() && !requiredSkillset.includes(requiredSkillsetInput.trim())) {
+      setRequiredSkillset([...requiredSkillset, requiredSkillsetInput.trim()])
+      setRequiredSkillsetInput("")
     }
-  };
+  }
 
   const removeSkill = (skillToRemove: string) => {
-    setRequiredSkillset(
-      requiredSkillset.filter((skill) => skill !== skillToRemove)
-    );
-  };
+    setRequiredSkillset(requiredSkillset.filter((skill) => skill !== skillToRemove))
+  }
 
   const addCertificate = () => {
-    if (
-      mandatoryCertificatesInput.trim() &&
-      !mandatoryCertificates.includes(mandatoryCertificatesInput.trim())
-    ) {
-      setMandatoryCertificates([
-        ...mandatoryCertificates,
-        mandatoryCertificatesInput.trim(),
-      ]);
-      setMandatoryCertificatesInput("");
+    if (mandatoryCertificatesInput.trim() && !mandatoryCertificates.includes(mandatoryCertificatesInput.trim())) {
+      setMandatoryCertificates([...mandatoryCertificates, mandatoryCertificatesInput.trim()])
+      setMandatoryCertificatesInput("")
     }
-  };
+  }
 
   const removeCertificate = (certificateToRemove: string) => {
-    setMandatoryCertificates(
-      mandatoryCertificates.filter((cert) => cert !== certificateToRemove)
-    );
-  };
+    setMandatoryCertificates(mandatoryCertificates.filter((cert) => cert !== certificateToRemove))
+  }
 
   const addOptionToCurrentQuestion = () => {
-    if (
-      currentOption.trim() &&
-      !currentOptions.includes(currentOption.trim())
-    ) {
-      setCurrentOptions([...currentOptions, currentOption.trim()]);
-      setCurrentOption("");
+    if (currentOption.trim() && !currentOptions.includes(currentOption.trim())) {
+      setCurrentOptions([...currentOptions, currentOption.trim()])
+      setCurrentOption("")
     }
-  };
+  }
 
   const removeOptionFromCurrentQuestion = (optionToRemove: string) => {
-    setCurrentOptions(
-      currentOptions.filter((option) => option !== optionToRemove)
-    );
-  };
+    setCurrentOptions(currentOptions.filter((option) => option !== optionToRemove))
+  }
 
   const addCustomQuestion = () => {
     if (currentQuestion.trim() && currentOptions.length > 0) {
@@ -193,127 +598,102 @@ export default function PostRole() {
         question: currentQuestion.trim(),
         type: currentQuestionType,
         options: [...currentOptions],
-      };
-      setCustomQuestions([...customQuestions, newQuestion]);
-      setCurrentQuestion("");
-      setCurrentOptions([]);
-      setCurrentOption("");
+      }
+      setCustomQuestions([...customQuestions, newQuestion])
+      setCurrentQuestion("")
+      setCurrentOptions([])
+      setCurrentOption("")
     }
-  };
+  }
 
   const removeCustomQuestion = (questionId: number) => {
-    setCustomQuestions(customQuestions.filter((q) => q.id !== questionId));
-  };
+    setCustomQuestions(customQuestions.filter((q) => q.id !== questionId))
+  }
 
   const formatDateForDisplay = (dateString: string) => {
-    const date = new Date(dateString);
-    const day = date.getDate();
-    const month = date.toLocaleDateString("en-US", { month: "short" });
-    const year = date.getFullYear();
+    const date = new Date(dateString)
+    const day = date.getDate()
+    const month = date.toLocaleDateString("en-US", { month: "short" })
+    const year = date.getFullYear()
 
     const suffix =
       day === 1 || day === 21 || day === 31
         ? "st"
         : day === 2 || day === 22
-        ? "nd"
-        : day === 3 || day === 23
-        ? "rd"
-        : "th";
+          ? "nd"
+          : day === 3 || day === 23
+            ? "rd"
+            : "th"
 
-    return `${day}${suffix} ${month} ${year}`;
-  };
-  // Education Qualifications functions
+    return `${day}${suffix} ${month} ${year}`
+  }
+
   const addEducationQualification = () => {
     if (educationQualificationInput.trim()) {
-      // Split only on bullet points, pipes, semicolons, and clear line breaks
       const splitQualifications = educationQualificationInput
         .split(/[•|;]|\n{1,}|(?:\s*•\s*)/)
         .map((q) => q.trim())
         .filter((q) => q.length > 0)
-        .filter((q) => !educationQualifications.includes(q));
+        .filter((q) => !educationQualifications.includes(q))
 
       if (splitQualifications.length > 0) {
-        setEducationQualifications([
-          ...educationQualifications,
-          ...splitQualifications,
-        ]);
-        setEducationQualificationInput("");
+        setEducationQualifications([...educationQualifications, ...splitQualifications])
+        setEducationQualificationInput("")
       }
     }
-  };
+  }
 
   const confirmSplitQualifications = () => {
-    const newQualifications = pendingQualifications.filter(
-      (q) => !educationQualifications.includes(q)
-    );
-    setEducationQualifications([
-      ...educationQualifications,
-      ...newQualifications,
-    ]);
-    setEducationQualificationInput("");
-    setShowSplitPreview(false);
-    setPendingQualifications([]);
-  };
+    const newQualifications = pendingQualifications.filter((q) => !educationQualifications.includes(q))
+    setEducationQualifications([...educationQualifications, ...newQualifications])
+    setEducationQualificationInput("")
+    setShowSplitPreview(false)
+    setPendingQualifications([])
+  }
 
   const removeEducationQualification = (qualificationToRemove: string) => {
     setEducationQualifications(
-      educationQualifications.filter(
-        (qualification) => qualification !== qualificationToRemove
-      )
-    );
-  };
+      educationQualifications.filter((qualification) => qualification !== qualificationToRemove),
+    )
+  }
 
-  // Responsibilities functions
-  // Responsibilities functions
   const addResponsibility = () => {
     if (responsibilityInput.trim()) {
-      // Smart splitting for responsibilities - split on bullet points, pipes, semicolons, and clear line breaks
       const splitResponsibilities = responsibilityInput
         .split(/[•|;]|\n{1,}|(?:\s*•\s*)/)
         .map((r) => r.trim())
         .filter((r) => r.length > 0)
-        .filter((r) => !responsibilities.includes(r));
+        .filter((r) => !responsibilities.includes(r))
 
       if (splitResponsibilities.length > 0) {
-        setResponsibilities([...responsibilities, ...splitResponsibilities]);
-        setResponsibilityInput("");
+        setResponsibilities([...responsibilities, ...splitResponsibilities])
+        setResponsibilityInput("")
       }
     }
-  };
+  }
 
   const removeResponsibility = (responsibilityToRemove: string) => {
-    setResponsibilities(
-      responsibilities.filter(
-        (responsibility) => responsibility !== responsibilityToRemove
-      )
-    );
-  };
+    setResponsibilities(responsibilities.filter((responsibility) => responsibility !== responsibilityToRemove))
+  }
 
   const confirmSplitResponsibilities = () => {
-    const newResponsibilities = pendingResponsibilities.filter(
-      (r) => !responsibilities.includes(r)
-    );
-    setResponsibilities([...responsibilities, ...newResponsibilities]);
-    setResponsibilityInput("");
-    setShowResponsibilitySplitPreview(false);
-    setPendingResponsibilities([]);
-  };
+    const newResponsibilities = pendingResponsibilities.filter((r) => !responsibilities.includes(r))
+    setResponsibilities([...responsibilities, ...newResponsibilities])
+    setResponsibilityInput("")
+    setShowResponsibilitySplitPreview(false)
+    setPendingResponsibilities([])
+  }
 
-  const router = useRouter();
-  const { user } = useUser();
+  const router = useRouter()
+  const { user } = useUser()
+
   const handleSubmit = async () => {
-    // Basic validation
     if (!jobTittle.trim()) {
-      toast.error("Job title is required");
-      return;
+      toast.error("Job title is required")
+      return
     }
 
-    // if (!user?.id) {
-    //   toast.error("User not authenticated");
-    //   return;
-    // }
-
-    setIsPosting(true);
+    setIsPosting(true)
 
     try {
       const jobData = {
@@ -333,166 +713,131 @@ export default function PostRole() {
         workLocation,
         description: aboutJob,
         customQuestions,
-      };
+        locationCoordinates: selectedLocation,
+      }
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(jobData),
-        }
-      );
+      const response = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(jobData),
+      })
 
-      const data = await response.json();
+      const data = await response.json()
 
       if (response.ok) {
-        toast.success("Job posted successfully!");
-        router.push("/company/profile");
+        toast.success("Job posted successfully!")
+        router.push("/company/profile")
       } else {
-        toast.error(data.message || "Failed to post job");
+        toast.error(data.message || "Failed to post job")
       }
     } catch (error) {
-      console.error("Error posting job:", error);
-      toast.error("An error occurred. Please try again later.");
+      console.error("Error posting job:", error)
+      toast.error("An error occurred. Please try again later.")
     } finally {
-      setIsPosting(false);
+      setIsPosting(false)
     }
-  };
+  }
 
   const handleAIAssist = async () => {
     if (!aboutJob.trim()) {
-      toast.error("Please enter a job description first");
-      return;
+      toast.error("Please enter a job description first")
+      return
     }
 
     if (aboutJob.length < 50) {
-      toast.error(
-        "Please provide a more detailed job description for better analysis"
-      );
-      return;
+      toast.error("Please provide a more detailed job description for better analysis")
+      return
     }
 
     try {
-      setIsAnalyzing(true);
+      setIsAnalyzing(true)
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs/ai-assist`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            description: aboutJob.trim(),
-            jobTitle: jobTittle.trim(),
-          }),
-        }
-      );
+      const response = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs/ai-assist`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          description: aboutJob.trim(),
+          jobTitle: jobTittle.trim(),
+        }),
+      })
 
-      const result = await response.json();
+      const result = await response.json()
 
       if (response.ok && result.success) {
-        const { data } = result;
+        const { data } = result
 
-
-        // Auto-fill job title if not already filled
         if (data.jobTitle && !jobTittle.trim()) {
-          setjobTittle(data.jobTitle);
+          setjobTittle(data.jobTitle)
         }
 
-        // Auto-fill work location if not already filled
         if (data.location && !workLocation.trim()) {
-          setWorkLocation(data.location);
+          setWorkLocation(data.location)
+          setLocationSearchQuery(data.location)
         }
 
-        // Auto-fill form fields with extracted data
         if (data.companyPerks.length > 0) {
-          setCompanyPerks((prev) => [
-            ...new Set([...prev, ...data.companyPerks]),
-          ]);
+          setCompanyPerks((prev) => [...new Set([...prev, ...data.companyPerks])])
         }
 
         if (data.requiredSkillset.length > 0) {
-          setRequiredSkillset((prev) => [
-            ...new Set([...prev, ...data.requiredSkillset]),
-          ]);
+          setRequiredSkillset((prev) => [...new Set([...prev, ...data.requiredSkillset])])
         }
 
         if (data.mandatoryCertificates.length > 0) {
-          setMandatoryCertificates((prev) => [
-            ...new Set([...prev, ...data.mandatoryCertificates]),
-          ]);
+          setMandatoryCertificates((prev) => [...new Set([...prev, ...data.mandatoryCertificates])])
         }
 
         if (data.educationQualifications.length > 0) {
-          setEducationQualifications((prev) => [
-            ...new Set([...prev, ...data.educationQualifications]),
-          ]);
+          setEducationQualifications((prev) => [...new Set([...prev, ...data.educationQualifications])])
         }
 
         if (data.responsibilities.length > 0) {
-          setResponsibilities((prev) => [
-            ...new Set([...prev, ...data.responsibilities]),
-          ]);
+          setResponsibilities((prev) => [...new Set([...prev, ...data.responsibilities])])
         }
 
-        // Handle FAT toggle - set it based on AI detection
         if (data.fatIncluded !== undefined) {
-          setFatAdded(data.fatIncluded);
+          setFatAdded(data.fatIncluded)
         }
 
-        // Auto-fill suggested pay range
         if (data.suggestedPayRange) {
-          // Check if the current payRange is the default value
           if (payRange === "₹12,000-60,000" || !payRange.trim()) {
-            setPayRange(data.suggestedPayRange);
+            setPayRange(data.suggestedPayRange)
           }
         }
 
-        // Scroll to top after successful analysis
         window.scrollTo({
           top: 0,
           behavior: "smooth",
-        });
+        })
 
-        // Enhanced success message
-        const extractedItems = [];
-        if (data.jobTitle && !jobTittle.trim())
-          extractedItems.push("job title");
-        if (data.location && !workLocation.trim())
-          extractedItems.push("location");
-        if (data.suggestedPayRange) extractedItems.push("pay range");
+        const extractedItems = []
+        if (data.jobTitle && !jobTittle.trim()) extractedItems.push("job title")
+        if (data.location && !workLocation.trim()) extractedItems.push("location")
+        if (data.suggestedPayRange) extractedItems.push("pay range")
 
-        const autoFillMessage =
-          extractedItems.length > 0
-            ? ` Auto-filled: ${extractedItems.join(", ")}.`
-            : "";
-
-        const fatMessage = data.fatIncluded
-          ? " 🍽️ FAT benefits detected and toggle enabled!"
-          : "";
+        const autoFillMessage = extractedItems.length > 0 ? ` Auto-filled: ${extractedItems.join(", ")}.` : ""
+        const fatMessage = data.fatIncluded ? " 🍽️ FAT benefits detected and toggle enabled!" : ""
 
         toast.success(
-          ` AI Analysis Complete! Added ${data.companyPerks.length} perks, ${data.requiredSkillset.length} skills, ${data.educationQualifications.length} qualifications, and ${data.responsibilities.length} responsibilities.${autoFillMessage}${fatMessage}`
-        );
+          `AI Analysis Complete! Added ${data.companyPerks.length} perks, ${data.requiredSkillset.length} skills, ${data.educationQualifications.length} qualifications, and ${data.responsibilities.length} responsibilities.${autoFillMessage}${fatMessage}`,
+        )
       } else {
-        toast.error(result.message || "Failed to analyze job description");
+        toast.error(result.message || "Failed to analyze job description")
       }
     } catch (error) {
-      console.error("Error calling AI assist:", error);
-      toast.error(
-        "Network error occurred during analysis. Please check your connection."
-      );
+      console.error("Error calling AI assist:", error)
+      toast.error("Network error occurred during analysis. Please check your connection.")
     } finally {
-      setIsAnalyzing(false);
+      setIsAnalyzing(false)
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] ">
+    <div className="min-h-screen bg-[#F5F5F5]">
       <JobHeader />
       <div className="max-w-5xl md:mx-auto p-8 -mx-5">
         {/* Back Button */}
@@ -519,9 +864,7 @@ export default function PostRole() {
               <div className="w-10 h-10 bg-purple-200 rounded-full flex items-center justify-center">
                 <span className="text-purple-700 font-semibold text-sm">R</span>
               </div>
-              <h1 className="text-xl font-semibold text-gray-900">
-                Post a Role
-              </h1>
+              <h1 className="text-xl font-semibold text-gray-900">Post a Role</h1>
               <span className="text-gray-500 text-lg">Role - 1</span>
             </div>
             <motion.button
@@ -530,9 +873,7 @@ export default function PostRole() {
               onClick={handleSubmit}
               disabled={isPosting}
               className={`rounded-full text-black font-medium text-sm px-10 py-2 transition-colors ${
-                isPosting
-                  ? "bg-gray-300 cursor-not-allowed"
-                  : "bg-[#76FF82] hover:bg-green-300"
+                isPosting ? "bg-gray-300 cursor-not-allowed" : "bg-[#76FF82] hover:bg-green-300"
               }`}
             >
               {isPosting ? "Posting..." : "Post"}
@@ -541,29 +882,22 @@ export default function PostRole() {
 
           {/* Form Fields */}
           <div className="space-y-3 my-3">
-            <label className="text-sm font-medium text-gray-700">
-              Job Tittle
-            </label>
-
-            {/* Location Input */}
+            <label className="text-sm font-medium text-gray-700">Job Title</label>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={jobTittle}
                 onChange={(e) => setjobTittle(e.target.value)}
-                placeholder="Enter Job Tittle"
+                placeholder="Enter Job Title"
                 className="w-48 px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-
-            {/* World Map Interface */}
           </div>
+
           <div className="space-y-8">
             {/* Company Perks */}
             <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700">
-                Add company perks
-              </label>
+              <label className="text-sm font-medium text-gray-700">Add company perks</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -580,7 +914,6 @@ export default function PostRole() {
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
-              {/* Display Added Perks */}
               {companyPerks.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {companyPerks.map((perk, index) => (
@@ -602,23 +935,21 @@ export default function PostRole() {
                 </div>
               )}
             </div>
+
+            {/* About Job */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">
-                  About Job
-                </label>
+                <label className="text-sm font-medium text-gray-700">About Job</label>
                 <button
                   type="button"
                   onClick={handleAIAssist}
-                  disabled={
-                    isAnalyzing || !aboutJob.trim() || aboutJob.length < 50
-                  }
+                  disabled={isAnalyzing || !aboutJob.trim() || aboutJob.length < 50}
                   className="flex items-center gap-2"
                 >
                   {isAnalyzing ? (
                     <>
                       <div className="w-3 h-3 border-2 border-black text-black border-t-transparent rounded-full animate-spin"></div>
-                      <span className="text-black"> Analyzing... </span>
+                      <span className="text-black">Analyzing...</span>
                     </>
                   ) : (
                     <>
@@ -638,11 +969,10 @@ export default function PostRole() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm placeholder-gray-400 text-black resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
+
             {/* Required Skillset */}
             <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700">
-                Add required skillset
-              </label>
+              <label className="text-sm font-medium text-gray-700">Add required skillset</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -659,7 +989,6 @@ export default function PostRole() {
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
-              {/* Display Added Skills */}
               {requiredSkillset.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {requiredSkillset.map((skill, index) => (
@@ -684,16 +1013,12 @@ export default function PostRole() {
 
             {/* Mandatory Certifications */}
             <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700">
-                Mandatory Certifications
-              </label>
+              <label className="text-sm font-medium text-gray-700">Mandatory Certifications</label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={mandatoryCertificatesInput}
-                  onChange={(e) =>
-                    setMandatoryCertificatesInput(e.target.value)
-                  }
+                  onChange={(e) => setMandatoryCertificatesInput(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && addCertificate()}
                   placeholder="Enter certificates"
                   className="w-48 px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -705,7 +1030,6 @@ export default function PostRole() {
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
-              {/* Display Added Certificates */}
               {mandatoryCertificates.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {mandatoryCertificates.map((cert, index) => (
@@ -727,21 +1051,16 @@ export default function PostRole() {
                 </div>
               )}
             </div>
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700">
-                Education Qualifications
-              </label>
 
+            {/* Education Qualifications */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-gray-700">Education Qualifications</label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={educationQualificationInput}
-                  onChange={(e) =>
-                    setEducationQualificationInput(e.target.value)
-                  }
-                  onKeyPress={(e) =>
-                    e.key === "Enter" && addEducationQualification()
-                  }
+                  onChange={(e) => setEducationQualificationInput(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && addEducationQualification()}
                   placeholder="Enter education qualification (e.g., BE Mechanical Engineer)"
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -753,28 +1072,17 @@ export default function PostRole() {
                 </button>
               </div>
 
-              {/* FAT Toggle (accent green) */}
-              {/* FAT Toggle (accent green) */}
+              {/* FAT Toggle */}
               <div className="pt-2">
                 <div
                   className={`flex items-center justify-between border rounded-xl p-4 ${
-                    fatAdded
-                      ? "bg-green-50 border-green-200"
-                      : "bg-gray-50 border-gray-200"
+                    fatAdded ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"
                   }`}
                 >
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium text-gray-900">
-                      FAT included?
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      (food, accommodation, travel)
-                    </span>
-                    {fatAdded && (
-                      <span className="text-xs text-green-600 mt-1">
-                        ✨ Detected by AI Assistant
-                      </span>
-                    )}
+                    <span className="text-sm font-medium text-gray-900">FAT included?</span>
+                    <span className="text-xs text-gray-500">(food, accommodation, travel)</span>
+                    {fatAdded && <span className="text-xs text-green-600 mt-1">✨ Detected by AI Assistant</span>}
                   </div>
 
                   <button
@@ -787,7 +1095,6 @@ export default function PostRole() {
                       fatAdded ? "bg-[#76FF82]" : "bg-gray-200"
                     }`}
                   >
-                    {/* moving knob */}
                     <motion.span
                       className="absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-sm"
                       animate={{ x: fatAdded ? 44 : 0 }}
@@ -797,7 +1104,6 @@ export default function PostRole() {
                         damping: 28,
                       }}
                     />
-                    {/* on/off label */}
                     <motion.span
                       key={fatAdded ? "on" : "off"}
                       initial={{ opacity: 0, y: 3 }}
@@ -813,9 +1119,6 @@ export default function PostRole() {
                 </div>
               </div>
 
-              {/* end FAT Toggle */}
-
-              {/* Display Added Education Qualifications */}
               {educationQualifications.length > 0 && (
                 <div className="space-y-2 mt-3">
                   {educationQualifications.map((qualification, index) => (
@@ -829,14 +1132,10 @@ export default function PostRole() {
                         <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-medium">
                           {index + 1}
                         </div>
-                        <span className="text-blue-800 text-sm font-medium">
-                          {qualification}
-                        </span>
+                        <span className="text-blue-800 text-sm font-medium">{qualification}</span>
                       </div>
                       <button
-                        onClick={() =>
-                          removeEducationQualification(qualification)
-                        }
+                        onClick={() => removeEducationQualification(qualification)}
                         className="w-6 h-6 flex items-center justify-center text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-full transition-colors"
                       >
                         <X className="w-4 h-4" />
@@ -846,12 +1145,10 @@ export default function PostRole() {
                 </div>
               )}
 
-              {/* Split Preview Modal */}
               {showSplitPreview && (
                 <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="text-sm font-medium text-blue-800 mb-2">
-                    We detected multiple qualifications. Split them into
-                    separate items?
+                    We detected multiple qualifications. Split them into separate items?
                   </div>
                   <div className="space-y-1 mb-3">
                     {pendingQualifications.map((qual, index) => (
@@ -869,12 +1166,9 @@ export default function PostRole() {
                     </button>
                     <button
                       onClick={() => {
-                        setEducationQualifications([
-                          ...educationQualifications,
-                          educationQualificationInput.trim(),
-                        ]);
-                        setEducationQualificationInput("");
-                        setShowSplitPreview(false);
+                        setEducationQualifications([...educationQualifications, educationQualificationInput.trim()])
+                        setEducationQualificationInput("")
+                        setShowSplitPreview(false)
                       }}
                       className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
                     >
@@ -885,19 +1179,14 @@ export default function PostRole() {
               )}
             </div>
 
-            {/* Job Responsibilities - ADD THIS HERE */}
             {/* Job Responsibilities */}
             <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700">
-                Job Responsibilities
-              </label>
+              <label className="text-sm font-medium text-gray-700">Job Responsibilities</label>
               <div className="flex gap-2">
                 <textarea
                   value={responsibilityInput}
                   onChange={(e) => setResponsibilityInput(e.target.value)}
-                  onKeyPress={(e) =>
-                    e.key === "Enter" && !e.shiftKey && addResponsibility()
-                  }
+                  onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && addResponsibility()}
                   placeholder="Enter responsibilities (e.g., Review and preparing ITP • Coordinate with site team • Attending inspection calls)"
                   rows={3}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 text-black resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -910,12 +1199,10 @@ export default function PostRole() {
                 </button>
               </div>
 
-              {/* Split Preview Modal for Responsibilities */}
               {showResponsibilitySplitPreview && (
                 <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-lg">
                   <div className="text-sm font-medium text-green-800 mb-2">
-                    We detected multiple responsibilities. Split them into
-                    separate items?
+                    We detected multiple responsibilities. Split them into separate items?
                   </div>
                   <div className="space-y-1 mb-3">
                     {pendingResponsibilities.map((resp, index) => (
@@ -933,12 +1220,9 @@ export default function PostRole() {
                     </button>
                     <button
                       onClick={() => {
-                        setResponsibilities([
-                          ...responsibilities,
-                          responsibilityInput.trim(),
-                        ]);
-                        setResponsibilityInput("");
-                        setShowResponsibilitySplitPreview(false);
+                        setResponsibilities([...responsibilities, responsibilityInput.trim()])
+                        setResponsibilityInput("")
+                        setShowResponsibilitySplitPreview(false)
                       }}
                       className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
                     >
@@ -948,7 +1232,6 @@ export default function PostRole() {
                 </div>
               )}
 
-              {/* Display Added Responsibilities */}
               {responsibilities.length > 0 && (
                 <div className="space-y-2 mt-3">
                   {responsibilities.map((responsibility, index) => (
@@ -962,9 +1245,7 @@ export default function PostRole() {
                         <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
                           {index + 1}
                         </div>
-                        <span className="text-green-800 text-sm font-medium leading-relaxed">
-                          {responsibility}
-                        </span>
+                        <span className="text-green-800 text-sm font-medium leading-relaxed">{responsibility}</span>
                       </div>
                       <button
                         onClick={() => removeResponsibility(responsibility)}
@@ -979,12 +1260,8 @@ export default function PostRole() {
             </div>
 
             {/* Work Duration */}
-            {/* ... continue with existing sections ... */}
-            {/* Work Duration */}
             <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700">
-                Work Duration
-              </label>
+              <label className="text-sm font-medium text-gray-700">Work Duration</label>
               <div className="flex gap-4">
                 <div className="relative">
                   <input
@@ -993,9 +1270,7 @@ export default function PostRole() {
                     onChange={(e) => setWorkStartDate(e.target.value)}
                     className="w-32 px-3 py-2 border border-gray-300 rounded-md text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                  <div className="text-xs text-gray-500 mt-1">
-                    {formatDateForDisplay(workStartDate)}
-                  </div>
+                  <div className="text-xs text-gray-500 mt-1">{formatDateForDisplay(workStartDate)}</div>
                 </div>
                 <div className="relative">
                   <input
@@ -1004,73 +1279,42 @@ export default function PostRole() {
                     onChange={(e) => setWorkEndDate(e.target.value)}
                     className="w-32 px-3 py-2 border border-gray-300 rounded-md text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                  <div className="text-xs text-gray-500 mt-1">
-                    {formatDateForDisplay(workEndDate)}
-                  </div>
+                  <div className="text-xs text-gray-500 mt-1">{formatDateForDisplay(workEndDate)}</div>
                 </div>
               </div>
             </div>
 
-            {/* Work Location */}
+            {/* Work Location with Fixed Ola Maps Integration */}
             <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700">
-                Work Location
-              </label>
+              <label className="text-sm font-medium text-gray-700">Work Location</label>
 
-              {/* Location Input */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={workLocation}
-                  onChange={(e) => setWorkLocation(e.target.value)}
-                  placeholder="Enter location"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* World Map Interface */}
-              <div className="relative bg-[#2A1B3D] rounded-lg overflow-hidden h-64">
-                {/* World Map Background */}
-                <div
-                  className="w-full h-full bg-cover bg-center relative"
-                  style={{
-                    backgroundImage: `url('/world-map-dark-theme-satellite-view.png')`,
-                  }}
-                >
-                  {/* Location Controls */}
-                  <div className="absolute bottom-4 right-4 flex gap-2">
-                    <button
-                      onClick={requestLocation}
-                      className="px-4 py-2 bg-white rounded-full text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2"
-                    >
-                      <MapPin className="w-4 h-4" />
-                      Auto Detect
-                    </button>
-                    <button
-                      onClick={() => setShowLocationPicker(!showLocationPicker)}
-                      className="px-4 py-2 bg-white rounded-full text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      Drop Pin
-                    </button>
-                  </div>
-
-                  {/* Location Marker */}
-                  {workLocation && (
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                      <div className="w-6 h-6 bg-red-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <div
+                          
+                           className="space-y-3 sm:space-y-4"
+                         >
+                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                             <h3 className="text-sm sm:text-base font-medium text-gray-700">
+                               Location
+                             </h3>
+                           </div>
+             
+                           <LocationInputWithSearch
+                             value={locationSearchQuery}
+                             onChange={setLocationSearchQuery}
+                            onLocationSelect={(location) => {
+                              setSelectedLocation({ lat: location.lat, lng: location.lng });
+                              setWorkLocation(location.address);
+                              setLocationSearchQuery(location.address);
+                            }}
+                             selectedLocation={selectedLocation ?? undefined}
+                           />
+                         </div>
             </div>
 
             {/* Pay Range */}
             <div className="space-y-4">
-              <label className="text-sm font-medium text-gray-700">
-                Pay Range
-              </label>
+              <label className="text-sm font-medium text-gray-700">Pay Range</label>
 
-              {/* Pay Range Toggle */}
               <div className="flex bg-gray-100 rounded-lg p-1 w-fit mt-2">
                 {["Daily", "Monthly"].map((option) => (
                   <button
@@ -1087,7 +1331,6 @@ export default function PostRole() {
                 ))}
               </div>
 
-              {/* Pay Range Input */}
               <input
                 type="text"
                 value={payRange}
@@ -1096,24 +1339,17 @@ export default function PostRole() {
               />
             </div>
 
-            {/* About Job */}
-
             {/* Custom Question */}
             <div className="space-y-4">
-              <label className="text-sm font-medium text-gray-700">
-                Custom Question
-              </label>
+              <label className="text-sm font-medium text-gray-700">Custom Question</label>
 
-              {/* Question Type Toggle */}
               <div className="space-y-3">
                 <div className="text-xs text-gray-500">Question Type</div>
                 <div className="flex bg-gray-100 rounded-lg p-1 w-fit">
                   {(["MCQ", "Single Choice"] as const).map((type) => (
                     <button
                       key={type}
-                      onClick={() => {
-                        setCurrentQuestionType(type);
-                      }}
+                      onClick={() => setCurrentQuestionType(type)}
                       className={`px-4 py-1 text-sm font-medium rounded-md transition-all ${
                         currentQuestionType === type
                           ? "bg-[#76FF82] text-black shadow-sm"
@@ -1124,128 +1360,106 @@ export default function PostRole() {
                     </button>
                   ))}
                 </div>
-              </div>
 
-              {/* Question Input */}
-              <input
-                type="text"
-                value={currentQuestion}
-                onChange={(e) => setCurrentQuestion(e.target.value)}
-                placeholder="Enter your Question"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+                <input
+                  type="text"
+                  value={currentQuestion}
+                  onChange={(e) => setCurrentQuestion(e.target.value)}
+                  placeholder="Enter your Question"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
 
-              {/* Options Section */}
-              <div className="space-y-3">
-                <div className="text-xs text-gray-500">Options</div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={currentOption}
-                    onChange={(e) => setCurrentOption(e.target.value)}
-                    onKeyPress={(e) =>
-                      e.key === "Enter" && addOptionToCurrentQuestion()
-                    }
-                    placeholder="Enter Option"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <button
-                    onClick={addOptionToCurrentQuestion}
-                    className="w-10 h-10 border border-gray-300 rounded-md flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Display Current Options */}
-                {currentOptions.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {currentOptions.map((option, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-2 px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm"
-                      >
-                        <span>{option}</span>
-                        <button
-                          onClick={() =>
-                            removeOptionFromCurrentQuestion(option)
-                          }
-                          className="w-4 h-4 flex items-center justify-center text-gray-500 hover:text-gray-700"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
+                <div className="space-y-3">
+                  <div className="text-xs text-gray-500">Options</div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={currentOption}
+                      onChange={(e) => setCurrentOption(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && addOptionToCurrentQuestion()}
+                      placeholder="Enter Option"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <button
+                      onClick={addOptionToCurrentQuestion}
+                      className="w-10 h-10 border border-gray-300 rounded-md flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
                   </div>
-                )}
 
-                {/* Create Question Button */}
-                {currentQuestion && currentOptions.length > 0 && (
-                  <button
-                    onClick={addCustomQuestion}
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    Create Question +
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Display Added Questions */}
-            {customQuestions.length > 0 && (
-              <div className="space-y-4">
-                <div className="text-sm font-medium text-gray-700">
-                  Added Questions
-                </div>
-                {customQuestions.map((question) => (
-                  <div
-                    key={question.id}
-                    className="border border-gray-200 rounded-lg p-4 space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium text-gray-900">
-                        {question.question}
-                      </div>
-                      <button
-                        onClick={() => removeCustomQuestion(question.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Type: {question.type}
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {question.options.map((option, index) => (
-                        <span
+                  {currentOptions.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {currentOptions.map((option, index) => (
+                        <div
                           key={index}
-                          className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
+                          className="flex items-center gap-2 px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm"
                         >
-                          {option}
-                        </span>
+                          <span>{option}</span>
+                          <button
+                            onClick={() => removeOptionFromCurrentQuestion(option)}
+                            className="w-4 h-4 flex items-center justify-center text-gray-500 hover:text-gray-700"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
                       ))}
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  )}
 
-            {/* Add Another Question Button */}
-            <button
-              onClick={() => {
-                setCurrentQuestion("");
-                setCurrentOptions([]);
-                setCurrentOption("");
-                setCurrentQuestionType("MCQ");
-              }}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-            >
-              Add another Question +
-            </button>
+                  {currentQuestion && currentOptions.length > 0 && (
+                    <button
+                      onClick={addCustomQuestion}
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Create Question +
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {customQuestions.length > 0 && (
+                <div className="space-y-4">
+                  <div className="text-sm font-medium text-gray-700">Added Questions</div>
+                  {customQuestions.map((question) => (
+                    <div key={question.id} className="border border-gray-200 rounded-lg p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium text-gray-900">{question.question}</div>
+                        <button
+                          onClick={() => removeCustomQuestion(question.id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="text-xs text-gray-500">Type: {question.type}</div>
+                      <div className="flex flex-wrap gap-1">
+                        {question.options.map((option, index) => (
+                          <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                            {option}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                onClick={() => {
+                  setCurrentQuestion("")
+                  setCurrentOptions([])
+                  setCurrentOption("")
+                  setCurrentQuestionType("MCQ")
+                }}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Add another Question +
+              </button>
+            </div>
           </div>
         </motion.div>
       </div>
     </div>
-  );
+  )
 }
