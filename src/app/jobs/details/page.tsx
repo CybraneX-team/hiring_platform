@@ -1,6 +1,8 @@
 "use client";
 
 import type * as React from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ArrowUp,
   ExternalLink,
@@ -8,9 +10,44 @@ import {
   MapPin,
   CalendarDays,
   Users,
+  Loader2,
 } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import JobHeader from "@/app/components/jobHeader";
+
+// Updated interface to match API response
+interface Job {
+  id: string;
+  title: string;
+  company: {
+    _id: string;
+    name: string;
+  };
+  description: string;
+  requiredSkills: Array<{
+    name: string;
+    level: string;
+    required: boolean;
+  }>;
+  location?: string;
+  salaryRange: {
+    min?: number;
+    max: number;
+    currency: string;
+    period?: string;
+  };
+  jobType: string;
+  experienceLevel?: string;
+  department?: string;
+  postedDate: string;
+  applicationDeadline?: string;
+  educationQualifications: string[];
+  responsibilities: string[];
+  benefits: string[];
+  workSchedule?: string | object;
+  isActive: boolean;
+  applicationCount: number;
+}
 
 interface CustomButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -24,7 +61,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   ...props
 }) => {
   const baseClasses =
-    "inline-flex items-center justify-center whitespace-nowrap rounded-full font-medium transition-colors focus:outline-none  disabled:opacity-50";
+    "inline-flex items-center justify-center whitespace-nowrap rounded-full font-medium transition-colors focus:outline-none disabled:opacity-50";
 
   const variantClasses = {
     primary: "bg-[#76FF82] hover:bg-[#69e874] text-black text-sm px-8 py-2.5",
@@ -59,7 +96,6 @@ const CustomBadge: React.FC<CustomBadgeProps> = ({
   );
 };
 
-// --- Custom Avatar Component ---
 interface CustomAvatarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 const CustomAvatar: React.FC<CustomAvatarProps> = ({
@@ -77,7 +113,119 @@ const CustomAvatar: React.FC<CustomAvatarProps> = ({
   );
 };
 
+// Loading component
+const LoadingSpinner = () => (
+  <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
+    <div className="flex flex-col items-center space-y-4">
+      <Loader2 className="h-12 w-12 animate-spin text-[#76FF82]" />
+      <p className="text-[#6B7280] text-lg">Loading job details...</p>
+    </div>
+  </div>
+);
+
+// Error component
+const ErrorMessage = ({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) => (
+  <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
+    <div className="bg-white rounded-xl shadow-sm border border-red-200 p-8 max-w-md text-center">
+      <div className="text-red-500 text-lg font-semibold mb-4">
+        Error Loading Job
+      </div>
+      <p className="text-[#6B7280] mb-6">{message}</p>
+      <CustomButton onClick={onRetry}>Try Again</CustomButton>
+    </div>
+  </div>
+);
+
 export default function JobListingPage() {
+  const params = useSearchParams();
+  const jobId = params.get("id");
+  const [job, setJob] = useState<Job | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch job details
+  const fetchJobDetails = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs/${jobId}`
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error("Job not found");
+        }
+        throw new Error("Failed to fetch job details");
+      }
+
+      const jobData = await response.json();
+      setJob(jobData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (jobId) {
+      fetchJobDetails();
+    }
+  }, [jobId]);
+
+  // Show loading state
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  // Show error state
+  if (error) {
+    return <ErrorMessage message={error} onRetry={fetchJobDetails} />;
+  }
+
+  // Show not found state
+  if (!job) {
+    return <ErrorMessage message="Job not found" onRetry={fetchJobDetails} />;
+  }
+
+  // Format date helper
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  // Updated format salary helper
+  const formatSalary = () => {
+    if (!job.salaryRange) return "Salary not specified";
+    const { min, max, currency, period } = job.salaryRange;
+    
+    if (min && min > 0) {
+      return `${min.toLocaleString()}-${max.toLocaleString()}${currency}${period ? `/${period}` : ''}`;
+    } else {
+      return `Up to ${max.toLocaleString()}${currency}${period ? `/${period}` : ''}`;
+    }
+  };
+
+  // Helper to get work schedule string
+  const getWorkSchedule = () => {
+    if (!job.workSchedule) return "Not specified";
+    if (typeof job.workSchedule === 'string') return job.workSchedule;
+    if (typeof job.workSchedule === 'object') {
+      return "Full-time"; // Default fallback
+    }
+    return "Not specified";
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -121,37 +269,30 @@ export default function JobListingPage() {
               <div className="flex flex-col lg:flex-row items-start justify-between">
                 <div className="flex items-start space-x-4 flex-1">
                   <CustomAvatar className="w-12 h-12 bg-[#C5BCFF] text-white font-semibold text-lg">
-                    R
+                    {job.company.name.charAt(0).toUpperCase()}
                   </CustomAvatar>
                   <div className="flex-1">
                     <h1 className="text-xl font-semibold text-[#1F2937] mb-2">
-                      Software Development Engineer
+                      {job.title}
                     </h1>
                     <p className="text-sm text-[#6B7280] leading-relaxed mb-8">
-                      Riverleaf Corp. is a leading supplier in tech solutions,
-                      providing automation to Industrial and Enterprise Clients.
+                      {job.description.substring(0, 200)}...
                     </p>
                     <div className="text-sm text-[#6B7280] mt-auto">
-                      @riverleaf
+                      @{job.company.name.toLowerCase().replace(/\s+/g, "")}
                     </div>
                   </div>
                 </div>
 
-                {/* Right side - Pay and Link */}
+                {/* Right side - Pay and Application Count */}
                 <div className="flex flex-col items-end mt-4 lg:mt-0 lg:ml-6">
-                  <a
-                    href="https://www.riverleaf.co"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-[#6B7280] flex items-center hover:underline mb-2"
-                  >
-                    www.Riverleaf.co <ExternalLink className="ml-1 h-3 w-3" />
-                  </a>
+                  <div className="text-sm text-[#6B7280] mb-2">
+                    {job.applicationCount} applications
+                  </div>
                   <div className="text-right">
                     <div className="text-xl font-bold text-[#1F2937]">
-                      12,000-60,000₹
+                      {formatSalary()}
                     </div>
-                    <div className="text-sm text-[#6B7280]">Per/Hr</div>
                   </div>
                 </div>
               </div>
@@ -169,7 +310,9 @@ export default function JobListingPage() {
                     <div className="font-semibold text-[#A1A1A1]">
                       Experience
                     </div>
-                    <div className="text-[#32343A]">6 Months - 1 Years</div>
+                    <div className="text-[#32343A]">
+                      {job.experienceLevel || "Not specified"}
+                    </div>
                   </div>
                 </div>
 
@@ -177,7 +320,7 @@ export default function JobListingPage() {
                   <CalendarDays className="h-4 w-4 text-[#6B7280] mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
                     <div className="font-semibold text-[#A1A1A1]">Job Type</div>
-                    <div className="text-[#32343A]">Full-Time</div>
+                    <div className="text-[#32343A]">{job.jobType}</div>
                   </div>
                 </div>
 
@@ -185,9 +328,9 @@ export default function JobListingPage() {
                   <Users className="h-4 w-4 text-[#6B7280] mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
                     <div className="font-semibold text-[#A1A1A1]">
-                      Timing hours
+                      Work Schedule
                     </div>
-                    <div className="text-[#32343A]">40 Hours a week</div>
+                    <div className="text-[#32343A]">{getWorkSchedule()}</div>
                   </div>
                 </div>
 
@@ -195,7 +338,9 @@ export default function JobListingPage() {
                   <MapPin className="h-4 w-4 text-[#6B7280] mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
                     <div className="font-semibold text-[#A1A1A1]">Location</div>
-                    <div className="text-[#32343A]">Michigan USA</div>
+                    <div className="text-[#32343A]">
+                      {job.location || "Remote/Not specified"}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -209,8 +354,11 @@ export default function JobListingPage() {
           >
             {/* Apply Button - Top Right */}
             <div className="flex justify-end mb-6">
-              <CustomButton className="font-semibold px-14 py-3 focus:outline-none">
-                Apply
+              <CustomButton
+                className="font-semibold px-14 py-3 focus:outline-none"
+                disabled={!job.isActive}
+              >
+                {job.isActive ? "Apply" : "Position Closed"}
               </CustomButton>
             </div>
 
@@ -218,166 +366,113 @@ export default function JobListingPage() {
               {/* Job Description */}
               <div className="-mt-12">
                 <h2 className="text-lg font-semibold text-[#1F2937] mb-3">
-                  Job description
+                  Job Description
                 </h2>
                 <div className="space-y-4 text-sm text-[#4B5563] leading-relaxed max-w-4xl">
-                  <p>
-                    We are seeking a detail-oriented and proactive Payroll
-                    Specialist to support our Finance function, specifically
-                    managing payroll accounting, reconciliations, and
-                    payroll-related financial reporting across multiple
-                    international jurisdictions (excluding North America).
-                  </p>
-                  <p>
-                    You will be responsible primarily for accurate
-                    payroll-related accounting data, coordinating closely with
-                    external payroll providers to ensure accounting accuracy,
-                    compliance, and high-quality standards, and ensuring payroll
-                    is correctly reflected in financial records and reporting.
-                  </p>
-                  <p>
-                    This role emphasizes payroll related accounting tasks
-                    (reconciliations, journal entries, compliance reporting)
-                    rather than operational payroll tasks such as direct payslip
-                    creation.
-                  </p>
+                  <p>{job.description}</p>
                 </div>
               </div>
 
-              {/* Perks */}
-              <div>
-                <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
-                  Perks
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  <CustomBadge>Provident Fund</CustomBadge>
-                  <CustomBadge>Joining Bonus</CustomBadge>
-                  <CustomBadge>5-Days a week</CustomBadge>
+              {/* Department */}
+              {job.department && (
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                    Department
+                  </h3>
+                  <CustomBadge>{job.department}</CustomBadge>
                 </div>
-              </div>
+              )}
 
-              {/* Must have Skills */}
-              <div>
-                <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
-                  Must have Skills
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  <CustomBadge>PHP</CustomBadge>
-                  <CustomBadge>Finances</CustomBadge>
-                  <CustomBadge>Quantitative Maths</CustomBadge>
-                  <CustomBadge>Microsoft Suite</CustomBadge>
+              {/* Benefits */}
+              {job.benefits && job.benefits.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                    Benefits
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {job.benefits.map((benefit, index) => (
+                      <CustomBadge key={index}>{benefit}</CustomBadge>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Qualifications */}
-              <div>
-                <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
-                  Qualifications
-                </h3>
-                <ul className="space-y-2 text-sm text-[#4B5563]">
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Bachelor's degree in Graphic Design or a related field.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Minimum 6 months to 1 year of experience in graphic
-                    designing.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Strong portfolio showcasing a variety of design projects.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Excellent communication and interpersonal skills.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Ability to work under pressure and meet tight deadlines.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    A passion for design and a creative eye for detail.
-                  </li>
-                </ul>
-              </div>
+              {/* Required Skills - Fixed to handle objects */}
+              {job.requiredSkills && job.requiredSkills.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                    Required Skills
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {job.requiredSkills.map((skill, index) => (
+                      <CustomBadge key={index}>
+                        {typeof skill === 'string' ? skill : skill.name}
+                        {typeof skill === 'object' && skill.level && (
+                          <span className="ml-1 text-xs">({skill.level})</span>
+                        )}
+                      </CustomBadge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Requirements */}
+              {job.educationQualifications && job.educationQualifications.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                    Qualifications
+                  </h3>
+                  <ul className="space-y-2 text-sm text-[#4B5563]">
+                    {job.educationQualifications.map((requirement, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                        {requirement}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* Key Responsibilities */}
-              <div>
-                <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
-                  Key Responsibilities
-                </h3>
-                <ul className="space-y-2 text-sm text-[#4B5563]">
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Ensure accurate and timely payroll accounting and
-                    reconciliations across multiple countries, in compliance
-                    with local regulations.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Work closely with external payroll providers to maintain
-                    high service standards and accuracy of payroll-related
-                    financial data.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Prepare and provide detailed payroll-related journal entries
-                    to the Finance team for accurate expense recognition.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Reconcile payroll tax payments, ensuring correct accounting
-                    treatment and accurate reporting.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Support payroll-related audits and internal controls by
-                    maintaining thorough payroll accounting documentation and
-                    clear records.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Identify, evaluate, and manage external payroll providers to
-                    ensure compliance standards, SLAs, and payroll accounting
-                    accuracy.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Act as the primary point of contact internally for
-                    payroll-related accounting queries and reconciliations.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Research, assess, and recommend improvements in payroll
-                    accounting processes.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Support the financial analysis of employee benefit programs,
-                    ensuring accurate accounting and cost-efficiency.
-                  </li>
-                </ul>
-              </div>
+              {job.responsibilities && job.responsibilities.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                    Key Responsibilities
+                  </h3>
+                  <ul className="space-y-2 text-sm text-[#4B5563]">
+                    {job.responsibilities.map((responsibility, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                        {responsibility}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Application Deadline */}
+              {job.applicationDeadline && (
+                <div className="bg-[#F3F4F6] rounded-lg p-4">
+                  <p className="text-sm text-[#4B5563]">
+                    <strong>Application Deadline:</strong>{" "}
+                    {formatDate(job.applicationDeadline)}
+                  </p>
+                  <p className="text-sm text-[#6B7280] mt-1">
+                    Posted on {formatDate(job.postedDate)}
+                  </p>
+                </div>
+              )}
+
+              {/* Posted Date - Always show since it exists */}
+              {!job.applicationDeadline && (
+                <div className="bg-[#F3F4F6] rounded-lg p-4">
+                  <p className="text-sm text-[#6B7280]">
+                    Posted on {formatDate(job.postedDate)}
+                  </p>
+                </div>
+              )}
             </div>
           </motion.div>
-
-          {/* Similar Jobs Section */}
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-[#1F2937]">
-              Discover Similar Jobs
-            </h2>
-            <motion.div
-              className="space-y-4"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              <SimilarJobCard itemVariants={itemVariants} />
-              <SimilarJobCard itemVariants={itemVariants} />
-            </motion.div>
-          </div>
         </motion.div>
 
         {/* Scroll to Top Button */}
@@ -392,69 +487,3 @@ export default function JobListingPage() {
     </div>
   );
 }
-
-// --- Similar Job Card Component ---
-interface SimilarJobCardProps {
-  itemVariants: Variants;
-}
-
-const SimilarJobCard: React.FC<SimilarJobCardProps> = ({ itemVariants }) => {
-  return (
-    <motion.div
-      className="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
-      variants={itemVariants}
-    >
-      <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
-        <div className="flex items-start space-x-4 flex-1">
-          <CustomAvatar className="w-10 h-10 bg-[#C5BCFF] text-white font-semibold text-base">
-            R
-          </CustomAvatar>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-[#1F2937] mb-1">
-              Software Development Engineer
-            </h3>
-            <p className="text-sm text-[#6B7280] mb-3">Riverleaf Corp.</p>
-
-            <div className="mb-4">
-              <h4 className="text-sm font-medium text-[#1F2937] mb-2">
-                About Job
-              </h4>
-              <p className="text-sm text-[#4B5563] leading-relaxed">
-                We are seeking a detail-oriented and proactive Payroll
-                Specialist to support our Finance function, specifically
-                managing payroll accounting, reconciliations, and
-                payroll-related financial reporting across multiple
-                international jurisdictions (excluding North America).
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2 mb-4">
-              <CustomBadge>Marketing</CustomBadge>
-              <CustomBadge>Design</CustomBadge>
-              <CustomBadge>Strategy Development</CustomBadge>
-            </div>
-
-            <div className="flex items-center space-x-4 text-xs text-[#6B7280]">
-              <div className="flex items-center space-x-1">
-                <Clock className="h-3 w-3" />
-                <span>Remote</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <CalendarDays className="h-3 w-3" />
-                <span>5 Days ago</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-end lg:items-end">
-          <div className="text-right mb-4">
-            <div className="text-lg font-bold text-[#1F2937]">120k$</div>
-            <div className="text-sm text-[#6B7280]">Per/Year</div>
-          </div>
-          <CustomButton className="font-semibold">View Role</CustomButton>
-        </div>
-      </div>
-    </motion.div>
-  );
-};

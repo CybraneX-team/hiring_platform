@@ -157,7 +157,6 @@ const OlaMapComponent = ({
   // Handle search when searchQuery changes
   useEffect(() => {
     if (searchQuery && searchQuery.trim() && isMapLoaded) {
-      console.log('Triggering search for:', searchQuery);
       handleAddressSearch(searchQuery);
     }
   }, [searchQuery, isMapLoaded]);
@@ -173,7 +172,6 @@ const OlaMapComponent = ({
         `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(address)}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
       );
       
-      console.log('Geocoding response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
@@ -184,7 +182,6 @@ const OlaMapComponent = ({
           const { lat, lng } = result.geometry.location;
           const formattedAddress = result.formatted_address || address;
           
-          console.log('Found location:', { lat, lng, formattedAddress });
           
           
           // Update map center and add marker
@@ -333,7 +330,6 @@ const OlaMapComponent = ({
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Reverse geocoding data:', data);
         const address = data.results?.[0]?.formatted_address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
         
         addMarker(lat, lng, address);

@@ -770,6 +770,7 @@ export default function PostRole() {
       if (response.ok && result.success) {
         const { data } = result
 
+        // Auto-fill job title if not already filled
         if (data.jobTitle && !jobTittle.trim()) {
           setjobTittle(data.jobTitle)
         }
@@ -779,6 +780,12 @@ export default function PostRole() {
           setLocationSearchQuery(data.location)
         }
 
+        // Set the clean job description - THIS IS THE KEY FIX
+        if (data.cleanJobDescription) {
+          setAboutJob(data.cleanJobDescription);
+        }
+
+        // Auto-fill form fields with extracted data
         if (data.companyPerks.length > 0) {
           setCompanyPerks((prev) => [...new Set([...prev, ...data.companyPerks])])
         }
@@ -809,22 +816,42 @@ export default function PostRole() {
           }
         }
 
+        // Set pay range type (Daily/Monthly) - NEW FIX
+        if (data.payRangeType) {
+          setActivePayRange(data.payRangeType);
+        }
+
+        // Set work duration dates - NEW FIX
+        if (data.workStartDate) {
+          setWorkStartDate(data.workStartDate);
+        }
+        if (data.workEndDate) {
+          setWorkEndDate(data.workEndDate);
+        }
+
+        // Scroll to top after successful analysis
         window.scrollTo({
           top: 0,
           behavior: "smooth",
         })
 
-        const extractedItems = []
-        if (data.jobTitle && !jobTittle.trim()) extractedItems.push("job title")
-        if (data.location && !workLocation.trim()) extractedItems.push("location")
-        if (data.suggestedPayRange) extractedItems.push("pay range")
+        // Enhanced success message
+        const extractedItems = [];
+        if (data.jobTitle && !jobTittle.trim())
+          extractedItems.push("job title");
+        if (data.location && !workLocation.trim())
+          extractedItems.push("location");
+        if (data.suggestedPayRange) extractedItems.push("pay range");
+        if (data.cleanJobDescription)
+          extractedItems.push("clean job description");
+        if (data.payRangeType) extractedItems.push("pay range type");
 
         const autoFillMessage = extractedItems.length > 0 ? ` Auto-filled: ${extractedItems.join(", ")}.` : ""
         const fatMessage = data.fatIncluded ? " 🍽️ FAT benefits detected and toggle enabled!" : ""
 
         toast.success(
-          `AI Analysis Complete! Added ${data.companyPerks.length} perks, ${data.requiredSkillset.length} skills, ${data.educationQualifications.length} qualifications, and ${data.responsibilities.length} responsibilities.${autoFillMessage}${fatMessage}`,
-        )
+          ` AI Analysis Complete! Added ${data.companyPerks.length} perks, ${data.requiredSkillset.length} skills, ${data.educationQualifications.length} qualifications, and ${data.responsibilities.length} responsibilities.${autoFillMessage}${fatMessage}`
+        );
       } else {
         toast.error(result.message || "Failed to analyze job description")
       }
@@ -1461,5 +1488,5 @@ export default function PostRole() {
         </motion.div>
       </div>
     </div>
-  )
+  );
 }

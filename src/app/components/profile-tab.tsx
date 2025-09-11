@@ -83,14 +83,12 @@ const OlaMapComponent = ({
               isFinite(location.lng)
             ) {
               mapCenter = { lat: location.lat, lng: location.lng }
-              console.log("Using provided location:", mapCenter)
             } else {
               console.warn("Invalid location coordinates provided:", location)
               setDebugInfo("Invalid location coordinates, using default location")
             }
           }
 
-          console.log("Initializing map with location:", mapCenter)
 
           mapInstanceRef.current = olaMaps.init({
             style: "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
@@ -111,7 +109,6 @@ const OlaMapComponent = ({
               !isNaN(location.lat) &&
               !isNaN(location.lng)
             ) {
-              console.log("Adding initial marker:", location)
               addMarker(location.lat, location.lng, location.address || "Selected Location")
             }
           })
@@ -119,7 +116,6 @@ const OlaMapComponent = ({
           // Add click event listener
           mapInstanceRef.current.on("click", (e: any) => {
             const { lat, lng } = e.lngLat
-            console.log("Map clicked at:", lat, lng)
             reverseGeocode(lat, lng)
           })
 
@@ -155,7 +151,6 @@ const OlaMapComponent = ({
       !isNaN(location.lat) &&
       !isNaN(location.lng)
     ) {
-      console.log("Updating map location:", location)
 
       // Fly to new location
       mapInstanceRef.current.flyTo({
@@ -174,7 +169,6 @@ const OlaMapComponent = ({
   // Handle search when searchQuery changes
   useEffect(() => {
     if (searchQuery && searchQuery.trim() && isMapLoaded) {
-      console.log("Triggering search for:", searchQuery)
       handleAddressSearch(searchQuery)
     }
   }, [searchQuery, isMapLoaded])
@@ -182,18 +176,15 @@ const OlaMapComponent = ({
   const geocodeAddress = async (address: string) => {
     if (!address.trim()) return
 
-    console.log("Geocoding address:", address)
 
     try {
       const response = await fetch(
         `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(address)}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`,
       )
 
-      console.log("Geocoding response status:", response.status)
 
       if (response.ok) {
         const data = await response.json()
-        console.log("Geocoding data:", data)
 
         if (data.geocodingResults && data.geocodingResults.length > 0) {
           const result = data.geocodingResults[0]
@@ -210,11 +201,9 @@ const OlaMapComponent = ({
           ) {
             const formattedAddress = result.formatted_address || address
 
-            console.log("Found location:", { lat, lng, formattedAddress })
 
             // Update map center and add marker
             if (mapInstanceRef.current) {
-              console.log("Flying to location:", lng, lat)
               mapInstanceRef.current.flyTo({
                 center: [lng, lat],
                 zoom: 15,
@@ -237,7 +226,6 @@ const OlaMapComponent = ({
             throw new Error("Invalid coordinates received")
           }
         } else {
-          console.log("No geocoding results found")
           throw new Error("Location not found")
         }
       } else {
@@ -289,7 +277,6 @@ const OlaMapComponent = ({
     try {
       // Remove existing marker
       if (markerRef.current) {
-        console.log("Removing existing marker")
         markerRef.current.remove()
         markerRef.current = null
       }
@@ -321,7 +308,6 @@ const OlaMapComponent = ({
       `
       markerElement.appendChild(innerDot)
 
-      console.log("Created marker element:", markerElement)
 
       // Ensure we have the Marker constructor
       if (!olaMaps || !olaMaps.Marker) {
@@ -336,7 +322,6 @@ const OlaMapComponent = ({
         .setLngLat([lng, lat])
         .addTo(mapInstanceRef.current)
 
-      console.log("Marker added successfully:", markerRef.current)
 
       // Add popup if available
       if (olaMaps.Popup) {
@@ -345,7 +330,6 @@ const OlaMapComponent = ({
         }).setHTML(`<div style="padding: 8px; font-size: 14px; font-weight: 500;">${title}</div>`)
 
         markerRef.current.setPopup(popup)
-        console.log("Popup added to marker")
       }
     } catch (error) {
       console.error("Error adding marker:", error)
@@ -367,7 +351,6 @@ const OlaMapComponent = ({
       return
     }
 
-    console.log("Reverse geocoding:", lat, lng)
 
     try {
       const response = await fetch(
