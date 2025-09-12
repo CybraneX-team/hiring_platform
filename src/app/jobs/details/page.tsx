@@ -1,7 +1,7 @@
 "use client";
 
 import type * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   ArrowUp,
@@ -15,7 +15,7 @@ import {
 import { motion, Variants } from "framer-motion";
 import JobHeader from "@/app/components/jobHeader";
 
-// Updated interface to match API response
+// Keep all your existing interfaces exactly the same
 interface Job {
   id: string;
   title: string;
@@ -142,7 +142,8 @@ const ErrorMessage = ({
   </div>
 );
 
-export default function JobListingPage() {
+// **NEW: Separate component that uses useSearchParams**
+function JobListingContent() {
   const params = useSearchParams();
   const jobId = params.get("id");
   const [job, setJob] = useState<Job | null>(null);
@@ -485,5 +486,14 @@ export default function JobListingPage() {
         </CustomButton>
       </div>
     </div>
+  );
+}
+
+// **MAIN COMPONENT: Wrap the content in Suspense**
+export default function JobListingPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <JobListingContent />
+    </Suspense>
   );
 }
