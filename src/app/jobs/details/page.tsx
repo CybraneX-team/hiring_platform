@@ -5,54 +5,6 @@ import { useState } from "react"
 import { ArrowUp, ExternalLink, Clock, MapPin, CalendarDays, Users, X, CheckCircle } from "lucide-react"
 import { motion, type Variants, AnimatePresence } from "framer-motion"
 import JobHeader from "@/app/components/jobHeader"
-import type * as React from "react";
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import {
-  ArrowUp,
-  ExternalLink,
-  Clock,
-  MapPin,
-  CalendarDays,
-  Users,
-  Loader2,
-} from "lucide-react";
-import { motion, Variants } from "framer-motion";
-import JobHeader from "@/app/components/jobHeader";
-
-// Keep all your existing interfaces exactly the same
-interface Job {
-  id: string;
-  title: string;
-  company: {
-    _id: string;
-    name: string;
-  };
-  description: string;
-  requiredSkills: Array<{
-    name: string;
-    level: string;
-    required: boolean;
-  }>;
-  location?: string;
-  salaryRange: {
-    min?: number;
-    max: number;
-    currency: string;
-    period?: string;
-  };
-  jobType: string;
-  experienceLevel?: string;
-  department?: string;
-  postedDate: string;
-  applicationDeadline?: string;
-  educationQualifications: string[];
-  responsibilities: string[];
-  benefits: string[];
-  workSchedule?: string | object;
-  isActive: boolean;
-  applicationCount: number;
-}
 
 interface CustomButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary"
@@ -61,7 +13,6 @@ interface CustomButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement
 const CustomButton: React.FC<CustomButtonProps> = ({ className, children, variant = "primary", ...props }) => {
   const baseClasses =
     "inline-flex items-center justify-center whitespace-nowrap rounded-full font-medium transition-colors focus:outline-none  disabled:opacity-50"
-    "inline-flex items-center justify-center whitespace-nowrap rounded-full font-medium transition-colors focus:outline-none disabled:opacity-50";
 
   const variantClasses = {
     primary: "bg-[#76FF82] hover:bg-[#69e874] text-black text-sm px-8 py-2.5",
@@ -85,6 +36,7 @@ const CustomBadge: React.FC<CustomBadgeProps> = ({ className, children, ...props
   )
 }
 
+// --- Custom Avatar Component ---
 interface CustomAvatarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 const CustomAvatar: React.FC<CustomAvatarProps> = ({ className, children, ...props }) => {
@@ -136,7 +88,7 @@ const ApplicationPopup: React.FC<{
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 text-black"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={onClose}
         >
           <motion.div
@@ -144,10 +96,10 @@ const ApplicationPopup: React.FC<{
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ type: "spring", duration: 0.3 }}
-            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto text-black"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6 border-b border-gray-100">
+            <div className="p-6 border-b border-gray-100 ">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-[#1F2937]">Apply for Software Development Engineer</h2>
                 <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -441,120 +393,6 @@ export default function JobListingPage() {
   const [showApplicationPopup, setShowApplicationPopup] = useState(false)
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
 
-// Loading component
-const LoadingSpinner = () => (
-  <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
-    <div className="flex flex-col items-center space-y-4">
-      <Loader2 className="h-12 w-12 animate-spin text-[#76FF82]" />
-      <p className="text-[#6B7280] text-lg">Loading job details...</p>
-    </div>
-  </div>
-);
-
-// Error component
-const ErrorMessage = ({
-  message,
-  onRetry,
-}: {
-  message: string;
-  onRetry: () => void;
-}) => (
-  <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
-    <div className="bg-white rounded-xl shadow-sm border border-red-200 p-8 max-w-md text-center">
-      <div className="text-red-500 text-lg font-semibold mb-4">
-        Error Loading Job
-      </div>
-      <p className="text-[#6B7280] mb-6">{message}</p>
-      <CustomButton onClick={onRetry}>Try Again</CustomButton>
-    </div>
-  </div>
-);
-
-// **NEW: Separate component that uses useSearchParams**
-function JobListingContent() {
-  const params = useSearchParams();
-  const jobId = params.get("id");
-  const [job, setJob] = useState<Job | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch job details
-  const fetchJobDetails = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs/${jobId}`
-      );
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error("Job not found");
-        }
-        throw new Error("Failed to fetch job details");
-      }
-
-      const jobData = await response.json();
-      setJob(jobData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (jobId) {
-      fetchJobDetails();
-    }
-  }, [jobId]);
-
-  // Show loading state
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
-  // Show error state
-  if (error) {
-    return <ErrorMessage message={error} onRetry={fetchJobDetails} />;
-  }
-
-  // Show not found state
-  if (!job) {
-    return <ErrorMessage message="Job not found" onRetry={fetchJobDetails} />;
-  }
-
-  // Format date helper
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
-  // Updated format salary helper
-  const formatSalary = () => {
-    if (!job.salaryRange) return "Salary not specified";
-    const { min, max, currency, period } = job.salaryRange;
-    
-    if (min && min > 0) {
-      return `${min.toLocaleString()}-${max.toLocaleString()}${currency}${period ? `/${period}` : ''}`;
-    } else {
-      return `Up to ${max.toLocaleString()}${currency}${period ? `/${period}` : ''}`;
-    }
-  };
-
-  // Helper to get work schedule string
-  const getWorkSchedule = () => {
-    if (!job.workSchedule) return "Not specified";
-    if (typeof job.workSchedule === 'string') return job.workSchedule;
-    if (typeof job.workSchedule === 'object') {
-      return "Full-time"; // Default fallback
-    }
-    return "Not specified";
-  };
-
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -616,37 +454,29 @@ function JobListingContent() {
               <div className="flex flex-col lg:flex-row items-start justify-between">
                 <div className="flex items-start space-x-4 flex-1">
                   <CustomAvatar className="w-12 h-12 bg-[#7C3AED] text-white font-semibold text-lg">R</CustomAvatar>
-                  <CustomAvatar className="w-12 h-12 bg-[#C5BCFF] text-white font-semibold text-lg">
-                    {job.company.name.charAt(0).toUpperCase()}
-                  </CustomAvatar>
                   <div className="flex-1">
                     <h1 className="text-xl font-semibold text-[#1F2937] mb-2">Software Development Engineer</h1>
-                    <h1 className="text-xl font-semibold text-[#1F2937] mb-2">
-                      {job.title}
-                    </h1>
                     <p className="text-sm text-[#6B7280] leading-relaxed mb-8">
                       Riverleaf Corp. is a leading supplier in tech solutions, providing automation to Industrial and
                       Enterprise Clients.
-                      {job.description.substring(0, 200)}...
                     </p>
                     <div className="text-sm text-[#6B7280] mt-auto">@riverleaf</div>
-                    <div className="text-sm text-[#6B7280] mt-auto">
-                      @{job.company.name.toLowerCase().replace(/\s+/g, "")}
-                    </div>
                   </div>
                 </div>
 
-                {/* Right side - Pay and Application Count */}
+                {/* Right side - Pay and Link */}
                 <div className="flex flex-col items-end mt-4 lg:mt-0 lg:ml-6">
-                  <div className="text-sm text-[#6B7280] mb-2">
-                    {job.applicationCount} applications
-                  </div>
+                  <a
+                    href="https://www.riverleaf.co"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-[#6B7280] flex items-center hover:underline mb-2"
+                  >
+                    www.Riverleaf.co <ExternalLink className="ml-1 h-3 w-3" />
+                  </a>
                   <div className="text-right">
                     <div className="text-xl font-bold text-[#1F2937]">12,000-60,000₹</div>
                     <div className="text-sm text-[#6B7280]">Per/Hr</div>
-                    <div className="text-xl font-bold text-[#1F2937]">
-                      {formatSalary()}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -663,12 +493,6 @@ function JobListingContent() {
                   <div className="text-sm">
                     <div className="font-semibold text-[#A1A1A1]">Experience</div>
                     <div className="text-[#32343A]">6 Months - 1 Years</div>
-                    <div className="font-semibold text-[#A1A1A1]">
-                      Experience
-                    </div>
-                    <div className="text-[#32343A]">
-                      {job.experienceLevel || "Not specified"}
-                    </div>
                   </div>
                 </div>
 
@@ -676,7 +500,7 @@ function JobListingContent() {
                   <CalendarDays className="h-4 w-4 text-[#6B7280] mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
                     <div className="font-semibold text-[#A1A1A1]">Job Type</div>
-                    <div className="text-[#32343A]">{job.jobType}</div>
+                    <div className="text-[#32343A]">Full-Time</div>
                   </div>
                 </div>
 
@@ -685,10 +509,6 @@ function JobListingContent() {
                   <div className="text-sm">
                     <div className="font-semibold text-[#A1A1A1]">Timing hours</div>
                     <div className="text-[#32343A]">40 Hours a week</div>
-                    <div className="font-semibold text-[#A1A1A1]">
-                      Work Schedule
-                    </div>
-                    <div className="text-[#32343A]">{getWorkSchedule()}</div>
                   </div>
                 </div>
 
@@ -696,9 +516,7 @@ function JobListingContent() {
                   <MapPin className="h-4 w-4 text-[#6B7280] mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
                     <div className="font-semibold text-[#A1A1A1]">Location</div>
-                    <div className="text-[#32343A]">
-                      {job.location || "Remote/Not specified"}
-                    </div>
+                    <div className="text-[#32343A]">Michigan USA</div>
                   </div>
                 </div>
               </div>
@@ -714,11 +532,6 @@ function JobListingContent() {
             <div className="flex justify-end mb-6">
               <CustomButton className="font-semibold px-14 py-3 focus:outline-none" onClick={handleApplyClick}>
                 Apply
-              <CustomButton
-                className="font-semibold px-14 py-3 focus:outline-none"
-                disabled={!job.isActive}
-              >
-                {job.isActive ? "Apply" : "Position Closed"}
               </CustomButton>
             </div>
 
@@ -726,9 +539,6 @@ function JobListingContent() {
               {/* Job Description */}
               <div className="-mt-12">
                 <h2 className="text-lg font-semibold text-[#1F2937] mb-3">Job description</h2>
-                <h2 className="text-lg font-semibold text-[#1F2937] mb-3">
-                  Job Description
-                </h2>
                 <div className="space-y-4 text-sm text-[#4B5563] leading-relaxed max-w-4xl">
                   <p>
                     We are seeking a detail-oriented and proactive Software Development Engineer to support our
@@ -742,7 +552,6 @@ function JobListingContent() {
                     This role emphasizes software development tasks (coding, debugging, testing) rather than operational
                     tasks such as direct client interaction.
                   </p>
-                  <p>{job.description}</p>
                 </div>
               </div>
 
@@ -753,29 +562,8 @@ function JobListingContent() {
                   <CustomBadge>Provident Fund</CustomBadge>
                   <CustomBadge>Joining Bonus</CustomBadge>
                   <CustomBadge>5-Days a week</CustomBadge>
-              {/* Department */}
-              {job.department && (
-                <div>
-                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
-                    Department
-                  </h3>
-                  <CustomBadge>{job.department}</CustomBadge>
                 </div>
-              )}
-
-              {/* Benefits */}
-              {job.benefits && job.benefits.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
-                    Benefits
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {job.benefits.map((benefit, index) => (
-                      <CustomBadge key={index}>{benefit}</CustomBadge>
-                    ))}
-                  </div>
-                </div>
-              )}
+              </div>
 
               {/* Must have Skills */}
               <div>
@@ -785,24 +573,8 @@ function JobListingContent() {
                   <CustomBadge>Finances</CustomBadge>
                   <CustomBadge>Quantitative Maths</CustomBadge>
                   <CustomBadge>Microsoft Suite</CustomBadge>
-              {/* Required Skills - Fixed to handle objects */}
-              {job.requiredSkills && job.requiredSkills.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
-                    Required Skills
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {job.requiredSkills.map((skill, index) => (
-                      <CustomBadge key={index}>
-                        {typeof skill === 'string' ? skill : skill.name}
-                        {typeof skill === 'object' && skill.level && (
-                          <span className="ml-1 text-xs">({skill.level})</span>
-                        )}
-                      </CustomBadge>
-                    ))}
-                  </div>
                 </div>
-              )}
+              </div>
 
               {/* Qualifications */}
               <div>
@@ -834,22 +606,6 @@ function JobListingContent() {
                   </li>
                 </ul>
               </div>
-              {/* Requirements */}
-              {job.educationQualifications && job.educationQualifications.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
-                    Qualifications
-                  </h3>
-                  <ul className="space-y-2 text-sm text-[#4B5563]">
-                    {job.educationQualifications.map((requirement, index) => (
-                      <li key={index} className="flex items-start">
-                        <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                        {requirement}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
 
               {/* Key Responsibilities */}
               <div>
@@ -881,43 +637,6 @@ function JobListingContent() {
                   </li>
                 </ul>
               </div>
-              {job.responsibilities && job.responsibilities.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
-                    Key Responsibilities
-                  </h3>
-                  <ul className="space-y-2 text-sm text-[#4B5563]">
-                    {job.responsibilities.map((responsibility, index) => (
-                      <li key={index} className="flex items-start">
-                        <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                        {responsibility}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Application Deadline */}
-              {job.applicationDeadline && (
-                <div className="bg-[#F3F4F6] rounded-lg p-4">
-                  <p className="text-sm text-[#4B5563]">
-                    <strong>Application Deadline:</strong>{" "}
-                    {formatDate(job.applicationDeadline)}
-                  </p>
-                  <p className="text-sm text-[#6B7280] mt-1">
-                    Posted on {formatDate(job.postedDate)}
-                  </p>
-                </div>
-              )}
-
-              {/* Posted Date - Always show since it exists */}
-              {!job.applicationDeadline && (
-                <div className="bg-[#F3F4F6] rounded-lg p-4">
-                  <p className="text-sm text-[#6B7280]">
-                    Posted on {formatDate(job.postedDate)}
-                  </p>
-                </div>
-              )}
             </div>
           </motion.div>
 
@@ -958,8 +677,6 @@ interface SimilarJobCardProps {
 }
 
 const SimilarJobCard: React.FC<SimilarJobCardProps> = ({ itemVariants }) => {
-// **MAIN COMPONENT: Wrap the content in Suspense**
-export default function JobListingPage() {
   return (
     <motion.div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6" variants={itemVariants}>
       <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
@@ -1006,9 +723,4 @@ export default function JobListingPage() {
       </div>
     </motion.div>
   )
-}
-    <Suspense fallback={<LoadingSpinner />}>
-      <JobListingContent />
-    </Suspense>
-  );
 }
