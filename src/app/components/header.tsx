@@ -76,11 +76,11 @@ export default function Header() {
           </Link>
         )}
 
-        <Menu
+        {/* <Menu
           className={`w-6 h-6 ml-10 transition-colors duration-300 ${
             isScrolled ? "text-black" : "text-white"
           }`}
-        />
+        /> */}
 
         {token && (
           <Link href="/profile">

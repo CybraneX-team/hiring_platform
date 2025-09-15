@@ -10,19 +10,25 @@ export default function BenefitsSection() {
   const benefits = [
     {
       num: "01",
-      title: "Lower energy costs",
+      title: "AI-driven talent and project matching",
       content:
         "Reduce your energy expenses by up to 70% with our efficient renewable energy solutions and smart grid integration.",
     },
     {
       num: "02",
-      title: "Environmental stewardship",
+      title: "Verified professionals and compliance-ready profiles",
       content:
         "Contribute to a cleaner planet with zero‑emission technology that significantly reduces carbon footprint.",
     },
     {
       num: "03",
-      title: "Boosted property value",
+      title: "Industry-focused: Energy",
+      content:
+        "Increase your property value with sustainable energy infrastructure that appeals to environmentally conscious buyers.",
+    },
+    {
+      num: "04",
+      title: "Secure end-to-end project management",
       content:
         "Increase your property value with sustainable energy infrastructure that appeals to environmentally conscious buyers.",
     },
@@ -43,16 +49,14 @@ export default function BenefitsSection() {
 
             {/* Push the blurb down on desktop to mirror visual rhythm */}
             <div className="mt-10 md:mt-48">
-              <p className="text-gray-600 leading-relaxed md:pr-6">
-                Our commitment to sustainability and cutting‑edge technology
-                ensures you’ll enjoy energy that’s not only reliable but also
-                beneficial in multiple ways.
+              <p className="text-[#8D8D8D] leading-relaxed md:pr-6">
+                Highest level or transparency maintenance while simultaneously maintaining privacy for sophisticated documentation
               </p>
 
               <a
                 href="#"
-                className="mt-6 inline-flex h-10 items-center justify-center rounded px-5 text-sm font-medium text-gray-900"
-                style={{ backgroundColor: ACCENT }}
+                className="mt-6 inline-flex h-10 items-center justify-center rounded px-5 text-sm font-medium text-white bg-[#17181D]"
+                
               >
                 Our approach
               </a>
@@ -78,7 +82,6 @@ export default function BenefitsSection() {
             <div className="border-y border-gray-200">
               {benefits.map((b, i) => {
                 const isOpen = open === i;
-                // Last row keeps border-b just like the reference (thin line below row 03)
                 return (
                   <div key={b.num} className="border-b border-gray-200">
                     <button
@@ -118,7 +121,7 @@ export default function BenefitsSection() {
               <img
                 src="/images/about.png"
                 alt="Solar panels under a blue sky"
-                className="h-80 w-full object-cover md:h-[420px]"
+                className="h-80 w-full object-cover md:h-[420px] rounded-xl"
               />
             </div>
           </div>

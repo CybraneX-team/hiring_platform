@@ -57,25 +57,23 @@ export default function HeroSection() {
 
       <section className="relative h-screen flex items-center justify-start">
         <div className="relative z-10 text-white max-w-[90%] mx-auto px-6 w-full">
-          <div className="max-w-2xl mt-40">
-            <h1 className="text-5xl md:text-6xl font-semibold mb-6 leading-tight">
-              A <span className="text-[#48FF58]"> workforce </span> for
+          <div className="max-w-4xl mt-30">
+            <h1 className="text-5xl md:text-5xl font-semibold mb-6 leading-tight">
+             Exceptional Projects and Talent in 
               <br />
-              better tomorrow
+            energy and Infra Sector at one place
             </h1>
             <p className="text-lg mb-8 text-white leading-relaxed">
-              Harness the power of renewable energy for a sustainable future.
-              Clean energy solutions that power tomorrow with innovative
-              technology.
+              Talent and opportunity converge with precision and innovation.
             </p>
             <div className="flex gap-4">
               <Link href="/signup">
-                <button className="bg-[#76FF83] hover:bg-[#6ef07a] text-black font-medium px-10 py-2.5 w-40 transition-colors">
+                <button className="bg-[#3EA442] hover:bg-[#6ef07a] text-white rounded-md font-medium px-10 py-2.5 w-40 transition-colors">
                   Find a job
                 </button>
               </Link>
               <Link href="/company/signup">
-                <button className="bg-white text-black px-10 py-3 w-48 transition-colors text-sm font-semibold">
+                <button className="bg-[#3EA442] text-white rounded-md px-10 py-3 w-48 transition-colors text-sm font-medium">
                   Hire an Engineer
                 </button>
               </Link>

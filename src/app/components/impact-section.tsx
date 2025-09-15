@@ -9,18 +9,15 @@ export default function ImpactSection() {
               backgroundImage: "url('/large-solar-panel-installation.png')",
             }}
           >
-            <div className="absolute inset-0 bg-[#76FF83] bg-opacity-90 flex items-center justify-center mb-20 rounded-2xl">
+            <div className="absolute inset-0 bg-[#3EA442] bg-opacity-90 flex items-center justify-center mb-20 rounded-2xl">
               <div className="text-center text-black max-w-2xl">
-                <p className="text-sm font-medium mb-6 uppercase tracking-wide">
-                  OUR COMMITMENT TO CLEAN ENERGY
+                <p className=" font-semibold mb-6 uppercase tracking-wide text-white text-xl">
+                 Projectmatch an ambitious initiative by Compscope
                 </p>
-                <p className="text-lg mb-8 leading-relaxed">
-                  We are committed to clean energy solutions that make a real
-                  difference. Our renewable technology helps reduce emissions
-                  while providing reliable, sustainable power for communities
-                  worldwide.
+                <p className="text-lg mb-8 text-white font-light">
+                  Created to redefine how energy  professionals and organizations connect, collaborate, and execute projects with precision and  excellence. Leveraging decades of expertise in hydrocarbon industrial projects, inspection, and  advanced energy solutions, Compscope ensures that every connection on Projectmatch is backed  by trust, technical depth, and verified credibility.
                 </p>
-                <button className="bg-black hover:bg-gray-800 text-white font-medium px-8 py-3 rounded-lg transition-colors">
+                <button className="bg-black  text-white font-medium px-8 py-3 rounded-lg transition-colors">
                   Get started
                 </button>
               </div>

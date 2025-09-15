@@ -1,27 +1,27 @@
 export default function SolutionsSection() {
   const solutions = [
     {
-      title: "Hydrogen Production",
+      title: "Oil & Gas",
       description:
-        "Advanced electrolysis technology for clean hydrogen generation from renewable sources.",
+        "Full lifecycle support: upstream, midstream, downstream projects, shutdowns,  inspections, maintenance, and execution.",
       bgColor: "bg-teal-800",
     },
     {
-      title: "Wind Energy Systems",
+      title: "Solar Energy",
       description:
-        "High-efficiency wind turbines designed for optimal energy capture and conversion.",
+        "Full lifecycle support: upstream, midstream, downstream projects, shutdowns,  inspections, maintenance, and execution.",
       bgColor: "bg-teal-800",
     },
     {
-      title: "Advanced Energy Storage",
+      title: "Offshore Projects",
       description:
-        "Cutting-edge storage solutions for reliable renewable energy distribution.",
+        "Commissioning, shutdowns, and infrastructure development.",
       bgColor: "bg-teal-800",
     },
     {
-      title: "Solar Power",
+      title: "Nuclear Power",
       description:
-        "Seamless integration of solar technology with hydrogen production systems.",
+        "Full lifecycle support: upstream, midstream, downstream projects, shutdowns,  inspections, maintenance, and execution.",
       bgColor: "bg-blue-600",
       image: "/solar-panels-on-roof.png",
     },
@@ -32,17 +32,15 @@ export default function SolutionsSection() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex justify-between items-center mb-16">
           <div>
-            <p className="text-[#76FF83] font-medium mb-6 text-sm uppercase tracking-wide">
+            {/* <p className="text-[#76FF83] font-medium mb-6 text-sm uppercase tracking-wide">
               OUR SOLUTIONS
-            </p>
+            </p> */}
             <h2 className="text-4xl md:text-5xl font-medium text-gray-900 leading-tight">
-              Our solutions, your
-              <br />
-              sustainable future.
+              Core Sectors
             </h2>
           </div>
-          <button className=" text-black font-medium rounded-lg transition-colors">
-            View all
+          <button className=" text-black font-light text-sm rounded-lg transition-colors">
+            View all →
           </button>
         </div>
 
@@ -50,7 +48,7 @@ export default function SolutionsSection() {
           {solutions.map((solution, index) => (
             <div
               key={index}
-              className={`${solution.bgColor} text-white p-8 rounded-2xl relative overflow-hidden`}
+              className={`bg-[#3EA442] text-white p-8 rounded-2xl relative overflow-hidden`}
             >
               {solution.image && (
                 <div
@@ -61,18 +59,20 @@ export default function SolutionsSection() {
                 ></div>
               )}
               <div className="relative z-10">
-                <h3 className="text-xl mb-4">{solution.title}</h3>
-                <p className="text-sm text-gray-200 mb-6 leading-relaxed">
+                <h3 className="text-xl mb-4 font-semibold">{solution.title}</h3>
+                <p className="text-sm text-white mb-6 leading-relaxed">
                   {solution.description}
                 </p>
-                <button className="text-[#76FF83] font-medium text-sm hover:underline">
-                  Learn more →
-                </button>
+              
               </div>
             </div>
           ))}
         </div>
+         <button className="bg-transparent text-black border border-black rounded-md px-10 py-3 w-44 transition-colors text-sm font-medium mt-10">
+                  View Roles {" "} →
+                </button>
       </div>
+      
     </section>
   );
 }

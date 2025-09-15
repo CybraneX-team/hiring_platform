@@ -6,12 +6,12 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid md:grid-cols-4 gap-12">
           <div>
-            <Link href="/" className="text-2xl font-bold mb-6 block text-black">
-              Compscope
+            <Link href="/" className="text-2xl font-semibold mb-6 block text-black">
+              ProjectMatch <br />
+              <span className="text-sm font-medium mb-6 block text-black">By Comscope</span>
             </Link>
             <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-              Leading the future of clean renewable energy solutions for a
-              sustainable tomorrow.
+              Connecting Talent to the projects!
             </p>
             <p className="text-gray-500 text-xs">
               © 2024 Compscope. All rights reserved.

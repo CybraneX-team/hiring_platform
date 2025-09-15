@@ -27,6 +27,7 @@ import ResumeUpload from "./ResumeUpload"
 import JobMatching from "./JobMatching"
 import { useUser } from "../context/UserContext"
 import { toast } from "react-toastify"
+import ApplicationDetailView from "./cv"
 
 // OlaMaps integration
 let OlaMaps: any = null
@@ -69,8 +70,8 @@ const OlaMapComponent = ({
 
       if (mapRef.current && olaMaps && !mapInstanceRef.current) {
         try {
-          // Validate location data before using it
-          let mapCenter = { lat: 12.9716, lng: 77.5946 } // Default to Bengaluru
+   
+          let mapCenter = { lat: 12.9716, lng: 77.5946 } 
 
           if (location) {
             // Check if location has valid coordinates
@@ -93,7 +94,7 @@ const OlaMapComponent = ({
           mapInstanceRef.current = olaMaps.init({
             style: "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
             container: mapRef.current,
-            center: [mapCenter.lng, mapCenter.lat], // [longitude, latitude]
+            center: [mapCenter.lng, mapCenter.lat],
             zoom: 12,
           })
 
@@ -139,7 +140,7 @@ const OlaMapComponent = ({
         mapInstanceRef.current = null
       }
     }
-  }, []) // Remove location from dependencies to prevent re-initialization
+  }, []) 
 
   // Handle location updates separately
   useEffect(() => {
@@ -1968,6 +1969,8 @@ const handleProfileSave = async () => {
                       </p>
                     </div>
                   )}
+
+                  <ApplicationDetailView />
                 </div>
               </div>
             ) : (
@@ -2009,7 +2012,7 @@ const handleProfileSave = async () => {
 
       <div className="pt-16 sm:pt-24 pb-8 sm:pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-10">
+          <div className="mb-10 flex items-center justify-between">
             <motion.button
               onClick={() => router.back()}
               whileHover={{ scale: 1.02 }}
@@ -2018,6 +2021,15 @@ const handleProfileSave = async () => {
             >
               <ArrowLeft className="w-4 h-4" />
               Back
+            </motion.button>
+            <motion.button
+              onClick={() => router.push("/jobs")}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
+            >
+            
+              Explore Jobs
             </motion.button>
           </div>
           <motion.div
