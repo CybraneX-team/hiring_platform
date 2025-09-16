@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, MapPin, Clock } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface Applicant {
   id: string;
@@ -17,6 +17,7 @@ interface Applicant {
   skills: string[];
   certifications: string[];
   matchPercentage: number;
+  applicationId: string;
 }
 
 const CircularProgress = ({ percentage }: { percentage: number }) => {
@@ -59,95 +60,169 @@ const CircularProgress = ({ percentage }: { percentage: number }) => {
   );
 };
 
-const mockApplicants: Applicant[] = [
-  {
-    id: "1",
-    name: "Miller Rich",
-    title: "Mechanical Engineer",
-    avatar: "MR",
-    available: true,
-    location: "USA, Michigan",
-    experience: "5 Years",
-    skills: [
-      "UI Development",
-      "AI Prompting",
-      "ML Ops",
-      "Adobe Suite",
-      "Wireframing",
-    ],
-    certifications: ["Certifications from Industry", "Site Management"],
-    matchPercentage: 83,
-  },
-  {
-    id: "2",
-    name: "Miller Rich",
-    title: "Mechanical Engineer",
-    avatar: "MR",
-    available: true,
-    location: "USA, Michigan",
-    experience: "5 Years",
-    skills: [
-      "UI Development",
-      "AI Prompting",
-      "ML Ops",
-      "Adobe Suite",
-      "Wireframing",
-    ],
-    certifications: ["Certifications from Industry", "Site Management"],
-    matchPercentage: 83,
-  },
-  {
-    id: "3",
-    name: "Miller Rich",
-    title: "Mechanical Engineer",
-    avatar: "MR",
-    available: true,
-    location: "USA, Michigan",
-    experience: "5 Years",
-    skills: [
-      "UI Development",
-      "AI Prompting",
-      "ML Ops",
-      "Adobe Suite",
-      "Wireframing",
-    ],
-    certifications: ["Certifications from Industry", "Site Management"],
-    matchPercentage: 83,
-  },
-  {
-    id: "4",
-    name: "Miller Rich",
-    title: "Mechanical Engineer",
-    avatar: "MR",
-    available: false,
-    location: "USA, Michigan",
-    experience: "5 Years",
-    skills: [
-      "UI Development",
-      "AI Prompting",
-      "ML Ops",
-      "Adobe Suite",
-      "Wireframing",
-    ],
-    certifications: ["Certifications from Industry", "Site Management"],
-    matchPercentage: 83,
-  },
-];
+const LoadingSpinner = () => (
+  <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
+    <div className="flex flex-col items-center space-y-4">
+      <Loader2 className="h-12 w-12 animate-spin text-[#76FF82]" />
+      <p className="text-gray-600 text-lg">Loading applicants...</p>
+    </div>
+  </div>
+);
 
-const filterTabs = [
-  { id: "all", label: "75% AI match", count: 4 },
-  { id: "experience", label: "2+ Yrs Experience", count: 3 },
-  { id: "cgpa", label: "7.5 CGPA+", count: 2 },
-  { id: "distance", label: "Distance > 50km", count: 1 },
-];
+const ErrorMessage = ({ message, onRetry }: { message: string; onRetry: () => void }) => (
+  <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
+    <div className="bg-white rounded-xl shadow-sm border border-red-200 p-8 max-w-md text-center">
+      <div className="text-red-500 text-lg font-semibold mb-4">Error Loading Applicants</div>
+      <p className="text-gray-600 mb-6">{message}</p>
+      <button
+        onClick={onRetry}
+        className="px-6 py-2 bg-[#76FF82] hover:bg-green-400 text-black font-medium rounded-full transition-colors"
+      >
+        Try Again
+      </button>
+    </div>
+  </div>
+);
 
-export default function ApplicationsListView() {
+function ApplicationsListContent() {
   const [activeFilter, setActiveFilter] = useState("all");
+  const [applicants, setApplicants] = useState<Applicant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [jobInfo, setJobInfo] = useState<any>(null);
+  
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const jobId = searchParams.get("jobId");
+
+  // Transform API response to match Applicant interface
+  const transformApplicationToApplicant = (application: any): Applicant => {
+    console.log("aappp", application )
+    const applicant = application.applicant;
+    const profile = application.profile || {};
+    
+    // Generate avatar from name
+    const generateAvatar = (name: string) => {
+      const names = name.split(' ');
+      if (names.length >= 2) {
+        return `${names[0][0]}${names[1][0]}`.toUpperCase();
+      }
+      return name.substring(0, 2).toUpperCase();
+    };
+
+    // Calculate experience years
+    const getExperienceText = (yearsOfExp: string | number) => {
+      const years = typeof yearsOfExp === 'string' ? parseInt(yearsOfExp) || 0 : yearsOfExp || 0;
+      return `${years} Year${years !== 1 ? 's' : ''}`;
+    };
+
+    return {
+      id: applicant._id || applicant.id,
+      name: application.profile.name || 'Unknown Applicant',
+      title: profile.openToRoles?.[0] || profile.WorkExperience?.[0]?.title || 'Professional',
+      avatar: generateAvatar(application.profile.name || 'NA'),
+      available: application.status === 'pending' || application.status === 'reviewing',
+      location: profile.location || 'Location not specified',
+      experience: getExperienceText(profile.yearsOfExp),
+      skills: profile.skills || ['No skills listed'],
+      certifications: profile.certificates?.map((cert: any) => cert.name) || ['No certifications'],
+      matchPercentage: Math.round(application.matchScore || application.matchDetails?.overallScore || 0),
+      applicationId: application._id
+    };
+  };
+
+  // Fetch applicants data
+  const fetchApplicants = async () => {
+    if (!jobId) {
+      setError("Job ID is required");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/job/${jobId}?limit=50`
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error("Job not found");
+        }
+        throw new Error("Failed to fetch applicants");
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setJobInfo(data.data.job);
+        
+        // Transform applications to applicants
+        const transformedApplicants = data.data.applications.map(transformApplicationToApplicant);
+        setApplicants(transformedApplicants);
+      } else {
+        throw new Error(data.message || "Failed to fetch applicants");
+      }
+    } catch (err) {
+      console.error("Error fetching applicants:", err);
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchApplicants();
+  }, [jobId]);
+
+  // Filter tabs based on actual data
+  const getFilterTabs = () => {
+    const totalApplicants = applicants.length;
+    const experiencedApplicants = applicants.filter(a => 
+      parseInt(a.experience.split(' ')[0]) >= 2
+    ).length;
+    const highMatchApplicants = applicants.filter(a => a.matchPercentage >= 75).length;
+    const availableApplicants = applicants.filter(a => a.available).length;
+
+    return [
+      { id: "all", label: "All Applicants", count: totalApplicants },
+      { id: "experience", label: "2+ Yrs Experience", count: experiencedApplicants },
+      { id: "match", label: "75%+ AI match", count: highMatchApplicants },
+      { id: "available", label: "Available", count: availableApplicants },
+    ];
+  };
+
+  // Filter applicants based on active filter
+  const getFilteredApplicants = () => {
+    switch (activeFilter) {
+      case "experience":
+        return applicants.filter(a => parseInt(a.experience.split(' ')[0]) >= 2);
+      case "match":
+        return applicants.filter(a => a.matchPercentage >= 75);
+      case "available":
+        return applicants.filter(a => a.available);
+      default:
+        return applicants;
+    }
+  };
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (error) {
+    return <ErrorMessage message={error} onRetry={fetchApplicants} />;
+  }
+
+  const filteredApplicants = getFilteredApplicants();
+  const filterTabs = getFilterTabs();
+
   return (
     <div className="min-h-screen bg-[#F5F5F5] p-4 sm:p-6 lg:p-8">
       <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">
-        Compscope
+        {jobInfo?.title || "Job Applications"}
       </h1>
       <div className="max-w-6xl mx-auto mt-12">
         {/* Header */}
@@ -178,16 +253,31 @@ export default function ApplicationsListView() {
                     : "bg-white text-gray-600 hover:bg-gray-50"
                 }`}
               >
-                {tab.label}
+                {tab.label} ({tab.count})
               </motion.button>
             ))}
           </div>
         </div>
 
+        {/* No Applicants Message */}
+        {filteredApplicants.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-600 text-lg">
+              {activeFilter === "all" 
+                ? "No applicants found for this job." 
+                : "No applicants match the selected filter."
+              }
+            </p>
+          </div>
+        )}
+
         {/* Applications List */}
         <div className="space-y-4">
           <AnimatePresence>
-            {mockApplicants.map((applicant, index) => (
+            {filteredApplicants.map((applicant, index) => {
+              console.log("applicant-applicant", applicant) 
+              return (
+
               <motion.div
                 key={applicant.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -222,7 +312,7 @@ export default function ApplicationsListView() {
                       <div className="border-t border-gray-100 mb-4 w-[115%] -mx-14"></div>
 
                       {/* Status Indicators */}
-                      <div className="flex flex-wrap gap-4 mb-4 text-sm  -mx-14  text-gray-600">
+                      <div className="flex flex-wrap gap-4 mb-4 text-sm -mx-14 text-gray-600">
                         <div className="flex items-center gap-1">
                           <div
                             className={`w-2 h-2 rounded-full ${
@@ -252,10 +342,10 @@ export default function ApplicationsListView() {
                       </div>
 
                       {/* Skills */}
-                      <div className="mb-6 -mx-14 ">
+                      <div className="mb-6 -mx-14">
                         <p className="text-xs text-gray-500 mb-2">Skills</p>
                         <div className="flex flex-wrap gap-2">
-                          {applicant.skills.map((skill, skillIndex) => (
+                          {applicant.skills.slice(0, 5).map((skill, skillIndex) => (
                             <span
                               key={skillIndex}
                               className="px-3 py-1 bg-[#F5F5F5] text-gray-700 text-xs rounded-full"
@@ -263,16 +353,21 @@ export default function ApplicationsListView() {
                               {skill}
                             </span>
                           ))}
+                          {applicant.skills.length > 5 && (
+                            <span className="px-3 py-1 bg-[#F5F5F5] text-gray-700 text-xs rounded-full">
+                              +{applicant.skills.length - 5} more
+                            </span>
+                          )}
                         </div>
                       </div>
 
                       {/* Certifications */}
-                      <div className="-mx-14 ">
+                      <div className="-mx-14">
                         <p className="text-xs text-gray-500 mb-2">
                           Certifications from Industry
                         </p>
                         <div className="flex flex-wrap gap-2">
-                          {applicant.certifications.map((cert, certIndex) => (
+                          {applicant.certifications.slice(0, 3).map((cert, certIndex) => (
                             <span
                               key={certIndex}
                               className="px-3 py-1 bg-[#F5F5F5] text-gray-700 text-xs rounded-full"
@@ -280,13 +375,18 @@ export default function ApplicationsListView() {
                               {cert}
                             </span>
                           ))}
+                          {applicant.certifications.length > 3 && (
+                            <span className="px-3 py-1 bg-[#F5F5F5] text-gray-700 text-xs rounded-full">
+                              +{applicant.certifications.length - 3} more
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Right Section - Match Percentage and Action Button */}
-                  <div className="flex flex-col items-end justify-between h-full min-h-[200px] ">
+                  <div className="flex flex-col items-end justify-between h-full min-h-[200px]">
                     {/* Match Percentage with Progress Circle and Label */}
                     <div className="flex flex-col items-center gap-1">
                       <CircularProgress
@@ -298,7 +398,7 @@ export default function ApplicationsListView() {
                     </div>
 
                     {/* Open Button */}
-                    <Link href="/company/applicants">
+                    <Link href={`/company/applicants?id=${applicant.applicationId}`}>
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
@@ -310,10 +410,19 @@ export default function ApplicationsListView() {
                   </div>
                 </div>
               </motion.div>
-            ))}
+            )})}
+            
           </AnimatePresence>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ApplicationsListView() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <ApplicationsListContent />
+    </Suspense>
   );
 }

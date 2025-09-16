@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect } from "react";
 import {
   Star,
   Upload,
@@ -19,59 +19,62 @@ import {
   Calendar,
   Clock,
   Plus,
-} from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
-import CalendarSection from "./calender"
-import { useRouter } from "next/navigation"
-import ResumeUpload from "./ResumeUpload"
-import JobMatching from "./JobMatching"
-import { useUser } from "../context/UserContext"
-import { toast } from "react-toastify"
-import ApplicationDetailView from "./cv"
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import CalendarSection from "./calender";
+import { useRouter } from "next/navigation";
+import ResumeUpload from "./ResumeUpload";
+import JobMatching from "./JobMatching";
+import { useUser } from "../context/UserContext";
+import { toast } from "react-toastify";
+import ApplicationDetailView from "./cv";
 
 // OlaMaps integration
-let OlaMaps: any = null
-let olaMaps: any = null
+let OlaMaps: any = null;
+let olaMaps: any = null;
 
 const initializeOlaMaps = async () => {
   if (typeof window !== "undefined" && !OlaMaps) {
     try {
-      const module = await import("olamaps-web-sdk")
-      OlaMaps = module.OlaMaps
+      const module = await import("olamaps-web-sdk");
+      OlaMaps = module.OlaMaps;
       olaMaps = new OlaMaps({
         apiKey: process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY || "",
-      })
+      });
     } catch (error) {
-      console.error("Failed to initialize OlaMaps:", error)
+      console.error("Failed to initialize OlaMaps:", error);
     }
   }
-}
+};
 
 const OlaMapComponent = ({
   location,
   onLocationSelect,
   searchQuery,
 }: {
-  location?: { lat: number; lng: number; address?: string }
-  onLocationSelect?: (location: { lat: number; lng: number; address: string }) => void
-  searchQuery?: string
+  location?: { lat: number; lng: number; address?: string };
+  onLocationSelect?: (location: {
+    lat: number;
+    lng: number;
+    address: string;
+  }) => void;
+  searchQuery?: string;
 }) => {
-  const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<any>(null)
-  const markerRef = useRef<any>(null)
-  const [isMapLoaded, setIsMapLoaded] = useState(false)
-  const [isDetecting, setIsDetecting] = useState(false)
-  const [isSearching, setIsSearching] = useState(false)
-  const [debugInfo, setDebugInfo] = useState<string>("")
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>("");
 
   useEffect(() => {
     const loadMap = async () => {
-      await initializeOlaMaps()
+      await initializeOlaMaps();
 
       if (mapRef.current && olaMaps && !mapInstanceRef.current) {
         try {
-   
-          let mapCenter = { lat: 12.9716, lng: 77.5946 } 
+          let mapCenter = { lat: 12.9716, lng: 77.5946 };
 
           if (location) {
             // Check if location has valid coordinates
@@ -83,24 +86,26 @@ const OlaMapComponent = ({
               isFinite(location.lat) &&
               isFinite(location.lng)
             ) {
-              mapCenter = { lat: location.lat, lng: location.lng }
+              mapCenter = { lat: location.lat, lng: location.lng };
             } else {
-              console.warn("Invalid location coordinates provided:", location)
-              setDebugInfo("Invalid location coordinates, using default location")
+              console.warn("Invalid location coordinates provided:", location);
+              setDebugInfo(
+                "Invalid location coordinates, using default location"
+              );
             }
           }
 
-
           mapInstanceRef.current = olaMaps.init({
-            style: "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
+            style:
+              "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
             container: mapRef.current,
             center: [mapCenter.lng, mapCenter.lat],
             zoom: 12,
-          })
+          });
 
           mapInstanceRef.current.on("load", () => {
-            setIsMapLoaded(true)
-            setDebugInfo("")
+            setIsMapLoaded(true);
+            setDebugInfo("");
 
             // Add marker if valid location exists
             if (
@@ -110,37 +115,41 @@ const OlaMapComponent = ({
               !isNaN(location.lat) &&
               !isNaN(location.lng)
             ) {
-              addMarker(location.lat, location.lng, location.address || "Selected Location")
+              addMarker(
+                location.lat,
+                location.lng,
+                location.address || "Selected Location"
+              );
             }
-          })
+          });
 
           // Add click event listener
           mapInstanceRef.current.on("click", (e: any) => {
-            const { lat, lng } = e.lngLat
-            reverseGeocode(lat, lng)
-          })
+            const { lat, lng } = e.lngLat;
+            reverseGeocode(lat, lng);
+          });
 
           // Add error handling
           mapInstanceRef.current.on("error", (e: any) => {
-            console.error("Map error:", e)
-            setDebugInfo("Map loading error")
-          })
+            console.error("Map error:", e);
+            setDebugInfo("Map loading error");
+          });
         } catch (error) {
-          console.error("Error initializing map:", error)
-          setDebugInfo("Failed to initialize map")
+          console.error("Error initializing map:", error);
+          setDebugInfo("Failed to initialize map");
         }
       }
-    }
+    };
 
-    loadMap()
+    loadMap();
 
     return () => {
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove()
-        mapInstanceRef.current = null
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
       }
-    }
-  }, []) 
+    };
+  }, []);
 
   // Handle location updates separately
   useEffect(() => {
@@ -152,44 +161,47 @@ const OlaMapComponent = ({
       !isNaN(location.lat) &&
       !isNaN(location.lng)
     ) {
-
       // Fly to new location
       mapInstanceRef.current.flyTo({
         center: [location.lng, location.lat],
         zoom: 15,
         duration: 1000,
-      })
+      });
 
       // Add marker
       setTimeout(() => {
-        addMarker(location.lat, location.lng, location.address || "Selected Location")
-      }, 200)
+        addMarker(
+          location.lat,
+          location.lng,
+          location.address || "Selected Location"
+        );
+      }, 200);
     }
-  }, [location])
+  }, [location]);
 
   // Handle search when searchQuery changes
   useEffect(() => {
     if (searchQuery && searchQuery.trim() && isMapLoaded) {
-      handleAddressSearch(searchQuery)
+      handleAddressSearch(searchQuery);
     }
-  }, [searchQuery, isMapLoaded])
+  }, [searchQuery, isMapLoaded]);
 
   const geocodeAddress = async (address: string) => {
-    if (!address.trim()) return
-
+    if (!address.trim()) return;
 
     try {
       const response = await fetch(
-        `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(address)}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`,
-      )
-
+        `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(
+          address
+        )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
+      );
 
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
 
         if (data.geocodingResults && data.geocodingResults.length > 0) {
-          const result = data.geocodingResults[0]
-          const { lat, lng } = result.geometry.location
+          const result = data.geocodingResults[0];
+          const { lat, lng } = result.geometry.location;
 
           // Validate coordinates before using them
           if (
@@ -200,8 +212,7 @@ const OlaMapComponent = ({
             isFinite(lat) &&
             isFinite(lng)
           ) {
-            const formattedAddress = result.formatted_address || address
-
+            const formattedAddress = result.formatted_address || address;
 
             // Update map center and add marker
             if (mapInstanceRef.current) {
@@ -209,55 +220,55 @@ const OlaMapComponent = ({
                 center: [lng, lat],
                 zoom: 15,
                 duration: 2000,
-              })
+              });
             }
 
             // Add marker with delay to ensure map has moved
             setTimeout(() => {
-              addMarker(lat, lng, formattedAddress)
-            }, 500)
+              addMarker(lat, lng, formattedAddress);
+            }, 500);
 
             if (onLocationSelect) {
-              onLocationSelect({ lat, lng, address: formattedAddress })
+              onLocationSelect({ lat, lng, address: formattedAddress });
             }
 
-            return { lat, lng, address: formattedAddress }
+            return { lat, lng, address: formattedAddress };
           } else {
-            console.error("Invalid coordinates from geocoding:", lat, lng)
-            throw new Error("Invalid coordinates received")
+            console.error("Invalid coordinates from geocoding:", lat, lng);
+            throw new Error("Invalid coordinates received");
           }
         } else {
-          throw new Error("Location not found")
+          throw new Error("Location not found");
         }
       } else {
-        const errorText = await response.text()
-        console.error("Geocoding API error:", response.status, errorText)
-        throw new Error(`Geocoding failed: ${response.status}`)
+        const errorText = await response.text();
+        console.error("Geocoding API error:", response.status, errorText);
+        throw new Error(`Geocoding failed: ${response.status}`);
       }
     } catch (error) {
-      console.error("Geocoding failed:", error)
-      setDebugInfo("Search failed - please try a different location")
-      throw error
+      console.error("Geocoding failed:", error);
+      setDebugInfo("Search failed - please try a different location");
+      throw error;
     }
-  }
+  };
 
   const handleAddressSearch = async (address: string) => {
-    setIsSearching(true)
-    setDebugInfo("Searching...")
+    setIsSearching(true);
+    setDebugInfo("Searching...");
     try {
-      await geocodeAddress(address)
-      setDebugInfo("")
+      await geocodeAddress(address);
+      setDebugInfo("");
     } catch (error) {
-      console.error("Address search failed:", error)
+      console.error("Address search failed:", error);
     } finally {
-      setIsSearching(false)
+      setIsSearching(false);
     }
-  }
+  };
 
   const addMarker = (lat: number, lng: number, title: string) => {
     if (!mapInstanceRef.current) {
-      console.error("Cannot add marker: map not initialized")
-      return
+      console.error("Cannot add marker: map not initialized");
+      return;
     }
 
     // Validate coordinates
@@ -269,22 +280,22 @@ const OlaMapComponent = ({
       !isFinite(lat) ||
       !isFinite(lng)
     ) {
-      console.error("Invalid coordinates for marker:", lat, lng)
-      return
+      console.error("Invalid coordinates for marker:", lat, lng);
+      return;
     }
 
-    console.log("Adding marker at:", lat, lng, title)
+    console.log("Adding marker at:", lat, lng, title);
 
     try {
       // Remove existing marker
       if (markerRef.current) {
-        markerRef.current.remove()
-        markerRef.current = null
+        markerRef.current.remove();
+        markerRef.current = null;
       }
 
       // Create marker element
-      const markerElement = document.createElement("div")
-      markerElement.className = "custom-marker"
+      const markerElement = document.createElement("div");
+      markerElement.className = "custom-marker";
       markerElement.style.cssText = `
         width: 30px; 
         height: 30px; 
@@ -298,22 +309,21 @@ const OlaMapComponent = ({
         cursor: pointer;
         z-index: 1000;
         position: relative;
-      `
+      `;
 
-      const innerDot = document.createElement("div")
+      const innerDot = document.createElement("div");
       innerDot.style.cssText = `
         width: 12px; 
         height: 12px; 
         background-color: white; 
         border-radius: 50%;
-      `
-      markerElement.appendChild(innerDot)
-
+      `;
+      markerElement.appendChild(innerDot);
 
       // Ensure we have the Marker constructor
       if (!olaMaps || !olaMaps.Marker) {
-        console.error("OlaMaps Marker not available")
-        return
+        console.error("OlaMaps Marker not available");
+        return;
       }
 
       // Add marker to map
@@ -321,22 +331,23 @@ const OlaMapComponent = ({
         element: markerElement,
       })
         .setLngLat([lng, lat])
-        .addTo(mapInstanceRef.current)
-
+        .addTo(mapInstanceRef.current);
 
       // Add popup if available
       if (olaMaps.Popup) {
         const popup = new olaMaps.Popup({
           offset: 25,
-        }).setHTML(`<div style="padding: 8px; font-size: 14px; font-weight: 500;">${title}</div>`)
+        }).setHTML(
+          `<div style="padding: 8px; font-size: 14px; font-weight: 500;">${title}</div>`
+        );
 
-        markerRef.current.setPopup(popup)
+        markerRef.current.setPopup(popup);
       }
     } catch (error) {
-      console.error("Error adding marker:", error)
-      setDebugInfo("Error adding marker")
+      console.error("Error adding marker:", error);
+      setDebugInfo("Error adding marker");
     }
-  }
+  };
 
   const reverseGeocode = async (lat: number, lng: number) => {
     // Validate coordinates
@@ -348,59 +359,60 @@ const OlaMapComponent = ({
       !isFinite(lat) ||
       !isFinite(lng)
     ) {
-      console.error("Invalid coordinates for reverse geocoding:", lat, lng)
-      return
+      console.error("Invalid coordinates for reverse geocoding:", lat, lng);
+      return;
     }
-
 
     try {
       const response = await fetch(
-        `https://api.olamaps.io/places/v1/reverse-geocode?latlng=${lat},${lng}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`,
-      )
+        `https://api.olamaps.io/places/v1/reverse-geocode?latlng=${lat},${lng}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
+      );
 
       if (response.ok) {
-        const data = await response.json()
-        console.log("Reverse geocoding data:", data)
-        const address = data.results?.[0]?.formatted_address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+        const data = await response.json();
+        console.log("Reverse geocoding data:", data);
+        const address =
+          data.results?.[0]?.formatted_address ||
+          `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
-        addMarker(lat, lng, address)
+        addMarker(lat, lng, address);
 
         if (onLocationSelect) {
-          onLocationSelect({ lat, lng, address })
+          onLocationSelect({ lat, lng, address });
         }
       } else {
-        console.error("Reverse geocoding failed:", response.status)
-        const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
-        addMarker(lat, lng, address)
+        console.error("Reverse geocoding failed:", response.status);
+        const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        addMarker(lat, lng, address);
 
         if (onLocationSelect) {
-          onLocationSelect({ lat, lng, address })
+          onLocationSelect({ lat, lng, address });
         }
       }
     } catch (error) {
-      console.error("Reverse geocoding failed:", error)
-      const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
-      addMarker(lat, lng, address)
+      console.error("Reverse geocoding failed:", error);
+      const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      addMarker(lat, lng, address);
 
       if (onLocationSelect) {
-        onLocationSelect({ lat, lng, address })
+        onLocationSelect({ lat, lng, address });
       }
     }
-  }
+  };
 
   const autoDetectLocation = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by this browser.")
-      return
+      alert("Geolocation is not supported by this browser.");
+      return;
     }
 
-    setIsDetecting(true)
-    console.log("Starting geolocation detection")
+    setIsDetecting(true);
+    console.log("Starting geolocation detection");
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const { latitude, longitude } = position.coords
-        console.log("Geolocation detected:", latitude, longitude)
+        const { latitude, longitude } = position.coords;
+        console.log("Geolocation detected:", latitude, longitude);
 
         // Validate detected coordinates
         if (
@@ -417,34 +429,44 @@ const OlaMapComponent = ({
               center: [longitude, latitude],
               zoom: 15,
               duration: 2000,
-            })
+            });
           }
 
-          reverseGeocode(latitude, longitude)
-          setDebugInfo("")
+          reverseGeocode(latitude, longitude);
+          setDebugInfo("");
         } else {
-          console.error("Invalid coordinates from geolocation:", latitude, longitude)
-          setDebugInfo("Invalid location detected")
+          console.error(
+            "Invalid coordinates from geolocation:",
+            latitude,
+            longitude
+          );
+          setDebugInfo("Invalid location detected");
         }
-        setIsDetecting(false)
+        setIsDetecting(false);
       },
       (error) => {
-        console.error("Geolocation error:", error)
-        setDebugInfo("Location detection failed")
-        alert("Unable to detect location. Please try again or select manually.")
-        setIsDetecting(false)
+        console.error("Geolocation error:", error);
+        setDebugInfo("Location detection failed");
+        alert(
+          "Unable to detect location. Please try again or select manually."
+        );
+        setIsDetecting(false);
       },
       {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 0,
-      },
-    )
-  }
+      }
+    );
+  };
 
   return (
     <div className="relative bg-gray-900 rounded-lg overflow-hidden h-48 sm:h-64">
-      <div ref={mapRef} className="w-full h-full" style={{ minHeight: "200px" }} />
+      <div
+        ref={mapRef}
+        className="w-full h-full"
+        style={{ minHeight: "200px" }}
+      />
 
       {!isMapLoaded && (
         <div className="absolute inset-0 bg-gradient-to-b from-blue-900 to-gray-900 flex items-center justify-center">
@@ -456,7 +478,9 @@ const OlaMapComponent = ({
       )}
 
       {isSearching && (
-        <div className="absolute top-2 left-2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs">Searching...</div>
+        <div className="absolute top-2 left-2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs">
+          Searching...
+        </div>
       )}
 
       {/* Debug info */}
@@ -487,11 +511,13 @@ const OlaMapComponent = ({
           )}
         </motion.button>
 
-        <div className="px-2 sm:px-3 py-1 bg-gray-700 text-white text-xs rounded-full">Click to pin</div>
+        <div className="px-2 sm:px-3 py-1 bg-gray-700 text-white text-xs rounded-full">
+          Click to pin
+        </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 // Enhanced location input field component
 const LocationInputWithSearch = ({
@@ -500,32 +526,36 @@ const LocationInputWithSearch = ({
   onLocationSelect,
   selectedLocation,
 }: {
-  value: string
-  onChange: (value: string) => void
-  onLocationSelect: (location: { lat: number; lng: number; address: string }) => void
-  selectedLocation?: { lat: number; lng: number; address?: string }
+  value: string;
+  onChange: (value: string) => void;
+  onLocationSelect: (location: {
+    lat: number;
+    lng: number;
+    address: string;
+  }) => void;
+  selectedLocation?: { lat: number; lng: number; address?: string };
 }) => {
-  const [searchTrigger, setSearchTrigger] = useState("")
-  const [isSearching, setIsSearching] = useState(false)
+  const [searchTrigger, setSearchTrigger] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
 
   const handleSearch = async () => {
-    if (!value.trim()) return
+    if (!value.trim()) return;
 
-    setIsSearching(true)
-    setSearchTrigger(value) // This will trigger the map to search
+    setIsSearching(true);
+    setSearchTrigger(value); // This will trigger the map to search
 
     // Reset after a short delay
     setTimeout(() => {
-      setIsSearching(false)
-    }, 2000)
-  }
+      setIsSearching(false);
+    }, 2000);
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      e.preventDefault()
-      handleSearch()
+      e.preventDefault();
+      handleSearch();
     }
-  }
+  };
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -548,10 +578,14 @@ const LocationInputWithSearch = ({
         </motion.button>
       </div>
 
-      <OlaMapComponent location={selectedLocation} onLocationSelect={onLocationSelect} searchQuery={searchTrigger} />
+      <OlaMapComponent
+        location={selectedLocation}
+        onLocationSelect={onLocationSelect}
+        searchQuery={searchTrigger}
+      />
     </div>
-  )
-}
+  );
+};
 
 const tabs = [
   { id: "profile", label: "Profile" },
@@ -560,7 +594,7 @@ const tabs = [
   { id: "certifications", label: "Certifications" },
   { id: "schedule", label: "Schedule" },
   { id: "resume", label: "Resume & Jobs" },
-]
+];
 
 const initialProfileData = {
   profile: {
@@ -578,7 +612,7 @@ const initialProfileData = {
     timezone: "Eastern Standard Time",
     preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
   },
-}
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -593,7 +627,7 @@ const containerVariants = {
     opacity: 0,
     transition: { duration: 0.2 },
   },
-}
+};
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -601,7 +635,7 @@ const itemVariants = {
     opacity: 1,
     y: 0,
   },
-}
+};
 
 const cardVariants = {
   hidden: { opacity: 0, y: 30, scale: 0.95 },
@@ -610,7 +644,7 @@ const cardVariants = {
     y: 0,
     scale: 1,
   },
-}
+};
 
 const skillVariants = {
   hidden: { opacity: 0, scale: 0.8 },
@@ -618,17 +652,19 @@ const skillVariants = {
     opacity: 1,
     scale: 1,
   },
-}
+};
 
 export default function ProfileTab() {
-  const [activeTab, setActiveTab] = useState("resume")
-  const { user, profile, updateProfile } = useUser()
-  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 })
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [httpMethod, sethttpMethod] = useState<string>("PUT")
-  const [modalType, setModalType] = useState<"education" | "experience" | "certificate" | null>(null)
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState("resume");
+  const { user, profile, updateProfile } = useUser();
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [httpMethod, sethttpMethod] = useState<string>("PUT");
+  const [modalType, setModalType] = useState<
+    "education" | "experience" | "certificate" | null
+  >(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   const [profileData, setProfileData] = useState(() => {
     try {
@@ -645,7 +681,9 @@ export default function ProfileTab() {
             profile.education?.map((edu: any, index: any) => ({
               id: index + 1,
               type: edu.Degree || "Degree",
-              period: edu.Graduation ? new Date(edu.Graduation).getFullYear().toString() : "",
+              period: edu.Graduation
+                ? new Date(edu.Graduation).getFullYear().toString()
+                : "",
               institution: edu.institure || edu.institute || "",
               description: edu.GPA ? `GPA: ${edu.GPA}` : "",
             })) || [],
@@ -673,22 +711,24 @@ export default function ProfileTab() {
               certificateFileName: cert.fileName || "",
               certificateMime: cert.mimeType || "",
             })) || [],
-        }
-        return transformedProfile
+        };
+        return transformedProfile;
       }
 
-      const savedProfile = localStorage.getItem("profileData")
+      const savedProfile = localStorage.getItem("profileData");
       if (savedProfile) {
-        const parsedProfile = JSON.parse(savedProfile)
-        return parsedProfile
+        const parsedProfile = JSON.parse(savedProfile);
+        return parsedProfile;
       }
 
-      return initialProfileData
+      return initialProfileData;
     } catch (error) {
-      console.error("Error parsing profile data:", error)
-      return initialProfileData
+      console.error("Error parsing profile data:", error);
+      return initialProfileData;
     }
-  })
+  });
+  const [newCertificatesFiles, setNewCertificatesFiles] = useState<File[]>([]);
+  const [newCertificatesMeta, setNewCertificatesMeta] = useState<any[]>([]);
 
   useEffect(() => {
     if (profile) {
@@ -704,7 +744,9 @@ export default function ProfileTab() {
           profile.education?.map((edu: any, index: any) => ({
             id: index + 1,
             type: edu.Degree || "Degree",
-            period: edu.Graduation ? new Date(edu.Graduation).getFullYear().toString() : "",
+            period: edu.Graduation
+              ? new Date(edu.Graduation).getFullYear().toString()
+              : "",
             institution: edu.institure || edu.institute || "",
             description: edu.GPA ? `GPA: ${edu.GPA}` : "",
           })) || [],
@@ -732,28 +774,29 @@ export default function ProfileTab() {
           timezone: "Eastern Standard Time",
           preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
         },
-      }
+      };
 
-      setProfileData(transformedProfile)
+      setProfileData(transformedProfile);
     }
-  }, [profile])
+  }, [profile]);
 
-  const [editingItem, setEditingItem] = useState<any>(null)
-  const [isEditMode, setIsEditMode] = useState(false)
-  const [formData, setFormData] = useState<any>({})
-  const [currentResumeId, setCurrentResumeId] = useState<string | null>(null)
-  const [showJobMatching, setShowJobMatching] = useState(false)
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [formData, setFormData] = useState<any>({});
+  const [currentResumeId, setCurrentResumeId] = useState<string | null>(null);
+  const [showJobMatching, setShowJobMatching] = useState(false);
   const [previewCert, setPreviewCert] = useState<{
-    url: string
-    name?: string
-    type?: string
-  } | null>(null)
-  const router = useRouter()
+    url: string;
+    name?: string;
+    type?: string;
+  } | null>(null);
+  const router = useRouter();
 
   // New state for profile management
-  const [isProfileEditOpen, setIsProfileEditOpen] = useState(false)
-  const [profilePicture, setProfilePicture] = useState("")
-  const [isProfilePictureModalOpen, setIsProfilePictureModalOpen] = useState(false)
+  const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
+  const [profilePicture, setProfilePicture] = useState("");
+  const [isProfilePictureModalOpen, setIsProfilePictureModalOpen] =
+    useState(false);
   const [profileFormData, setProfileFormData] = useState({
     name: "",
     location: "",
@@ -762,22 +805,27 @@ export default function ProfileTab() {
     languages: "",
     availability: "",
     locationData: null as { lat: number; lng: number; address: string } | null,
-  })
-  const profileFileInputRef = useRef<HTMLInputElement>(null)
+  });
+  const profileFileInputRef = useRef<HTMLInputElement>(null);
 
-  const [showAvailabilityCalendar, setShowAvailabilityCalendar] = useState(false)
-  const [selectedAvailabilitySlots, setSelectedAvailabilitySlots] = useState<string[]>([])
-  const [showLocationMap, setShowLocationMap] = useState(false)
+  const [showAvailabilityCalendar, setShowAvailabilityCalendar] =
+    useState(false);
+  const [selectedAvailabilitySlots, setSelectedAvailabilitySlots] = useState<
+    string[]
+  >([]);
+  const [showLocationMap, setShowLocationMap] = useState(false);
 
   // New state for availability slot management
-  const [availabilitySlots, setAvailabilitySlots] = useState<string[]>(profileData.profile.availability || [])
-  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
-  const [newAvailabilityDate, setNewAvailabilityDate] = useState("")
-  const [newAvailabilityStartDate, setNewAvailabilityStartDate] = useState("")
-  const [newAvailabilityEndDate, setNewAvailabilityEndDate] = useState("")
+  const [availabilitySlots, setAvailabilitySlots] = useState<string[]>(
+    profileData.profile.availability || []
+  );
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
+  const [newAvailabilityDate, setNewAvailabilityDate] = useState("");
+  const [newAvailabilityStartDate, setNewAvailabilityStartDate] = useState("");
+  const [newAvailabilityEndDate, setNewAvailabilityEndDate] = useState("");
 
   // Map search query state
-  const [mapSearchQuery, setMapSearchQuery] = useState("")
+  const [mapSearchQuery, setMapSearchQuery] = useState("");
 
   // Check if profile is complete
   const isProfileComplete = () => {
@@ -787,51 +835,59 @@ export default function ProfileTab() {
       profileData.profile.bio &&
       profileData.profile.skills.length > 0 &&
       profileData.profile.languages.length > 0
-    )
-  }
+    );
+  };
 
-  const tabsRef = useRef<(HTMLButtonElement | null)[]>([])
-  const userId = user?.id
+  const handleCertificateFileChange = (file: File | null, meta: any = {}) => {
+    if (!file) return;
+    setNewCertificatesFiles((prev) => [...prev, file]);
+    setNewCertificatesMeta((prev) => [...prev, meta]);
+  };
+
+  const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  const userId = user?.id;
 
   useEffect(() => {
-    const activeIndex = tabs.findIndex((tab) => tab.id === activeTab)
-    const activeTabElement = tabsRef.current[activeIndex]
+    const activeIndex = tabs.findIndex((tab) => tab.id === activeTab);
+    const activeTabElement = tabsRef.current[activeIndex];
 
     if (activeTabElement) {
       setIndicatorStyle({
         left: activeTabElement.offsetLeft,
         width: activeTabElement.offsetWidth,
-      })
+      });
     }
-  }, [activeTab])
+  }, [activeTab]);
 
   // Initialize availability slots from profile data
   useEffect(() => {
     if (profileData.profile.availability) {
-      setAvailabilitySlots(profileData.profile.availability)
+      setAvailabilitySlots(profileData.profile.availability);
     }
-  }, [profileData.profile.availability])
+  }, [profileData.profile.availability]);
 
   // Profile picture handling
-  const handleProfilePictureUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+  const handleProfilePictureUpload = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onload = (e) => {
-        setProfilePicture(e.target?.result as string)
-        setIsProfilePictureModalOpen(false)
-      }
-      reader.readAsDataURL(file)
+        setProfilePicture(e.target?.result as string);
+        setIsProfilePictureModalOpen(false);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const handleRemoveProfilePicture = () => {
-    setProfilePicture("")
-    setIsProfilePictureModalOpen(false)
+    setProfilePicture("");
+    setIsProfilePictureModalOpen(false);
     if (profileFileInputRef.current) {
-      profileFileInputRef.current.value = ""
+      profileFileInputRef.current.value = "";
     }
-  }
+  };
 
   const renderProfilePicture = () => {
     if (profilePicture) {
@@ -839,127 +895,238 @@ export default function ProfileTab() {
         <>
           <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
             <span className="text-white font-bold text-lg sm:text-xl">
-              {profile?.name ? profile?.name.charAt(0) : user?.name ? user?.name.charAt(0) : ""}
+              {profile?.name
+                ? profile?.name.charAt(0)
+                : user?.name
+                ? user?.name.charAt(0)
+                : ""}
             </span>
           </div>
           <div className="min-w-0">
             <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 truncate">
               {profile?.name ? profile?.name : user?.name ? user?.name : ""}
             </h2>
-            <p className="text-gray-500 text-sm sm:text-base">{profile?.location ? profile?.location : ""}</p>
+            <p className="text-gray-500 text-sm sm:text-base">
+              {profile?.location ? profile?.location : ""}
+            </p>
           </div>
         </>
-      )
+      );
     }
 
     return (
       <>
         <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
           <span className="text-white font-bold text-lg sm:text-xl">
-            {profile?.name ? profile?.name.charAt(0) : user?.name ? user?.name.charAt(0) : ""}
+            {profile?.name
+              ? profile?.name.charAt(0)
+              : user?.name
+              ? user?.name.charAt(0)
+              : ""}
           </span>
         </div>
         <div className="min-w-0">
           <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 truncate">
             {profile?.name ? profile?.name : user?.name ? user?.name : ""}
           </h2>
-          <p className="text-gray-500 text-sm sm:text-base">{profile?.location ? profile?.location : ""}</p>
+          <p className="text-gray-500 text-sm sm:text-base">
+            {profile?.location ? profile?.location : ""}
+          </p>
         </div>
       </>
     );
   };
 
-const handleProfileSave = async () => {
-  try {
-    setIsLoading(true);
-    
-    const skillsArray: string[] = profileFormData.skills
-      ? profileFormData.skills
-          .split(",")
-          .map((skill) => skill.trim())
-          .filter((skill) => skill)
-      : [];
-    const languagesArray: string[] = profileFormData.languages
-      ? profileFormData.languages
-          .split(",")
-          .map((lang) => lang.trim())
-          .filter((lang) => lang)
-      : [];
+  const handleProfileSave = async () => {
+    try {
+      setIsLoading(true);
 
-    const updatedProfileData = {
-      ...profileData,
-      profile: {
-        bio: profileFormData.bio,
-        skills: skillsArray,
-        languages: languagesArray,
-      },
-    };
+      const skillsArray: string[] = profileFormData.skills
+        ? profileFormData.skills
+            .split(",")
+            .map((skill) => skill.trim())
+            .filter((skill) => skill)
+        : [];
+      const languagesArray: string[] = profileFormData.languages
+        ? profileFormData.languages
+            .split(",")
+            .map((lang) => lang.trim())
+            .filter((lang) => lang)
+        : [];
 
-    // Update local state first (optimistic update)
-    setProfileData(updatedProfileData);
+      // Prepare updated profile data
+      const updatedProfileData: any = {
+        ...profileData,
+        profile: {
+          ...profileData.profile,
+          bio: profileFormData.bio,
+          skills: skillsArray,
+          languages: languagesArray,
+          availability: availabilitySlots,
+          location: profileFormData.locationData,
+        },
+        education: profileData.education,
+        experiences: profileData.experiences,
+        schedule: profileData.schedule,
+      };
 
-    // Call API to update profile
-    await updateProfileAPI(updatedProfileData);
-    
-    // Update localStorage
-    localStorage.setItem("profile", JSON.stringify(updatedProfileData));
-    
-    toast.success("Profile updated successfully!");
-    setIsProfileEditOpen(false);
-    
-  } catch (error) {
-    console.error("Failed to update profile:", error);
-    // Revert local state on API failure
-    setProfileData(profileData);
-    toast.error("Failed to update profile. Please try again.");
-  } finally {
-    setIsLoading(false);
-  }
-}
+      // Prepare FormData explicitly to support files along with JSON data
+      const formData = new FormData();
+
+      formData.append("userId", user?.id || "");
+      formData.append("bio", updatedProfileData.profile.bio);
+      formData.append(
+        "skills",
+        JSON.stringify(updatedProfileData.profile.skills)
+      );
+      formData.append(
+        "languages",
+        JSON.stringify(updatedProfileData.profile.languages)
+      );
+      formData.append(
+        "availability",
+        JSON.stringify(updatedProfileData.profile.availability)
+      );
+      if (updatedProfileData.profile.location) {
+        formData.append(
+          "profileLocation",
+          JSON.stringify(updatedProfileData.profile.location)
+        );
+      }
+
+      // Add other sections
+      formData.append(
+        "education",
+        JSON.stringify(updatedProfileData.education)
+      );
+      formData.append(
+        "WorkExperience",
+        JSON.stringify(updatedProfileData.experiences)
+      );
+
+      // FIXED: Handle certificates conditionally without duplication
+      if (newCertificatesFiles && newCertificatesFiles.length > 0) {
+        // Only append new certificates and their metadata
+        formData.append("newCertificates", JSON.stringify(newCertificatesMeta));
+        newCertificatesFiles.forEach((file) => {
+          formData.append("certificateFiles", file);
+        });
+
+        // FIXED: Send existing certificates separately to avoid duplication
+        if (
+          profileData.certifications &&
+          profileData.certifications.length > 0
+        ) {
+          formData.append(
+            "certificates",
+            JSON.stringify(profileData.certifications)
+          );
+        }
+      } else if (
+        profileData.certifications &&
+        profileData.certifications.length > 0
+      ) {
+        // FIXED: Only send existing certificates when no new files are uploaded
+        formData.append(
+          "certificates",
+          JSON.stringify(profileData.certifications)
+        );
+      }
+
+      // Name and location fields outside profile
+      formData.append("name", profileFormData.name);
+      formData.append("location", profileFormData.location);
+
+      // Call API
+      const apiUrl = profile?._id
+        ? `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/edit-profile/${profile._id}`
+        : `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/create-profile`;
+      const method = profile?._id ? "PUT" : "POST";
+
+      const response = await fetch(apiUrl, {
+        method,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update profile");
+      }
+
+      const result = await response.json();
+
+      if (result.profile && updateProfile) {
+        updateProfile(result.profile);
+      }
+
+      // FIXED: Clear certificate states after successful save
+      setNewCertificatesFiles([]);
+      setNewCertificatesMeta([]);
+
+      toast.success("Profile updated successfully!");
+      setIsProfileEditOpen(false);
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      toast.error("Failed to update profile. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Availability slot management functions
   const addAvailabilitySlot = () => {
     if (newAvailabilityStartDate && newAvailabilityEndDate) {
-      const startDate = new Date(newAvailabilityStartDate).toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
+      const startDate = new Date(newAvailabilityStartDate).toLocaleDateString(
+        "en-US",
+        {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }
+      );
 
-      const endDate = new Date(newAvailabilityEndDate).toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
+      const endDate = new Date(newAvailabilityEndDate).toLocaleDateString(
+        "en-US",
+        {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }
+      );
 
-      const newSlot = `${startDate} - ${endDate}`
+      const newSlot = `${startDate} - ${endDate}`;
 
       if (!availabilitySlots.includes(newSlot)) {
-        setAvailabilitySlots([...availabilitySlots, newSlot])
+        setAvailabilitySlots([...availabilitySlots, newSlot]);
       }
 
       // Reset form
-      setNewAvailabilityDate("")
-      setNewAvailabilityStartDate("")
-      setNewAvailabilityEndDate("")
-      setShowAvailabilityModal(false)
+      setNewAvailabilityDate("");
+      setNewAvailabilityStartDate("");
+      setNewAvailabilityEndDate("");
+      setShowAvailabilityModal(false);
     }
-  }
+  };
 
   const removeAvailabilitySlot = (slotToRemove: string) => {
-    setAvailabilitySlots(availabilitySlots.filter((slot) => slot !== slotToRemove))
-  }
+    setAvailabilitySlots(
+      availabilitySlots.filter((slot) => slot !== slotToRemove)
+    );
+  };
 
   // Handle map location selection
-  const handleMapLocationSelect = (location: { lat: number; lng: number; address: string }) => {
+  const handleMapLocationSelect = (location: {
+    lat: number;
+    lng: number;
+    address: string;
+  }) => {
     setProfileFormData((prev) => ({
       ...prev,
       location: location.address,
       locationData: location,
-    }))
-  }
+    }));
+  };
 
   // const handleProfileSave = async () => {
   //   try {
@@ -1016,60 +1183,73 @@ const handleProfileSave = async () => {
       languages: profileData.profile.languages.join(", ") || "",
       availability: profileData.profile.availability?.join(", ") || "",
       locationData: profileData.profile.location || null,
-    })
+    });
 
     // Initialize availability slots
-    setAvailabilitySlots(profileData.profile.availability || [])
+    setAvailabilitySlots(profileData.profile.availability || []);
+
+    // FIXED: Clear certificate states to prevent duplication
+    setNewCertificatesFiles([]);
+    setNewCertificatesMeta([]);
 
     // Clear map search query
-    setMapSearchQuery("")
+    setMapSearchQuery("");
 
-    setIsProfileEditOpen(true)
-  }
+    setIsProfileEditOpen(true);
+  };
 
   const updateProfileAPI = async (updatedData: any) => {
     try {
-      setIsLoading(true)
-      const profileId = profile?._id
+      setIsLoading(true);
+      const profileId = profile?._id;
 
-      let apiUrl: string
-      let method: string
+      let apiUrl: string;
+      let method: string;
 
       if (!profileId) {
-        apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/create-profile`
-        method = "POST"
+        apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/create-profile`;
+        method = "POST";
       } else {
-        apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/edit-profile/${profileId}`
-        method = "PUT"
+        apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/edit-profile/${profileId}`;
+        method = "PUT";
       }
 
-      const formData = new FormData()
+      const formData = new FormData();
 
-      formData.append("userId", user ? user?.id : "")
+      formData.append("userId", user ? user?.id : "");
 
       if (updatedData.profile) {
         if (updatedData.profile.bio) {
-          formData.append("bio", updatedData.profile.bio)
+          formData.append("bio", updatedData.profile.bio);
         }
         if (updatedData.profile.skills) {
-          formData.append("skills", JSON.stringify(updatedData.profile.skills))
+          formData.append("skills", JSON.stringify(updatedData.profile.skills));
         }
         if (updatedData.profile.languages) {
-          formData.append("languages", JSON.stringify(updatedData.profile.languages))
+          formData.append(
+            "languages",
+            JSON.stringify(updatedData.profile.languages)
+          );
         }
         if (updatedData.profile.availability) {
-          formData.append("availability", JSON.stringify(updatedData.profile.availability))
+          formData.append(
+            "availability",
+            JSON.stringify(updatedData.profile.availability)
+          );
         }
         if (updatedData.profile.location) {
-          formData.append("profileLocation", JSON.stringify(updatedData.profile.location))
+          formData.append(
+            "profileLocation",
+            JSON.stringify(updatedData.profile.location)
+          );
         }
       }
 
       if (profileFormData.name) {
-        formData.append("name", profileFormData.name)
+        formData.append("name", profileFormData.name);
       }
       if (profileFormData.location) {
-        formData.append("location", profileFormData.location)
+        formData.append("location", profileFormData.location);
       }
 
       if (updatedData.education) {
@@ -1079,13 +1259,17 @@ const handleProfileSave = async () => {
             updatedData.education
               .map((edu: any) => ({
                 institure: edu.institution || edu.institure || "",
-                Graduation: edu.period ? new Date(`${edu.period}-12-31`).toISOString() : undefined,
+                Graduation: edu.period
+                  ? new Date(`${edu.period}-12-31`).toISOString()
+                  : undefined,
                 Degree: edu.type || edu.Degree || "",
-                GPA: edu.description?.includes("GPA:") ? edu.description.replace("GPA: ", "") : edu.GPA || "",
+                GPA: edu.description?.includes("GPA:")
+                  ? edu.description.replace("GPA: ", "")
+                  : edu.GPA || "",
               }))
-              .filter((edu: any) => edu.institure),
-          ),
-        )
+              .filter((edu: any) => edu.institure)
+          )
+        );
       }
 
       if (updatedData.experiences) {
@@ -1098,9 +1282,9 @@ const handleProfileSave = async () => {
                 title: exp.title || "",
                 description: exp.description || "",
               }))
-              .filter((exp: any) => exp.company),
-          ),
-        )
+              .filter((exp: any) => exp.company)
+          )
+        );
       }
 
       if (updatedData.certifications) {
@@ -1109,72 +1293,84 @@ const handleProfileSave = async () => {
           issuer: cert.issuer || "Unknown Issuer",
           date: cert.date || "Unknown Date",
           description: cert.description || "",
-        }))
+        }));
 
-        formData.append("certificates", JSON.stringify(certData))
+        formData.append("certificates", JSON.stringify(certData));
       }
 
       updatedData.certifications?.forEach((cert: any) => {
         if (cert.certificateFile instanceof File) {
-          formData.append("certificateFiles", cert.certificateFile)
+          formData.append("certificateFiles", cert.certificateFile);
         }
-      })
+      });
 
       const response = await fetch(apiUrl, {
         method: method,
         body: formData,
-      })
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        console.error("API Error Response:", errorData)
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || "Unknown error"}`)
+        const errorData = await response.json();
+        console.error("API Error Response:", errorData);
+        throw new Error(
+          `HTTP error! status: ${response.status}, message: ${
+            errorData.message || "Unknown error"
+          }`
+        );
       }
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.profile && updateProfile) {
-        updateProfile(result.profile)
+        updateProfile(result.profile);
       }
-      return result
+      return result;
     } catch (error: any) {
-      toast.error(error.message)
-      console.error("Error updating profile:", error)
-      throw error
+      toast.error(error.message);
+      console.error("Error updating profile:", error);
+      throw error;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     if (user && user.signedUpAs === "Company") {
-      toast.info("You are signed up as a company. Redirecting to company profile...")
-      router.push("/company/profile")
+      toast.info(
+        "You are signed up as a company. Redirecting to company profile..."
+      );
+      router.push("/company/profile");
     }
-  }, [user, router])
+  }, [user, router]);
 
   const renderStars = () => {
     return (
       <div className="flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
-          <motion.div key={star} whileHover={{ scale: 1.1 }} transition={{ duration: 0.2 }}>
+          <motion.div
+            key={star}
+            whileHover={{ scale: 1.1 }}
+            transition={{ duration: 0.2 }}
+          >
             <Star
               className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                star <= 3 ? "fill-yellow-400 text-yellow-400" : "fill-gray-300 text-gray-300"
+                star <= 3
+                  ? "fill-yellow-400 text-yellow-400"
+                  : "fill-gray-300 text-gray-300"
               }`}
             />
           </motion.div>
         ))}
       </div>
-    )
-  }
+    );
+  };
 
   const renderAddCard = (
     title: string,
     description: string,
     buttonText: string,
     icon: React.ReactNode,
-    type: "education" | "experience" | "certificate",
+    type: "education" | "experience" | "certificate"
   ) => {
     return (
       <motion.div
@@ -1222,79 +1418,99 @@ const handleProfileSave = async () => {
           {buttonText}
         </motion.button>
       </motion.div>
-    )
-  }
+    );
+  };
 
-  const openEditModal = (type: "education" | "experience" | "certificate", item: any) => {
-    setModalType(type)
-    setEditingItem(item)
-    setIsEditMode(true)
-    setFormData(item)
-    setIsModalOpen(true)
-  }
+  const openEditModal = (
+    type: "education" | "experience" | "certificate",
+    item: any
+  ) => {
+    setModalType(type);
+    setEditingItem(item);
+    setIsEditMode(true);
+    setFormData(item);
+    setIsModalOpen(true);
+  };
 
   const openModal = (type: "education" | "experience" | "certificate") => {
-    setModalType(type)
-    setEditingItem(null)
-    setIsEditMode(false)
-    setFormData({})
-    setIsModalOpen(true)
-  }
+    setModalType(type);
+    setEditingItem(null);
+    setIsEditMode(false);
+    setFormData({});
+    setIsModalOpen(true);
+  };
 
   const closeModal = () => {
-    setIsModalOpen(false)
-    setModalType(null)
-    setEditingItem(null)
-    setIsEditMode(false)
-    setFormData({})
-    setPreviewCert(null)
-  }
+    setIsModalOpen(false);
+    setModalType(null);
+    setEditingItem(null);
+    setIsEditMode(false);
+    setFormData({});
+    setPreviewCert(null);
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev: any) => ({
       ...prev,
       [field]: value,
-    }))
-  }
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    let updatedProfileData
+    let updatedProfileData;
 
     if (isEditMode && editingItem && modalType) {
       updatedProfileData = {
         ...profileData,
-        [modalType === "certificate" ? "certifications" : modalType === "education" ? "education" : "experiences"]:
-          profileData[
-            modalType === "certificate" ? "certifications" : modalType === "education" ? "education" : "experiences"
-          ].map((item: any) =>
-            item.id === editingItem.id
-              ? {
-                  ...item,
-                  ...formData,
-                  certificateUrl: formData.certificateUrl ?? item.certificateUrl,
-                  certificateMime: formData.certificateMime ?? item.certificateMime,
-                  certificateFileName: formData.certificateFileName ?? item.certificateFileName,
-                }
-              : item,
-          ),
-      }
+        [modalType === "certificate"
+          ? "certifications"
+          : modalType === "education"
+          ? "education"
+          : "experiences"]: profileData[
+          modalType === "certificate"
+            ? "certifications"
+            : modalType === "education"
+            ? "education"
+            : "experiences"
+        ].map((item: any) =>
+          item.id === editingItem.id
+            ? {
+                ...item,
+                ...formData,
+                certificateUrl: formData.certificateUrl ?? item.certificateUrl,
+                certificateMime:
+                  formData.certificateMime ?? item.certificateMime,
+                certificateFileName:
+                  formData.certificateFileName ?? item.certificateFileName,
+              }
+            : item
+        ),
+      };
     } else if (modalType) {
       const newItem = {
         ...formData,
         id: Date.now(),
-      }
+      };
 
       updatedProfileData = {
         ...profileData,
-        [modalType === "certificate" ? "certifications" : modalType === "education" ? "education" : "experiences"]: [
+        [modalType === "certificate"
+          ? "certifications"
+          : modalType === "education"
+          ? "education"
+          : "experiences"]: [
           ...profileData[
-            modalType === "certificate" ? "certifications" : modalType === "education" ? "education" : "experiences"
+            modalType === "certificate"
+              ? "certifications"
+              : modalType === "education"
+              ? "education"
+              : "experiences"
           ],
           newItem,
         ],
-      }
+      };
     }
 
     if (updatedProfileData) {
@@ -1310,13 +1526,13 @@ const handleProfileSave = async () => {
 
         toast.success("Profile updated successfully!");
       } catch (error) {
-        console.error("Failed to update profile:", error)
-        setProfileData(profileData)
+        console.error("Failed to update profile:", error);
+        setProfileData(profileData);
       }
     }
 
-    closeModal()
-  }
+    closeModal();
+  };
 
   const handleProfileFieldUpdate = async (field: string, value: any) => {
     try {
@@ -1326,19 +1542,19 @@ const handleProfileSave = async () => {
           ...profileData.profile,
           [field]: value,
         },
-      }
+      };
 
       setProfileData(updatedProfileData);
       await updateProfileAPI(updatedProfileData);
       localStorage.setItem("profile", JSON.stringify(updatedProfileData));
     } catch (error) {
-      console.error("Failed to update profile field:", error)
-      alert("Failed to update profile. Please try again.")
+      console.error("Failed to update profile field:", error);
+      alert("Failed to update profile. Please try again.");
     }
-  }
+  };
 
   const renderModal = () => {
-    if (!isModalOpen || !modalType) return null
+    if (!isModalOpen || !modalType) return null;
 
     const modalContent = {
       education: {
@@ -1411,24 +1627,45 @@ const handleProfileSave = async () => {
           },
         ],
       },
-    }
+    };
 
-    const config = modalContent[modalType]
+    const config = modalContent[modalType];
 
-    const handleCertificateFileChange = (file: File | null) => {
-      if (!file) return
-      const url = URL.createObjectURL(file)
-      setFormData((prev: any) => ({
-        ...prev,
-        certificateUrl: url,
-        certificateMime: file.type,
-        certificateFileName: file.name,
-        certificateFile: file,
-      }))
-    }
+    const handleCertificateFileChange = (file: File | null, meta: any = {}) => {
+      if (!file) return;
 
+      // FIXED: Ensure we're only adding new certificates, not duplicating
+      setNewCertificatesFiles((prev) => {
+        // Check if file already exists to prevent duplicates
+        const fileExists = prev.some(
+          (existingFile) =>
+            existingFile.name === file.name && existingFile.size === file.size
+        );
+
+        if (fileExists) {
+          console.warn("File already selected:", file.name);
+          return prev;
+        }
+
+        return [...prev, file];
+      });
+
+      setNewCertificatesMeta((prev) => {
+        // Check if meta already exists
+        const metaExists = prev.some(
+          (existingMeta) => existingMeta.name === meta.name
+        );
+
+        if (metaExists) {
+          return prev;
+        }
+
+        return [...prev, meta];
+      });
+    };
     const isPdf = (mime?: string, url?: string) =>
-      (mime && mime.includes("pdf")) || (url && url.toLowerCase().endsWith(".pdf"))
+      (mime && mime.includes("pdf")) ||
+      (url && url.toLowerCase().endsWith(".pdf"));
 
     return (
       <AnimatePresence>
@@ -1449,7 +1686,9 @@ const handleProfileSave = async () => {
             className="bg-white rounded-xl p-4 sm:p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">{config.title}</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">
+                {config.title}
+              </h2>
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -1469,12 +1708,16 @@ const handleProfileSave = async () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1, duration: 0.3 }}
                 >
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{field.label}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {field.label}
+                  </label>
                   {field.type === "textarea" ? (
                     <textarea
                       placeholder={field.placeholder}
                       value={formData[field.name] || ""}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange(field.name, e.target.value)
+                      }
                       className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none h-20 sm:h-24 text-sm sm:text-base"
                     />
                   ) : (
@@ -1482,7 +1725,9 @@ const handleProfileSave = async () => {
                       type="text"
                       placeholder={field.placeholder}
                       value={formData[field.name] || ""}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange(field.name, e.target.value)
+                      }
                       className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm sm:text-base"
                     />
                   )}
@@ -1505,13 +1750,20 @@ const handleProfileSave = async () => {
                   <input
                     type="file"
                     accept="application/pdf,image/*"
-                    onChange={(e) => handleCertificateFileChange(e.target.files?.[0] || null)}
+                    onChange={(e) =>
+                      handleCertificateFileChange(e.target.files?.[0] || null)
+                    }
                     className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
                   {formData.certificateUrl && (
                     <div className="mt-3 border border-gray-200 rounded-lg p-2">
-                      <p className="text-xs text-gray-500 mb-2">{formData.certificateFileName || "Selected file"}</p>
-                      {isPdf(formData.certificateMime, formData.certificateUrl) ? (
+                      <p className="text-xs text-gray-500 mb-2">
+                        {formData.certificateFileName || "Selected file"}
+                      </p>
+                      {isPdf(
+                        formData.certificateMime,
+                        formData.certificateUrl
+                      ) ? (
                         <iframe
                           src={formData.certificateUrl}
                           title="Certificate preview"
@@ -1559,8 +1811,8 @@ const handleProfileSave = async () => {
                         modalType === "certificate"
                           ? "Certificate"
                           : modalType === "education"
-                            ? "Education"
-                            : "Experience"
+                          ? "Education"
+                          : "Experience"
                       }`}
                 </motion.button>
               </motion.div>
@@ -1568,8 +1820,8 @@ const handleProfileSave = async () => {
           </motion.div>
         </motion.div>
       </AnimatePresence>
-    )
-  }
+    );
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -1584,10 +1836,15 @@ const handleProfileSave = async () => {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="space-y-8 sm:space-y-12 text-black"
           >
-            {!profileData.profile.bio || profileData.profile.skills.length === 0 ? (
+            {!profileData.profile.bio ||
+            profileData.profile.skills.length === 0 ? (
               <motion.div variants={itemVariants} className="text-center py-12">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Complete Your Profile</h3>
-                <p className="text-gray-600 mb-6">Add your information to get started</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  Complete Your Profile
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Add your information to get started
+                </p>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -1600,72 +1857,88 @@ const handleProfileSave = async () => {
             ) : (
               <>
                 <motion.div variants={itemVariants}>
-                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-black">About</h3>
-                  <p className="text-gray-600 leading-relaxed text-sm sm:text-base">{profileData.profile.bio}</p>
+                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-black">
+                    About
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
+                    {profileData.profile.bio}
+                  </p>
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
-                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Skills</h3>
+                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
+                    Skills
+                  </h3>
                   <motion.div
                     className="flex flex-wrap gap-2 sm:gap-3"
                     variants={containerVariants}
                     transition={{ staggerChildren: 0.1 }}
                   >
-                    {profileData.profile.skills.map((skill: string, index: number) => (
-                      <motion.span
-                        key={index}
-                        variants={skillVariants}
-                        whileHover={{ scale: 1.05, y: -2 }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
-                        className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-100 text-blue-800 rounded-full text-xs sm:text-sm font-medium cursor-default"
-                      >
-                        {skill}
-                      </motion.span>
-                    ))}
+                    {profileData.profile.skills.map(
+                      (skill: string, index: number) => (
+                        <motion.span
+                          key={index}
+                          variants={skillVariants}
+                          whileHover={{ scale: 1.05, y: -2 }}
+                          transition={{ duration: 0.3, ease: "easeOut" }}
+                          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-100 text-blue-800 rounded-full text-xs sm:text-sm font-medium cursor-default"
+                        >
+                          {skill}
+                        </motion.span>
+                      )
+                    )}
                   </motion.div>
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
-                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Languages</h3>
+                  <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
+                    Languages
+                  </h3>
                   <motion.ul
                     className="space-y-2 sm:space-y-3"
                     variants={containerVariants}
                     transition={{ staggerChildren: 0.1 }}
                   >
-                    {profileData.profile.languages.map((language: string, index: number) => (
-                      <motion.li
-                        key={index}
-                        variants={itemVariants}
-                        transition={{ duration: 0.4, ease: "easeOut" }}
-                        className="text-gray-600 text-sm sm:text-base"
-                      >
-                        {language}
-                      </motion.li>
-                    ))}
+                    {profileData.profile.languages.map(
+                      (language: string, index: number) => (
+                        <motion.li
+                          key={index}
+                          variants={itemVariants}
+                          transition={{ duration: 0.4, ease: "easeOut" }}
+                          className="text-gray-600 text-sm sm:text-base"
+                        >
+                          {language}
+                        </motion.li>
+                      )
+                    )}
                   </motion.ul>
                 </motion.div>
 
                 {/* Availability Section */}
                 {profileData.profile.availability.length > 0 && (
                   <motion.div variants={itemVariants}>
-                    <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Availability</h3>
+                    <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
+                      Availability
+                    </h3>
                     <motion.div
                       className="flex flex-wrap gap-2 sm:gap-3"
                       variants={containerVariants}
                       transition={{ staggerChildren: 0.1 }}
                     >
-                      {profileData.profile.availability.map((slot: string, index: number) => (
-                        <motion.div
-                          key={index}
-                          variants={skillVariants}
-                          whileHover={{ scale: 1.05, y: -2 }}
-                          transition={{ duration: 0.3, ease: "easeOut" }}
-                          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm font-medium cursor-default flex items-center gap-2"
-                        >
-                          <Clock className="w-3 h-3" />
-                          {slot}
-                        </motion.div>
-                      ))}
+                      {profileData.profile.availability.map(
+                        (slot: string, index: number) => (
+                          <motion.div
+                            key={index}
+                            variants={skillVariants}
+                            whileHover={{ scale: 1.05, y: -2 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
+                            className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm font-medium cursor-default flex items-center gap-2"
+                          >
+                            <Clock className="w-3 h-3" />
+                            {slot}
+                          </motion.div>
+                        )
+                      )}
                     </motion.div>
                   </motion.div>
                 )}
@@ -1673,20 +1946,27 @@ const handleProfileSave = async () => {
                 {/* Location Map Section */}
                 {profileData.profile.location && (
                   <motion.div variants={itemVariants}>
-                    <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Location</h3>
+                    <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
+                      Location
+                    </h3>
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 text-gray-600">
                         <MapPin className="w-4 h-4" />
-                        <span className="text-sm sm:text-base">{profileData.profile.location || "Location set"}</span>
+                        <span className="text-sm sm:text-base">
+                          {profileData.profile.location || "Location set"}
+                        </span>
                       </div>
-                      <OlaMapComponent location={profileData.profile.location} searchQuery="" />
+                      <OlaMapComponent
+                        location={profileData.profile.location}
+                        searchQuery=""
+                      />
                     </div>
                   </motion.div>
                 )}
               </>
             )}
           </motion.div>
-        )
+        );
 
       case "education":
         return (
@@ -1720,9 +2000,15 @@ const handleProfileSave = async () => {
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
 
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 pr-10">{edu.type}</h3>
-                <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">{edu.period}</p>
-                <p className="text-gray-600 text-sm sm:text-base">{edu.institution}</p>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 pr-10">
+                  {edu.type}
+                </h3>
+                <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">
+                  {edu.period}
+                </p>
+                <p className="text-gray-600 text-sm sm:text-base">
+                  {edu.institution}
+                </p>
               </motion.div>
             ))}
 
@@ -1731,10 +2017,10 @@ const handleProfileSave = async () => {
               "Add your educational background to showcase your qualifications",
               "Add Education",
               <GraduationCap className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto" />,
-              "education",
+              "education"
             )}
           </motion.div>
-        )
+        );
 
       case "experiences":
         return (
@@ -1768,10 +2054,18 @@ const handleProfileSave = async () => {
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
 
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 pr-10">{exp.title}</h3>
-                <p className="text-blue-600 font-medium text-sm sm:text-base mb-2">{exp.company}</p>
-                <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">{exp.period}</p>
-                <p className="text-gray-600 text-sm sm:text-base">{exp.description}</p>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 pr-10">
+                  {exp.title}
+                </h3>
+                <p className="text-blue-600 font-medium text-sm sm:text-base mb-2">
+                  {exp.company}
+                </p>
+                <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">
+                  {exp.period}
+                </p>
+                <p className="text-gray-600 text-sm sm:text-base">
+                  {exp.description}
+                </p>
               </motion.div>
             ))}
 
@@ -1780,10 +2074,10 @@ const handleProfileSave = async () => {
               "Add your work experience to highlight your professional journey",
               "Add Experience",
               <Briefcase className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto" />,
-              "experience",
+              "experience"
             )}
           </motion.div>
-        )
+        );
 
       case "certifications":
         return (
@@ -1817,10 +2111,20 @@ const handleProfileSave = async () => {
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
 
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 pr-10">{cert.name}</h3>
-                <p className="text-gray-600 text-sm sm:text-base">Issued by: {cert.issuer}</p>
-                <p className="text-gray-500 text-sm sm:text-base">Date: {cert.date}</p>
-                {cert.description && <p className="text-gray-600 text-sm sm:text-base">{cert.description}</p>}
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 pr-10">
+                  {cert.name}
+                </h3>
+                <p className="text-gray-600 text-sm sm:text-base">
+                  Issued by: {cert.issuer}
+                </p>
+                <p className="text-gray-500 text-sm sm:text-base">
+                  Date: {cert.date}
+                </p>
+                {cert.description && (
+                  <p className="text-gray-600 text-sm sm:text-base">
+                    {cert.description}
+                  </p>
+                )}
 
                 {cert.certificateUrl && (
                   <div className="pt-2 flex gap-2">
@@ -1856,7 +2160,7 @@ const handleProfileSave = async () => {
               "Upload your certificates to showcase your qualifications",
               "Add Certificate",
               <Upload className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto" />,
-              "certificate",
+              "certificate"
             )}
 
             <AnimatePresence>
@@ -1907,7 +2211,7 @@ const handleProfileSave = async () => {
               )}
             </AnimatePresence>
           </motion.div>
-        )
+        );
 
       case "schedule":
         return (
@@ -1922,7 +2226,7 @@ const handleProfileSave = async () => {
           >
             <CalendarSection />
           </motion.div>
-        )
+        );
 
       case "resume":
         return (
@@ -1939,7 +2243,9 @@ const handleProfileSave = async () => {
               <div className="space-y-6">
                 <div className="bg-white rounded-xl p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-semibold text-gray-900">Resume Management</h3>
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      Resume Management
+                    </h3>
                     {currentResumeId && (
                       <button
                         onClick={() => setShowJobMatching(true)}
@@ -1954,7 +2260,7 @@ const handleProfileSave = async () => {
                   <ResumeUpload
                     userId={userId ? userId : ""}
                     onUploadComplete={(data) => {
-                      setCurrentResumeId(data.resumeId)
+                      setCurrentResumeId(data.resumeId);
                     }}
                   />
 
@@ -1962,10 +2268,13 @@ const handleProfileSave = async () => {
                     <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
                       <div className="flex items-center gap-2">
                         <FileText className="w-5 h-5 text-green-600" />
-                        <span className="text-green-800 font-medium">Resume uploaded successfully!</span>
+                        <span className="text-green-800 font-medium">
+                          Resume uploaded successfully!
+                        </span>
                       </div>
                       <p className="text-green-700 text-sm mt-1">
-                        You can now search for matching jobs using our AI-powered matching system.
+                        You can now search for matching jobs using our
+                        AI-powered matching system.
                       </p>
                     </div>
                   )}
@@ -1976,7 +2285,9 @@ const handleProfileSave = async () => {
             ) : (
               <div className="space-y-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-gray-900">AI-Powered Job Matches</h3>
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    AI-Powered Job Matches
+                  </h3>
                   <button
                     onClick={() => setShowJobMatching(false)}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
@@ -1986,16 +2297,21 @@ const handleProfileSave = async () => {
                   </button>
                 </div>
 
-                {currentResumeId && <JobMatching resumeId={currentResumeId} userId={userId ? userId : ""} />}
+                {currentResumeId && (
+                  <JobMatching
+                    resumeId={currentResumeId}
+                    userId={userId ? userId : ""}
+                  />
+                )}
               </div>
             )}
           </motion.div>
-        )
+        );
 
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] overflow-x-hidden">
@@ -2007,7 +2323,9 @@ const handleProfileSave = async () => {
         transition={{ duration: 0.5 }}
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
-        <h1 className="text-base sm:text-lg font-semibold text-gray-900">Logo</h1>
+        <h1 className="text-base sm:text-lg font-semibold text-gray-900">
+          Logo
+        </h1>
       </motion.div>
 
       <div className="pt-16 sm:pt-24 pb-8 sm:pb-16">
@@ -2028,7 +2346,6 @@ const handleProfileSave = async () => {
               whileTap={{ scale: 0.98 }}
               className="flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
             >
-            
               Explore Jobs
             </motion.button>
           </div>
@@ -2040,7 +2357,10 @@ const handleProfileSave = async () => {
           >
             <div className="flex items-center gap-4 sm:gap-6">
               <div className="relative">
-                <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.2 }}
+                >
                   {renderProfilePicture()}
                 </motion.div>
 
@@ -2062,10 +2382,10 @@ const handleProfileSave = async () => {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   if (isProfileComplete()) {
-                    openProfileEditModal()
+                    openProfileEditModal();
                   } else {
-                    setActiveTab("profile")
-                    openProfileEditModal()
+                    setActiveTab("profile");
+                    openProfileEditModal();
                   }
                 }}
                 className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 border border-[#12372B] text-gray-700 bg-transparent hover:bg-gray-50 transition-colors text-sm sm:text-base whitespace-nowrap"
@@ -2086,13 +2406,15 @@ const handleProfileSave = async () => {
                 <motion.button
                   key={tab.id}
                   ref={(el) => {
-                    tabsRef.current[index] = el
+                    tabsRef.current[index] = el;
                   }}
                   onClick={() => setActiveTab(tab.id)}
                   whileHover={{ y: -2 }}
                   whileTap={{ y: 0 }}
                   className={`px-3 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
-                    activeTab === tab.id ? "text-blue-600" : "text-gray-500 hover:text-gray-700"
+                    activeTab === tab.id
+                      ? "text-blue-600"
+                      : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
                   {tab.label}
@@ -2144,7 +2466,10 @@ const handleProfileSave = async () => {
               exit={{ y: 24, opacity: 0, scale: 0.98 }}
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 id="profile-picture-title" className="text-lg font-semibold text-gray-900">
+                <h2
+                  id="profile-picture-title"
+                  className="text-lg font-semibold text-gray-900"
+                >
                   Profile Picture
                 </h2>
                 <button
@@ -2201,7 +2526,9 @@ const handleProfileSave = async () => {
                   )}
                 </div>
 
-                <p className="text-xs text-gray-500 text-center">Supported formats: JPG, PNG, SVG. Max size: 5MB</p>
+                <p className="text-xs text-gray-500 text-center">
+                  Supported formats: JPG, PNG, SVG. Max size: 5MB
+                </p>
               </div>
             </motion.div>
           </motion.div>
@@ -2236,8 +2563,13 @@ const handleProfileSave = async () => {
               exit={{ y: 24, opacity: 0, scale: 0.98 }}
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 id="profile-edit-title" className="text-xl font-semibold text-gray-900">
-                  {isProfileComplete() ? "Edit Profile" : "Add Profile Information"}
+                <h2
+                  id="profile-edit-title"
+                  className="text-xl font-semibold text-gray-900"
+                >
+                  {isProfileComplete()
+                    ? "Edit Profile"
+                    : "Add Profile Information"}
                 </h2>
                 <button
                   onClick={() => setIsProfileEditOpen(false)}
@@ -2250,7 +2582,9 @@ const handleProfileSave = async () => {
 
               <div className="space-y-5">
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">Full Name</label>
+                  <label className="text-sm font-medium text-gray-700">
+                    Full Name
+                  </label>
                   <input
                     type="text"
                     value={profileFormData.name}
@@ -2266,7 +2600,9 @@ const handleProfileSave = async () => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">Location</label>
+                  <label className="text-sm font-medium text-gray-700">
+                    Location
+                  </label>
                   <div className="space-y-3">
                     <LocationInputWithSearch
                       value={profileFormData.location}
@@ -2274,16 +2610,20 @@ const handleProfileSave = async () => {
                         setProfileFormData((prev) => ({
                           ...prev,
                           location: value,
-                        }))
+                        }));
                       }}
                       onLocationSelect={handleMapLocationSelect}
-                      selectedLocation={profileFormData.locationData || undefined}
+                      selectedLocation={
+                        profileFormData.locationData || undefined
+                      }
                     />
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">About</label>
+                  <label className="text-sm font-medium text-gray-700">
+                    About
+                  </label>
                   <textarea
                     value={profileFormData.bio}
                     onChange={(e) =>
@@ -2299,7 +2639,9 @@ const handleProfileSave = async () => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">Skills</label>
+                  <label className="text-sm font-medium text-gray-700">
+                    Skills
+                  </label>
                   <input
                     type="text"
                     value={profileFormData.skills}
@@ -2315,7 +2657,9 @@ const handleProfileSave = async () => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">Languages</label>
+                  <label className="text-sm font-medium text-gray-700">
+                    Languages
+                  </label>
                   <input
                     type="text"
                     value={profileFormData.languages}
@@ -2333,7 +2677,9 @@ const handleProfileSave = async () => {
                 {/* Availability Section */}
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700">Unavailability</label>
+                    <label className="text-sm font-medium text-gray-700">
+                      Unavailability
+                    </label>
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -2370,7 +2716,8 @@ const handleProfileSave = async () => {
 
                   {availabilitySlots.length === 0 && (
                     <p className="text-sm text-gray-500 mt-1">
-                      No unavailability slots added yet. Click "Add Slot" to get started.
+                      No unavailability slots added yet. Click "Add Slot" to get
+                      started.
                     </p>
                   )}
                 </div>
@@ -2426,7 +2773,10 @@ const handleProfileSave = async () => {
               exit={{ y: 24, opacity: 0, scale: 0.98 }}
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 id="availability-title" className="text-xl font-semibold text-gray-900">
+                <h2
+                  id="availability-title"
+                  className="text-xl font-semibold text-gray-900"
+                >
                   Add Unavailability Slot
                 </h2>
                 <button
@@ -2449,24 +2799,32 @@ const handleProfileSave = async () => {
                     min={new Date().toISOString().split("T")[0]}
                   />
                 </div> */}
-         
+
                 <div className="flex gap-3">
                   <div className="flex-1 flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">Start Date</label>
+                    <label className="text-sm font-medium text-gray-700">
+                      Start Date
+                    </label>
                     <input
                       type="date"
                       value={newAvailabilityStartDate}
-                      onChange={(e) => setNewAvailabilityStartDate(e.target.value)}
+                      onChange={(e) =>
+                        setNewAvailabilityStartDate(e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
                   <div className="flex-1 flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">End Date</label>
+                    <label className="text-sm font-medium text-gray-700">
+                      End Date
+                    </label>
                     <input
                       type="date"
                       value={newAvailabilityEndDate}
-                      onChange={(e) => setNewAvailabilityEndDate(e.target.value)}
+                      onChange={(e) =>
+                        setNewAvailabilityEndDate(e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -2485,7 +2843,9 @@ const handleProfileSave = async () => {
                   whileTap={{ scale: 0.98 }}
                   className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={addAvailabilitySlot}
-                  disabled={!newAvailabilityStartDate || !newAvailabilityEndDate}
+                  disabled={
+                    !newAvailabilityStartDate || !newAvailabilityEndDate
+                  }
                 >
                   Add Slot
                 </motion.button>
@@ -2495,5 +2855,5 @@ const handleProfileSave = async () => {
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }

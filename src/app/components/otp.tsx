@@ -96,6 +96,7 @@ export default function Otp() {
       // ✅ store user + token
       setUserCreds({ name: "", email: "", password: "" });
       localStorage.setItem("token", response.token);
+      localStorage.setItem("profile", JSON.stringify(response.profile));
       localStorage.setItem("user", JSON.stringify(response.user));
 
       // Redirect differently

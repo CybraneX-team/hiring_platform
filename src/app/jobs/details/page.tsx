@@ -1,15 +1,65 @@
 "use client"
 
-import type * as React from "react"
-import { useState } from "react"
-import { ArrowUp, ExternalLink, Clock, MapPin, CalendarDays, Users, X, CheckCircle } from "lucide-react"
-import { motion, type Variants, AnimatePresence } from "framer-motion"
-import JobHeader from "@/app/components/jobHeader"
+import type * as React from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  ArrowUp,
+  ExternalLink,
+  Clock,
+  MapPin,
+  CalendarDays,
+  Users,
+  X,
+  CheckCircle,
+  Loader2,
+} from "lucide-react";
+import { motion, type Variants, AnimatePresence } from "framer-motion";
+import JobHeader from "@/app/components/jobHeader";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { useUser } from "@/app/context/UserContext";
 
+// Interfaces
 interface CustomButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary"
+  variant?: "primary" | "secondary";
 }
 
+interface Job {
+  id: string;
+  title: string;
+  company: {
+    _id: string;
+    name: string;
+  };
+  description: string;
+  requiredSkills: Array<{
+    name: string;
+    level: string;
+    required: boolean;
+  }>;
+  location?: string;
+  salaryRange: {
+    min?: number;
+    max: number;
+    currency: string;
+    period?: string;
+  };
+  jobType: string;
+  experienceLevel?: string;
+  department?: string;
+  postedDate: string;
+  applicationDeadline?: string;
+  educationQualifications: string[];
+  responsibilities: string[];
+  benefits: string[];
+  workSchedule?: string | object;
+  isActive: boolean;
+  applicationCount: number;
+  usersApplied: string[];
+}
+
+// Components (keep your existing CustomButton, CustomBadge, CustomAvatar)
 const CustomButton: React.FC<CustomButtonProps> = ({ className, children, variant = "primary", ...props }) => {
   const baseClasses =
     "inline-flex items-center justify-center whitespace-nowrap rounded-full font-medium transition-colors focus:outline-none  disabled:opacity-50"
@@ -26,9 +76,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({ className, children, varian
   )
 }
 
-interface CustomBadgeProps extends React.HTMLAttributes<HTMLDivElement> {}
-
-const CustomBadge: React.FC<CustomBadgeProps> = ({ className, children, ...props }) => {
+const CustomBadge: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, children, ...props }) => {
   return (
     <div className={`px-3 py-1.5 bg-[#F3F4F6] text-[#6B7280] text-xs font-medium rounded-full ${className}`} {...props}>
       {children}
@@ -36,10 +84,7 @@ const CustomBadge: React.FC<CustomBadgeProps> = ({ className, children, ...props
   )
 }
 
-// --- Custom Avatar Component ---
-interface CustomAvatarProps extends React.HTMLAttributes<HTMLDivElement> {}
-
-const CustomAvatar: React.FC<CustomAvatarProps> = ({ className, children, ...props }) => {
+const CustomAvatar: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, children, ...props }) => {
   return (
     <div className={`rounded-full flex items-center justify-center flex-shrink-0 ${className}`} {...props}>
       {children}
@@ -88,7 +133,7 @@ const ApplicationPopup: React.FC<{
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 text-black"
           onClick={onClose}
         >
           <motion.div
@@ -96,10 +141,10 @@ const ApplicationPopup: React.FC<{
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ type: "spring", duration: 0.3 }}
-            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto text-black"
+            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6 border-b border-gray-100 ">
+            <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-[#1F2937]">Apply for Software Development Engineer</h2>
                 <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -389,34 +434,178 @@ const SuccessPopup: React.FC<{
   )
 }
 
-export default function JobListingPage() {
-  const [showApplicationPopup, setShowApplicationPopup] = useState(false)
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false)
+// Error component
+const ErrorMessage = ({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) => (
+  <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
+    <div className="bg-white rounded-xl shadow-sm border border-red-200 p-8 max-w-md text-center">
+      <div className="text-red-500 text-lg font-semibold mb-4">
+        Error Loading Job
+      </div>
+      <p className="text-[#6B7280] mb-6">{message}</p>
+      <CustomButton onClick={onRetry}>Try Again</CustomButton>
+    </div>
+  </div>
+);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  }
+const LoadingSpinner = () => (
+  <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
+    <div className="flex flex-col items-center space-y-4">
+      <Loader2 className="h-12 w-12 animate-spin text-[#76FF82]" />
+      <p className="text-[#6B7280] text-lg">Loading job details...</p>
+    </div>
+  </div>
+);
 
-  const itemVariants: Variants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 15,
-      },
-    },
-  }
+// Main component that uses useSearchParams and useUser
+function JobListingContent() {
+  const params = useSearchParams();
+  const jobId = params.get("id");
+  const [job, setJob] = useState<Job | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isApplying, setIsApplying] = useState(false);
 
-  const handleApplyClick = () => {
+  // Modal states
+  const [showApplicationPopup, setShowApplicationPopup] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+
+  // Get user and profile data from context
+  const { user, profile } = useUser();
+  const [hasApplied, setHasApplied] = useState(false);
+
+  // Fetch job details
+  const fetchJobDetails = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs/${jobId}`
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error("Job not found");
+        }
+        throw new Error("Failed to fetch job details");
+      }
+
+      const jobData = await response.json();
+      setJob(jobData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle actual job application (your original API call)
+  const handleActualApply = async () => {
+    console.log("jobId || !user?.id || !profile?.id", jobId, user?.id, profile?._id);
+    if (!jobId || !user?.id || !profile?._id) {
+      toast.error(
+        "Missing required information. Please ensure you're logged in and have a profile."
+      );
+      return;
+    }
+
+    try {
+      setIsApplying(true);
+
+      const applicationData = {
+        jobId: jobId,
+        userId: user.id,
+        profileId: profile._id,
+        coverLetter: "",
+      };
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(applicationData),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          setHasApplied(true);
+          toast.warning(
+            result.message || "You have already applied for this job!"
+          );
+          return;
+        }
+        throw new Error(result.message || "Failed to submit application");
+      }
+
+      // Success
+      setHasApplied(true);
+      toast.success(
+        `Application submitted successfully! Match Score: ${result.data.matchAnalysis.overallScore}%`,
+        {
+          position: "top-right",
+          autoClose: 5000,
+        }
+      );
+
+      if (result.data.matchAnalysis.recommendations?.length > 0) {
+        setTimeout(() => {
+          toast.info(
+            `Recommendations: ${result.data.matchAnalysis.recommendations[0]}`,
+            {
+              position: "top-right",
+              autoClose: 8000,
+            }
+          );
+        }, 2000);
+      }
+    } catch (error) {
+      console.error("Application error:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to submit application. Please try again.",
+        {
+          position: "top-right",
+          autoClose: 5000,
+        }
+      );
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  useEffect(() => {
+    if (jobId) {
+      fetchJobDetails();
+    }
+  }, [jobId]);
+
+  useEffect(() => {
+    console.log("job is", job);
+    if (job && job.usersApplied && user?.id) {
+      const applied = job.usersApplied.includes(user.id);
+      setHasApplied(applied);
+    }
+  }, [job, user]);
+
+
+
+  const handleCloseSuccessPopus = () => {
+    setShowSuccessPopup(false);
+  };
+
+   const handleApplyClick = () => {
     setShowApplicationPopup(true)
   }
 
@@ -433,10 +622,73 @@ export default function JobListingPage() {
   const handleCloseSuccessPopup = () => {
     setShowSuccessPopup(false)
   }
+  // Loading and error states
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (error) {
+    return <ErrorMessage message={error} onRetry={fetchJobDetails} />;
+  }
+
+  if (!job) {
+    return <ErrorMessage message="Job not found" onRetry={fetchJobDetails} />;
+  }
+
+  // Format helpers
+  const formatSalary = () => {
+    if (!job.salaryRange) return "Salary not specified";
+    const { min, max, currency, period } = job.salaryRange;
+
+    if (min && min > 0) {
+      return `${min.toLocaleString()}-${max.toLocaleString()}${currency}${
+        period ? `/${period}` : ""
+      }`;
+    } else {
+      return `Up to ${max.toLocaleString()}${currency}${
+        period ? `/${period}` : ""
+      }`;
+    }
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants: Variants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 15,
+      },
+    },
+  };
 
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       <JobHeader />
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       <div className="px-0 py-6 sm:px-4 md:px-8 md:py-8 lg:px-12 lg:py-10">
         <motion.div
           className="mx-auto max-w-7xl space-y-6"
@@ -444,6 +696,7 @@ export default function JobListingPage() {
           initial="hidden"
           animate="visible"
         >
+          
           {/* Top Section - Company Info and Details */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Left Card - Company Info */}
@@ -453,30 +706,25 @@ export default function JobListingPage() {
             >
               <div className="flex flex-col lg:flex-row items-start justify-between">
                 <div className="flex items-start space-x-4 flex-1">
-                  <CustomAvatar className="w-12 h-12 bg-[#7C3AED] text-white font-semibold text-lg">R</CustomAvatar>
+                  <CustomAvatar className="w-12 h-12 bg-[#7C3AED] text-white font-semibold text-lg">
+                    {job.company.name.charAt(0).toUpperCase()}
+                  </CustomAvatar>
                   <div className="flex-1">
-                    <h1 className="text-xl font-semibold text-[#1F2937] mb-2">Software Development Engineer</h1>
+                    <h1 className="text-xl font-semibold text-[#1F2937] mb-2">{job.title}</h1>
                     <p className="text-sm text-[#6B7280] leading-relaxed mb-8">
-                      Riverleaf Corp. is a leading supplier in tech solutions, providing automation to Industrial and
-                      Enterprise Clients.
+                      {job.description}
                     </p>
-                    <div className="text-sm text-[#6B7280] mt-auto">@riverleaf</div>
+                    <div className="text-sm text-[#6B7280] mt-auto">@{job.company.name.toLowerCase()}</div>
                   </div>
                 </div>
 
                 {/* Right side - Pay and Link */}
                 <div className="flex flex-col items-end mt-4 lg:mt-0 lg:ml-6">
-                  <a
-                    href="https://www.riverleaf.co"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-[#6B7280] flex items-center hover:underline mb-2"
-                  >
-                    www.Riverleaf.co <ExternalLink className="ml-1 h-3 w-3" />
-                  </a>
                   <div className="text-right">
-                    <div className="text-xl font-bold text-[#1F2937]">12,000-60,000₹</div>
-                    <div className="text-sm text-[#6B7280]">Per/Hr</div>
+                    <div className="text-xl font-bold text-[#1F2937]">{formatSalary()}</div>
+                    <div className="text-sm text-[#6B7280]">
+                      {job.salaryRange?.period || "Per/Hr"}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -492,7 +740,7 @@ export default function JobListingPage() {
                   <Clock className="h-4 w-4 text-[#6B7280] mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
                     <div className="font-semibold text-[#A1A1A1]">Experience</div>
-                    <div className="text-[#32343A]">6 Months - 1 Years</div>
+                    <div className="text-[#32343A]">{job.experienceLevel || "Not specified"}</div>
                   </div>
                 </div>
 
@@ -500,15 +748,7 @@ export default function JobListingPage() {
                   <CalendarDays className="h-4 w-4 text-[#6B7280] mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
                     <div className="font-semibold text-[#A1A1A1]">Job Type</div>
-                    <div className="text-[#32343A]">Full-Time</div>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <Users className="h-4 w-4 text-[#6B7280] mt-0.5 flex-shrink-0" />
-                  <div className="text-sm">
-                    <div className="font-semibold text-[#A1A1A1]">Timing hours</div>
-                    <div className="text-[#32343A]">40 Hours a week</div>
+                    <div className="text-[#32343A]">{job.jobType}</div>
                   </div>
                 </div>
 
@@ -516,7 +756,7 @@ export default function JobListingPage() {
                   <MapPin className="h-4 w-4 text-[#6B7280] mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
                     <div className="font-semibold text-[#A1A1A1]">Location</div>
-                    <div className="text-[#32343A]">Michigan USA</div>
+                    <div className="text-[#32343A]">{job.location || "Remote"}</div>
                   </div>
                 </div>
               </div>
@@ -530,8 +770,23 @@ export default function JobListingPage() {
           >
             {/* Apply Button - Top Right */}
             <div className="flex justify-end mb-6">
-              <CustomButton className="font-semibold px-14 py-3 focus:outline-none" onClick={handleApplyClick}>
-                Apply
+              <CustomButton
+                className="font-semibold px-14 py-3 focus:outline-none"
+                disabled={!job.isActive || isApplying || hasApplied}
+                onClick={handleApplyClick}  // This opens the modal
+              >
+                {isApplying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Applying...
+                  </>
+                ) : hasApplied ? (
+                  "Applied ✓"
+                ) : !job.isActive ? (
+                  "Position Closed"
+                ) : (
+                  "Apply"
+                )}
               </CustomButton>
             </div>
 
@@ -540,114 +795,62 @@ export default function JobListingPage() {
               <div className="-mt-12">
                 <h2 className="text-lg font-semibold text-[#1F2937] mb-3">Job description</h2>
                 <div className="space-y-4 text-sm text-[#4B5563] leading-relaxed max-w-4xl">
-                  <p>
-                    We are seeking a detail-oriented and proactive Software Development Engineer to support our
-                    development team, specifically developing scalable and efficient software solutions for our clients.
-                  </p>
-                  <p>
-                    You will be responsible primarily for writing clean code, conducting code reviews, and ensuring
-                    software quality and compliance with industry standards.
-                  </p>
-                  <p>
-                    This role emphasizes software development tasks (coding, debugging, testing) rather than operational
-                    tasks such as direct client interaction.
-                  </p>
+                  <p>{job.description}</p>
                 </div>
               </div>
 
-              {/* Perks */}
-              <div>
-                <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Perks</h3>
-                <div className="flex flex-wrap gap-2">
-                  <CustomBadge>Provident Fund</CustomBadge>
-                  <CustomBadge>Joining Bonus</CustomBadge>
-                  <CustomBadge>5-Days a week</CustomBadge>
+              {/* Required Skills */}
+              {job.requiredSkills && job.requiredSkills.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                    Required Skills
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {job.requiredSkills.map((skill, index) => (
+                      <CustomBadge key={index}>
+                        {typeof skill === "string" ? skill : skill.name}
+                        {typeof skill === "object" && skill.level && (
+                          <span className="ml-1 text-xs">({skill.level})</span>
+                        )}
+                      </CustomBadge>
+                    ))}
+                  </div>
                 </div>
-              </div>
-
-              {/* Must have Skills */}
-              <div>
-                <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Must have Skills</h3>
-                <div className="flex flex-wrap gap-2">
-                  <CustomBadge>PHP</CustomBadge>
-                  <CustomBadge>Finances</CustomBadge>
-                  <CustomBadge>Quantitative Maths</CustomBadge>
-                  <CustomBadge>Microsoft Suite</CustomBadge>
-                </div>
-              </div>
+              )}
 
               {/* Qualifications */}
-              <div>
-                <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Qualifications</h3>
-                <ul className="space-y-2 text-sm text-[#4B5563]">
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Bachelor's degree in Computer Science or a related field.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Minimum 6 months to 1 year of experience in software development.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Strong portfolio showcasing a variety of software projects.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Excellent communication and interpersonal skills.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Ability to work under pressure and meet tight deadlines.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    A passion for software development and a focus on quality.
-                  </li>
-                </ul>
-              </div>
+              {job.educationQualifications && job.educationQualifications.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                    Qualifications
+                  </h3>
+                  <ul className="space-y-2 text-sm text-[#4B5563]">
+                    {job.educationQualifications.map((requirement, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                        {requirement}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* Key Responsibilities */}
-              <div>
-                <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Key Responsibilities</h3>
-                <ul className="space-y-2 text-sm text-[#4B5563]">
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Develop and maintain scalable software solutions for our clients.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Conduct code reviews and provide feedback to improve code quality.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Ensure software compliance with industry standards and regulations.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Act as the primary point of contact internally for software development queries and support.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Research, assess, and recommend improvements in software development processes.
-                  </li>
-                  <li className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    Support the analysis of software performance and provide optimization suggestions.
-                  </li>
-                </ul>
-              </div>
+              {job.responsibilities && job.responsibilities.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Key Responsibilities</h3>
+                  <ul className="space-y-2 text-sm text-[#4B5563]">
+                    {job.responsibilities.map((responsibility, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                        {responsibility}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </motion.div>
-
-          {/* Similar Jobs Section */}
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-[#1F2937]">Discover Similar Jobs</h2>
-            <motion.div className="space-y-4" variants={containerVariants} initial="hidden" animate="visible">
-              <SimilarJobCard itemVariants={itemVariants} />
-              <SimilarJobCard itemVariants={itemVariants} />
-            </motion.div>
-          </div>
         </motion.div>
 
         {/* Scroll to Top Button */}
@@ -663,64 +866,19 @@ export default function JobListingPage() {
       <ApplicationPopup
         isOpen={showApplicationPopup}
         onClose={handleCloseApplicationPopup}
-        onSubmit={handleApplicationSubmit}
+        onSubmit={handleApplicationSubmit}  // This calls your actual API
       />
 
-      <SuccessPopup isOpen={showSuccessPopup} onClose={handleCloseSuccessPopup} />
+      <SuccessPopup isOpen={showSuccessPopup}  onClose={handleCloseSuccessPopup} />
     </div>
-  )
+  );
 }
 
-// --- Similar Job Card Component ---
-interface SimilarJobCardProps {
-  itemVariants: Variants
-}
-
-const SimilarJobCard: React.FC<SimilarJobCardProps> = ({ itemVariants }) => {
+// Wrapper component for Suspense
+export default function JobListingPage() {
   return (
-    <motion.div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6" variants={itemVariants}>
-      <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
-        <div className="flex items-start space-x-4 flex-1">
-          <CustomAvatar className="w-10 h-10 bg-[#7C3AED] text-white font-semibold text-base">R</CustomAvatar>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-[#1F2937] mb-1">Software Development Engineer</h3>
-            <p className="text-sm text-[#6B7280] mb-3">Riverleaf Corp.</p>
-
-            <div className="mb-4">
-              <h4 className="text-sm font-medium text-[#1F2937] mb-2">About Job</h4>
-              <p className="text-sm text-[#4B5563] leading-relaxed">
-                We are seeking a detail-oriented and proactive Software Development Engineer to support our development
-                team, specifically developing scalable and efficient software solutions for our clients.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2 mb-4">
-              <CustomBadge>Marketing</CustomBadge>
-              <CustomBadge>Design</CustomBadge>
-              <CustomBadge>Strategy Development</CustomBadge>
-            </div>
-
-            <div className="flex items-center space-x-4 text-xs text-[#6B7280]">
-              <div className="flex items-center space-x-1">
-                <Clock className="h-3 w-3" />
-                <span>Remote</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <CalendarDays className="h-3 w-3" />
-                <span>5 Days ago</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-end lg:items-end">
-          <div className="text-right mb-4">
-            <div className="text-lg font-bold text-[#1F2937]">120k$</div>
-            <div className="text-sm text-[#6B7280]">Per/Year</div>
-          </div>
-          <CustomButton className="font-semibold">View Role</CustomButton>
-        </div>
-      </div>
-    </motion.div>
-  )
+    <Suspense fallback={<LoadingSpinner />}>
+      <JobListingContent />
+    </Suspense>
+  );
 }

@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Star, Plus, ArrowLeft, X, Pencil, MapPin, ChevronDown } from "lucide-react";
+import {
+  Star,
+  Plus,
+  ArrowLeft,
+  X,
+  Pencil,
+  MapPin,
+  ChevronDown,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -15,15 +23,15 @@ let OlaMaps: any = null;
 let olaMaps: any = null;
 
 const initializeOlaMaps = async () => {
-  if (typeof window !== 'undefined' && !OlaMaps) {
+  if (typeof window !== "undefined" && !OlaMaps) {
     try {
-      const module = await import('olamaps-web-sdk');
+      const module = await import("olamaps-web-sdk");
       OlaMaps = module.OlaMaps;
       olaMaps = new OlaMaps({
         apiKey: process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY || "",
       });
     } catch (error) {
-      console.error('Failed to initialize OlaMaps:', error);
+      console.error("Failed to initialize OlaMaps:", error);
     }
   }
 };
@@ -40,7 +48,7 @@ const teamSizeOptions = [
   { value: "small", label: "Small (1-10)" },
   { value: "medium", label: "Medium (10-50)" },
   { value: "large", label: "Large (50-100)" },
-  { value: "huge", label: "Huge (100+)" }
+  { value: "huge", label: "Huge (100+)" },
 ];
 
 const containerVariants = {
@@ -75,14 +83,18 @@ const cardVariants = {
   },
 };
 
-const OlaMapComponent = ({ 
-  location, 
+const OlaMapComponent = ({
+  location,
   onLocationSelect,
-  searchQuery
-}: { 
-  location?: { lat: number; lng: number; address?: string }, 
-  onLocationSelect?: (location: { lat: number; lng: number; address: string }) => void,
-  searchQuery?: string
+  searchQuery,
+}: {
+  location?: { lat: number; lng: number; address?: string };
+  onLocationSelect?: (location: {
+    lat: number;
+    lng: number;
+    address: string;
+  }) => void;
+  searchQuery?: string;
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -95,51 +107,50 @@ const OlaMapComponent = ({
   useEffect(() => {
     const loadMap = async () => {
       await initializeOlaMaps();
-      
+
       if (mapRef.current && olaMaps && !mapInstanceRef.current) {
         try {
           // Default location (Bengaluru)
           const defaultLocation = location || { lat: 12.9716, lng: 77.5946 };
-          
-          console.log('Initializing map with location:', defaultLocation);
-      
-          
+
+          console.log("Initializing map with location:", defaultLocation);
+
           mapInstanceRef.current = olaMaps.init({
-            style: "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
+            style:
+              "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
             container: mapRef.current,
             center: [defaultLocation.lng, defaultLocation.lat],
             zoom: 12,
           });
 
-          mapInstanceRef.current.on('load', () => {
-           
+          mapInstanceRef.current.on("load", () => {
             setIsMapLoaded(true);
-      
-            
+
             // Add marker if location exists
             if (location) {
-              console.log('Adding initial marker:', location);
-              addMarker(location.lat, location.lng, location.address || "Selected Location");
+              console.log("Adding initial marker:", location);
+              addMarker(
+                location.lat,
+                location.lng,
+                location.address || "Selected Location"
+              );
             }
           });
 
           // Add click event listener
-          mapInstanceRef.current.on('click', (e: any) => {
+          mapInstanceRef.current.on("click", (e: any) => {
             const { lat, lng } = e.lngLat;
-            console.log('Map clicked at:', lat, lng);
-           
+            console.log("Map clicked at:", lat, lng);
+
             reverseGeocode(lat, lng);
           });
 
           // Add error handling
-          mapInstanceRef.current.on('error', (e: any) => {
-            console.error('Map error:', e);
-           
+          mapInstanceRef.current.on("error", (e: any) => {
+            console.error("Map error:", e);
           });
-
         } catch (error) {
-          console.error('Error initializing map:', error);
-
+          console.error("Error initializing map:", error);
         }
       }
     };
@@ -163,59 +174,55 @@ const OlaMapComponent = ({
 
   const geocodeAddress = async (address: string) => {
     if (!address.trim()) return;
-    
-    console.log('Geocoding address:', address);
 
-    
+    console.log("Geocoding address:", address);
+
     try {
       const response = await fetch(
-        `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(address)}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
+        `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(
+          address
+        )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
       );
-      
-      
+
       if (response.ok) {
         const data = await response.json();
-        console.log('Geocoding data:', data);
-        
+        console.log("Geocoding data:", data);
+
         if (data.geocodingResults && data.geocodingResults.length > 0) {
           const result = data.geocodingResults[0];
           const { lat, lng } = result.geometry.location;
           const formattedAddress = result.formatted_address || address;
-          
-          
-          
+
           // Update map center and add marker
           if (mapInstanceRef.current) {
-            console.log('Flying to location:', lng, lat);
+            console.log("Flying to location:", lng, lat);
             mapInstanceRef.current.flyTo({
               center: [lng, lat],
               zoom: 15,
-              duration: 2000
+              duration: 2000,
             });
           }
-          
+
           // Add marker with delay to ensure map has moved
           setTimeout(() => {
             addMarker(lat, lng, formattedAddress);
           }, 500);
-          
+
           if (onLocationSelect) {
             onLocationSelect({ lat, lng, address: formattedAddress });
           }
-          
+
           return { lat, lng, address: formattedAddress };
         } else {
-          console.log('No geocoding results found');
-         
+          console.log("No geocoding results found");
         }
       } else {
         const errorText = await response.text();
-        console.error('Geocoding API error:', response.status, errorText);
-
+        console.error("Geocoding API error:", response.status, errorText);
       }
-      throw new Error('Location not found');
+      throw new Error("Location not found");
     } catch (error) {
-      console.error('Geocoding failed:', error);
+      console.error("Geocoding failed:", error);
 
       throw error;
     }
@@ -226,7 +233,7 @@ const OlaMapComponent = ({
     try {
       await geocodeAddress(address);
     } catch (error) {
-      console.error('Address search failed:', error);
+      console.error("Address search failed:", error);
     } finally {
       setIsSearching(false);
     }
@@ -234,31 +241,30 @@ const OlaMapComponent = ({
 
   const addMarker = (lat: number, lng: number, title: string) => {
     if (!mapInstanceRef.current) {
-      console.error('Cannot add marker: map not initialized');
-     
+      console.error("Cannot add marker: map not initialized");
+
       return;
     }
 
-    console.log('Adding marker at:', lat, lng, title);
-  
+    console.log("Adding marker at:", lat, lng, title);
 
     try {
       // Remove existing marker
       if (markerRef.current) {
-        console.log('Removing existing marker');
+        console.log("Removing existing marker");
         markerRef.current.remove();
         markerRef.current = null;
       }
 
       // Validate coordinates
       if (isNaN(lat) || isNaN(lng)) {
-        console.error('Invalid coordinates:', lat, lng);
+        console.error("Invalid coordinates:", lat, lng);
         return;
       }
 
       // Create marker element
-      const markerElement = document.createElement('div');
-      markerElement.className = 'custom-marker';
+      const markerElement = document.createElement("div");
+      markerElement.className = "custom-marker";
       markerElement.style.cssText = `
         width: 30px; 
         height: 30px; 
@@ -273,8 +279,8 @@ const OlaMapComponent = ({
         z-index: 1000;
         position: relative;
       `;
-      
-      const innerDot = document.createElement('div');
+
+      const innerDot = document.createElement("div");
       innerDot.style.cssText = `
         width: 12px; 
         height: 12px; 
@@ -283,74 +289,73 @@ const OlaMapComponent = ({
       `;
       markerElement.appendChild(innerDot);
 
-      console.log('Created marker element:', markerElement);
+      console.log("Created marker element:", markerElement);
 
       // Ensure we have the Marker constructor
       if (!olaMaps || !olaMaps.Marker) {
-        console.error('OlaMaps Marker not available');
-      
+        console.error("OlaMaps Marker not available");
+
         return;
       }
 
       // Add marker to map
       markerRef.current = new olaMaps.Marker({
-        element: markerElement
+        element: markerElement,
       })
         .setLngLat([lng, lat])
         .addTo(mapInstanceRef.current);
 
-      console.log('Marker added successfully:', markerRef.current);
+      console.log("Marker added successfully:", markerRef.current);
 
       // Add popup if available
       if (olaMaps.Popup) {
         const popup = new olaMaps.Popup({
-          offset: 25
-        }).setHTML(`<div style="padding: 8px; font-size: 14px; font-weight: 500;">${title}</div>`);
+          offset: 25,
+        }).setHTML(
+          `<div style="padding: 8px; font-size: 14px; font-weight: 500;">${title}</div>`
+        );
 
         markerRef.current.setPopup(popup);
-        console.log('Popup added to marker');
+        console.log("Popup added to marker");
       }
-
-
-
     } catch (error) {
-      console.error('Error adding marker:', error);
-  
+      console.error("Error adding marker:", error);
     }
   };
 
   const reverseGeocode = async (lat: number, lng: number) => {
-    console.log('Reverse geocoding:', lat, lng);
-   
-    
+    console.log("Reverse geocoding:", lat, lng);
+
     try {
       const response = await fetch(
         `https://api.olamaps.io/places/v1/reverse-geocode?latlng=${lat},${lng}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
       );
-      
+
       if (response.ok) {
         const data = await response.json();
-        const address = data.results?.[0]?.formatted_address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-        
+        const address =
+          data.results?.[0]?.formatted_address ||
+          `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+
         addMarker(lat, lng, address);
-        
+
         if (onLocationSelect) {
           onLocationSelect({ lat, lng, address });
         }
       } else {
-        console.error('Reverse geocoding failed:', response.status);
+        console.error("Reverse geocoding failed:", response.status);
         const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
         addMarker(lat, lng, address);
-        
+
         if (onLocationSelect) {
           onLocationSelect({ lat, lng, address });
         }
       }
     } catch (error) {
-      console.error('Reverse geocoding failed:', error);
+      console.error("Reverse geocoding failed:", error);
       const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
       addMarker(lat, lng, address);
-      
+
       if (onLocationSelect) {
         onLocationSelect({ lat, lng, address });
       }
@@ -359,41 +364,42 @@ const OlaMapComponent = ({
 
   const autoDetectLocation = () => {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by this browser.');
+      alert("Geolocation is not supported by this browser.");
       return;
     }
 
     setIsDetecting(true);
-    console.log('Starting geolocation detection');
-   
-    
+    console.log("Starting geolocation detection");
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        console.log('Geolocation detected:', latitude, longitude);
-        
+        console.log("Geolocation detected:", latitude, longitude);
+
         // Fly to detected location
         if (mapInstanceRef.current) {
           mapInstanceRef.current.flyTo({
             center: [longitude, latitude],
             zoom: 15,
-            duration: 2000
+            duration: 2000,
           });
         }
-        
+
         reverseGeocode(latitude, longitude);
         setIsDetecting(false);
       },
       (error) => {
-        console.error('Geolocation error:', error);
-      
-        alert('Unable to detect location. Please try again or select manually.');
+        console.error("Geolocation error:", error);
+
+        alert(
+          "Unable to detect location. Please try again or select manually."
+        );
         setIsDetecting(false);
       },
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 0
+        maximumAge: 0,
       }
     );
   };
@@ -403,9 +409,9 @@ const OlaMapComponent = ({
       <div
         ref={mapRef}
         className="w-full h-full"
-        style={{ minHeight: '200px' }}
+        style={{ minHeight: "200px" }}
       />
-      
+
       {!isMapLoaded && (
         <div className="absolute inset-0 bg-gradient-to-b from-blue-900 to-gray-900 flex items-center justify-center">
           <div className="text-white text-center">
@@ -448,7 +454,7 @@ const OlaMapComponent = ({
             </>
           )}
         </motion.button>
-        
+
         <div className="px-2 sm:px-3 py-1 bg-gray-700 text-white text-xs rounded-full">
           Click to pin
         </div>
@@ -458,26 +464,30 @@ const OlaMapComponent = ({
 };
 
 // Enhanced location input field component
-const LocationInputWithSearch = ({ 
-  value, 
-  onChange, 
-  onLocationSelect, 
-  selectedLocation 
+const LocationInputWithSearch = ({
+  value,
+  onChange,
+  onLocationSelect,
+  selectedLocation,
 }: {
   value: string;
   onChange: (value: string) => void;
-  onLocationSelect: (location: { lat: number; lng: number; address: string }) => void;
+  onLocationSelect: (location: {
+    lat: number;
+    lng: number;
+    address: string;
+  }) => void;
   selectedLocation?: { lat: number; lng: number; address?: string };
 }) => {
-  const [searchTrigger, setSearchTrigger] = useState('');
+  const [searchTrigger, setSearchTrigger] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
   const handleSearch = async () => {
     if (!value.trim()) return;
-    
+
     setIsSearching(true);
     setSearchTrigger(value); // This will trigger the map to search
-    
+
     // Reset after a short delay
     setTimeout(() => {
       setIsSearching(false);
@@ -485,7 +495,7 @@ const LocationInputWithSearch = ({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleSearch();
     }
@@ -509,11 +519,11 @@ const LocationInputWithSearch = ({
           disabled={!value.trim() || isSearching}
           className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
         >
-          {isSearching ? 'Searching...' : 'Search'}
+          {isSearching ? "Searching..." : "Search"}
         </motion.button>
       </div>
 
-      <OlaMapComponent 
+      <OlaMapComponent
         location={selectedLocation}
         onLocationSelect={onLocationSelect}
         searchQuery={searchTrigger}
@@ -523,10 +533,10 @@ const LocationInputWithSearch = ({
 };
 
 // Team Size Dropdown Component
-const TeamSizeDropdown = ({ 
-  value, 
-  onChange, 
-  placeholder = "Select team size" 
+const TeamSizeDropdown = ({
+  value,
+  onChange,
+  placeholder = "Select team size",
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -538,16 +548,21 @@ const TeamSizeDropdown = ({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const selectedOption = teamSizeOptions.find(option => option.value === value);
+  const selectedOption = teamSizeOptions.find(
+    (option) => option.value === value
+  );
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -557,7 +572,9 @@ const TeamSizeDropdown = ({
         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500"
         whileTap={{ scale: 0.98 }}
       >
-        <span className={selectedOption?.value ? "text-gray-900" : "text-gray-500"}>
+        <span
+          className={selectedOption?.value ? "text-gray-900" : "text-gray-500"}
+        >
           {selectedOption?.label || placeholder}
         </span>
         <motion.div
@@ -586,9 +603,14 @@ const TeamSizeDropdown = ({
                   setIsOpen(false);
                 }}
                 className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
-                  option.value === value ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                } ${option.value === "" ? 'text-gray-500' : ''}`}
-                whileHover={{ backgroundColor: option.value === value ? '#dbeafe' : '#f9fafb' }}
+                  option.value === value
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-gray-700"
+                } ${option.value === "" ? "text-gray-500" : ""}`}
+                whileHover={{
+                  backgroundColor:
+                    option.value === value ? "#dbeafe" : "#f9fafb",
+                }}
               >
                 {option.label}
               </motion.button>
@@ -625,11 +647,11 @@ export default function ProfileTab() {
     profile ? profile.companyLogo : ""
   );
   const handleLocationTextChange = (value: string) => {
-  setFormState(prevState => ({ 
-    ...prevState, 
-    locationText: value 
-  }));
-};
+    setFormState((prevState) => ({
+      ...prevState,
+      locationText: value,
+    }));
+  };
 
   const router = useRouter(); // Declare the router variable here
   const [hasLoadedApplications, setHasLoadedApplications] = useState(false);
@@ -671,7 +693,7 @@ export default function ProfileTab() {
         title: "Complete Your Profile",
         description: "Please complete your profile to get started.",
         duration: 5000,
-        variant : "success"
+        variant: "success",
       });
       localStorage.setItem("profileToastShown", "true");
     }
@@ -685,10 +707,12 @@ export default function ProfileTab() {
       formState.locationText
     );
   };
-  
+
   const [applications, setApplications] = useState([]);
   const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [applicationsError, setApplicationsError] = useState<any>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState<any>(null);
 
   // Add this useEffect for authentication check
   useEffect(() => {
@@ -761,6 +785,7 @@ export default function ProfileTab() {
       );
 
       const data = await response.json();
+      console.log("📥 Response data:", data);
 
       if (!response.ok) {
         throw new Error(data.message || "Failed to update profile");
@@ -797,6 +822,7 @@ export default function ProfileTab() {
       setIsEditOpen(false);
     }
   };
+
   // Add useEffect to fetch data when component mounts or user changes
   useEffect(() => {
     if (user?.id && activeTab === "jobs" && !hasLoadedApplications) {
@@ -837,7 +863,7 @@ export default function ProfileTab() {
         title: "Invalid file type",
         description: "Please upload a JPG, PNG, SVG, or WebP image.",
         duration: 5000,
-        variant : "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -848,7 +874,7 @@ export default function ProfileTab() {
         title: "File too large",
         description: "Please upload an image smaller than 5MB.",
         duration: 5000,
-        variant : "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -890,7 +916,7 @@ export default function ProfileTab() {
         title: "Logo uploaded successfully",
         description: "Your company logo has been updated.",
         duration: 5000,
-        variant : "success"
+        variant: "success",
       });
     } catch (error: any) {
       console.error("Error uploading logo:", error);
@@ -898,7 +924,7 @@ export default function ProfileTab() {
         title: "Upload failed",
         description: error.message || "Please try again.",
         duration: 5000,
-        variant : "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsLogoUploading(false);
@@ -911,7 +937,7 @@ export default function ProfileTab() {
         title: "Error",
         description: "User or profile information missing",
         duration: 5000,
-        variant : "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -958,7 +984,7 @@ export default function ProfileTab() {
         title: "Logo removed successfully",
         description: "Your company logo has been removed.",
         duration: 5000,
-        variant: "success"
+        variant: "success",
       });
     } catch (error: any) {
       console.error("Error removing logo:", error);
@@ -966,21 +992,25 @@ export default function ProfileTab() {
         title: "Failed to remove logo",
         description: error.message || "Please try again.",
         duration: 5000,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsLogoUploading(false);
     }
   };
 
-  const handleLocationSelect = (location: { lat: number; lng: number; address: string }) => {
+  const handleLocationSelect = (location: {
+    lat: number;
+    lng: number;
+    address: string;
+  }) => {
     setSelectedLocation(location);
-    setFormState({ ...formState , locationText: location.address});
+    setFormState({ ...formState, locationText: location.address });
   };
 
   // Helper function to get display text for team size
   const getTeamSizeDisplayText = (value: string) => {
-    const option = teamSizeOptions.find(opt => opt.value === value);
+    const option = teamSizeOptions.find((opt) => opt.value === value);
     return option?.label || "Enter team size";
   };
 
@@ -1122,7 +1152,7 @@ export default function ProfileTab() {
 
               <LocationInputWithSearch
                 value={formState.locationText}
-                onChange={handleLocationTextChange }
+                onChange={handleLocationTextChange}
                 onLocationSelect={handleLocationSelect}
                 selectedLocation={selectedLocation ?? undefined}
               />
@@ -1221,16 +1251,8 @@ export default function ProfileTab() {
                       </h3>
 
                       <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
-                        0 Applicants
+                        {job.totalApplications || 0} Applicants
                       </p>
-
-                      {job.jobType && (
-                        <div className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full mb-2">
-                          {job.jobType}
-                        </div>
-                      )}
-
-                      {/* Job Description (truncated) */}
                       {job.description && (
                         <p className="text-xs text-gray-600 line-clamp-2 mb-2">
                           {job.description
@@ -1624,10 +1646,15 @@ export default function ProfileTab() {
                   </label>
                   <LocationInputWithSearch
                     value={formState.locationText}
-                    onChange={(value) => setFormState(s => ({ ...s, locationText: value }))}
+                    onChange={(value) =>
+                      setFormState((s) => ({ ...s, locationText: value }))
+                    }
                     onLocationSelect={(location) => {
                       setSelectedLocation(location);
-                      setFormState(s => ({ ...s, locationText: location.address }));
+                      setFormState((s) => ({
+                        ...s,
+                        locationText: location.address,
+                      }));
                     }}
                     selectedLocation={selectedLocation ?? undefined}
                   />
@@ -1645,7 +1672,9 @@ export default function ProfileTab() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm"
-                  onClick={updateProfile}
+                  onClick={() => {
+                    updateProfile();
+                  }}
                 >
                   Save
                 </motion.button>
