@@ -116,7 +116,7 @@ export default function JobComponent() {
       return {
         id: job.id,
         title: job.title,
-        company: job.company?.name || job.company,
+        company: job.company?.companyName || "",
         salary,
         salaryType,
         tags: [

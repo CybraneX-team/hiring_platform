@@ -30,7 +30,7 @@ interface Job {
   title: string;
   company: {
     _id: string;
-    name: string;
+    companyName: string;
   };
   description: string;
   requiredSkills: Array<{
@@ -50,6 +50,7 @@ interface Job {
   department?: string;
   postedDate: string;
   applicationDeadline?: string;
+  companyDescription: string;
   educationQualifications: string[];
   responsibilities: string[];
   benefits: string[];
@@ -57,6 +58,7 @@ interface Job {
   isActive: boolean;
   applicationCount: number;
   usersApplied: string[];
+  customQuestions : any;
 }
 
 // Components (keep your existing CustomButton, CustomBadge, CustomAvatar)
@@ -96,7 +98,8 @@ const ApplicationPopup: React.FC<{
   isOpen: boolean
   onClose: () => void
   onSubmit: (data: any) => void
-}> = ({ isOpen, onClose, onSubmit }) => {
+  job?: Job | null // Add job prop
+}> = ({ isOpen, onClose, onSubmit, job }) => {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -114,9 +117,19 @@ const ApplicationPopup: React.FC<{
     expectedSalary: "",
   })
 
+  // State for custom questions
+  const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({})
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    
+    // If this is for custom questions, submit those answers
+    if (job?.customQuestions && job.customQuestions.length > 0) {
+      onSubmit(customAnswers)
+    } else {
+      // Otherwise submit the full form data
+      onSubmit(formData)
+    }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -125,6 +138,16 @@ const ApplicationPopup: React.FC<{
       [e.target.name]: e.target.value,
     })
   }
+
+  const handleCustomAnswerChange = (questionId: string, value: string) => {
+    setCustomAnswers(prev => ({
+      ...prev,
+      [questionId]: value
+    }))
+  }
+
+  // Check if we should show custom questions
+  const showCustomQuestions = job?.customQuestions && job.customQuestions.length > 0
 
   return (
     <AnimatePresence>
@@ -146,7 +169,9 @@ const ApplicationPopup: React.FC<{
           >
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-[#1F2937]">Apply for Software Development Engineer</h2>
+                <h2 className="text-xl font-semibold text-[#1F2937]">
+                  {showCustomQuestions ? `Apply for ${job?.title}` : "Apply for Software Development Engineer"}
+                </h2>
                 <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                   <X className="h-5 w-5 text-[#6B7280]" />
                 </button>
@@ -154,215 +179,260 @@ const ApplicationPopup: React.FC<{
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#1F2937] mb-2">Full Name *</label>
-                  <input
-                    type="text"
-                    name="fullName"
-                    required
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
-                    placeholder="Enter your full name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#1F2937] mb-2">Email Address *</label>
-                  <input
-                    type="email"
-                    name="email"
-                    required
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
-                    placeholder="your.email@example.com"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#1F2937] mb-2">Phone Number *</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    required
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
-                    placeholder="+1 (555) 123-4567"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#1F2937] mb-2">Years of Experience *</label>
-                  <select
-                    name="experience"
-                    required
-                    value={formData.experience}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
-                  >
-                    <option value="">Select experience</option>
-                    <option value="0-6months">0-6 months</option>
-                    <option value="6months-1year">6 months - 1 year</option>
-                    <option value="1-2years">1-2 years</option>
-                    <option value="2-5years">2-5 years</option>
-                    <option value="5+years">5+ years</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#1F2937] mb-2">Portfolio/GitHub URL</label>
-                <input
-                  type="url"
-                  name="portfolio"
-                  value={formData.portfolio}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
-                  placeholder="https://github.com/yourusername"
-                />
-              </div>
-
-              <div className="border-t border-gray-100 pt-6">
-                <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Technical Questions</h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[#1F2937] mb-2">Programming Languages *</label>
-                    <input
-                      type="text"
-                      name="programmingLanguages"
-                      required
-                      value={formData.programmingLanguages}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
-                      placeholder="e.g., PHP, JavaScript, Python, Java"
-                    />
+              {showCustomQuestions ? (
+                // Custom Questions Form
+                <div className="space-y-6">
+                  <div className="text-sm text-[#6B7280] mb-4">
+                    Please answer the following questions to complete your application:
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-[#1F2937] mb-2">Frameworks & Technologies *</label>
-                    <input
-                      type="text"
-                      name="frameworks"
-                      required
-                      value={formData.frameworks}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
-                      placeholder="e.g., Laravel, React, Node.js, Vue.js"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-[#1F2937] mb-2">Database Experience *</label>
-                    <input
-                      type="text"
-                      name="databaseExperience"
-                      required
-                      value={formData.databaseExperience}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
-                      placeholder="e.g., MySQL, PostgreSQL, MongoDB, Redis"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-[#1F2937] mb-2">
-                      Describe your most challenging project *
-                    </label>
-                    <textarea
-                      name="projectDescription"
-                      required
-                      value={formData.projectDescription}
-                      onChange={handleInputChange}
-                      rows={3}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all resize-none"
-                      placeholder="Briefly describe a challenging project you worked on, the technologies used, and your role..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-[#1F2937] mb-2">Problem-solving example *</label>
-                    <textarea
-                      name="problemSolvingExample"
-                      required
-                      value={formData.problemSolvingExample}
-                      onChange={handleInputChange}
-                      rows={3}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all resize-none"
-                      placeholder="Describe a technical problem you solved and your approach to solving it..."
-                    />
+                  
+                  {job.customQuestions.map((question: any, index: number) => (
+                    <div key={question.id || index} className="space-y-2">
+                      <label className="block text-sm font-medium text-[#1F2937] mb-2">
+                        {question.question} *
+                      </label>
+                      
+                      {question.type === "MCQ" ? (
+                        <select
+                          required
+                          value={customAnswers[question.id] || ""}
+                          onChange={(e) => handleCustomAnswerChange(question.id, e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
+                        >
+                          <option value="">Select an option</option>
+                          {question.options?.map((option: string, optIndex: number) => (
+                            <option key={optIndex} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <textarea
+                          required
+                          value={customAnswers[question.id] || ""}
+                          onChange={(e) => handleCustomAnswerChange(question.id, e.target.value)}
+                          rows={3}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all resize-none"
+                          placeholder="Enter your answer..."
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                // Full Application Form (your existing form)
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#1F2937] mb-2">Full Name *</label>
+                      <input
+                        type="text"
+                        name="fullName"
+                        required
+                        value={formData.fullName}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
+                        placeholder="Enter your full name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#1F2937] mb-2">Email Address *</label>
+                      <input
+                        type="email"
+                        name="email"
+                        required
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
+                        placeholder="your.email@example.com"
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-[#1F2937] mb-2">Remote Work Experience *</label>
-                      <select
-                        name="remoteWorkExperience"
+                      <label className="block text-sm font-medium text-[#1F2937] mb-2">Phone Number *</label>
+                      <input
+                        type="tel"
+                        name="phone"
                         required
-                        value={formData.remoteWorkExperience}
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
+                        placeholder="+1 (555) 123-4567"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#1F2937] mb-2">Years of Experience *</label>
+                      <select
+                        name="experience"
+                        required
+                        value={formData.experience}
                         onChange={handleInputChange}
                         className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
                       >
                         <option value="">Select experience</option>
-                        <option value="no-experience">No remote work experience</option>
-                        <option value="some-experience">Some remote work experience</option>
-                        <option value="extensive-experience">Extensive remote work experience</option>
-                        <option value="fully-remote">Worked fully remote for 1+ years</option>
+                        <option value="0-6months">0-6 months</option>
+                        <option value="6months-1year">6 months - 1 year</option>
+                        <option value="1-2years">1-2 years</option>
+                        <option value="2-5years">2-5 years</option>
+                        <option value="5+years">5+ years</option>
                       </select>
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-[#1F2937] mb-2">
-                        Expected Salary (₹/hour) *
-                      </label>
-                      <input
-                        type="number"
-                        name="expectedSalary"
-                        required
-                        value={formData.expectedSalary}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
-                        placeholder="e.g., 15000"
-                        min="0"
-                      />
+                  <div>
+                    <label className="block text-sm font-medium text-[#1F2937] mb-2">Portfolio/GitHub URL</label>
+                    <input
+                      type="url"
+                      name="portfolio"
+                      value={formData.portfolio}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
+                      placeholder="https://github.com/yourusername"
+                    />
+                  </div>
+
+                  <div className="border-t border-gray-100 pt-6">
+                    <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Technical Questions</h3>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[#1F2937] mb-2">Programming Languages *</label>
+                        <input
+                          type="text"
+                          name="programmingLanguages"
+                          required
+                          value={formData.programmingLanguages}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
+                          placeholder="e.g., PHP, JavaScript, Python, Java"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-[#1F2937] mb-2">Frameworks & Technologies *</label>
+                        <input
+                          type="text"
+                          name="frameworks"
+                          required
+                          value={formData.frameworks}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
+                          placeholder="e.g., Laravel, React, Node.js, Vue.js"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-[#1F2937] mb-2">Database Experience *</label>
+                        <input
+                          type="text"
+                          name="databaseExperience"
+                          required
+                          value={formData.databaseExperience}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
+                          placeholder="e.g., MySQL, PostgreSQL, MongoDB, Redis"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-[#1F2937] mb-2">
+                          Describe your most challenging project *
+                        </label>
+                        <textarea
+                          name="projectDescription"
+                          required
+                          value={formData.projectDescription}
+                          onChange={handleInputChange}
+                          rows={3}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all resize-none"
+                          placeholder="Briefly describe a challenging project you worked on, the technologies used, and your role..."
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-[#1F2937] mb-2">Problem-solving example *</label>
+                        <textarea
+                          name="problemSolvingExample"
+                          required
+                          value={formData.problemSolvingExample}
+                          onChange={handleInputChange}
+                          rows={3}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all resize-none"
+                          placeholder="Describe a technical problem you solved and your approach to solving it..."
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-[#1F2937] mb-2">Remote Work Experience *</label>
+                          <select
+                            name="remoteWorkExperience"
+                            required
+                            value={formData.remoteWorkExperience}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
+                          >
+                            <option value="">Select experience</option>
+                            <option value="no-experience">No remote work experience</option>
+                            <option value="some-experience">Some remote work experience</option>
+                            <option value="extensive-experience">Extensive remote work experience</option>
+                            <option value="fully-remote">Worked fully remote for 1+ years</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-[#1F2937] mb-2">
+                            Expected Salary (₹/hour) *
+                          </label>
+                          <input
+                            type="number"
+                            name="expectedSalary"
+                            required
+                            value={formData.expectedSalary}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
+                            placeholder="e.g., 15000"
+                            min="0"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-[#1F2937] mb-2">When can you start? *</label>
-                <select
-                  name="availability"
-                  required
-                  value={formData.availability}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
-                >
-                  <option value="">Select availability</option>
-                  <option value="immediately">Immediately</option>
-                  <option value="1week">Within 1 week</option>
-                  <option value="2weeks">Within 2 weeks</option>
-                  <option value="1month">Within 1 month</option>
-                  <option value="negotiable">Negotiable</option>
-                </select>
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#1F2937] mb-2">When can you start? *</label>
+                    <select
+                      name="availability"
+                      required
+                      value={formData.availability}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
+                    >
+                      <option value="">Select availability</option>
+                      <option value="immediately">Immediately</option>
+                      <option value="1week">Within 1 week</option>
+                      <option value="2weeks">Within 2 weeks</option>
+                      <option value="1month">Within 1 month</option>
+                      <option value="negotiable">Negotiable</option>
+                    </select>
+                  </div>
 
-              <div>
-                <label className="block text-sm font-medium text-[#1F2937] mb-2">Cover Letter *</label>
-                <textarea
-                  name="coverLetter"
-                  required
-                  value={formData.coverLetter}
-                  onChange={handleInputChange}
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all resize-none"
-                  placeholder="Tell us why you're interested in this position and what makes you a great fit..."
-                />
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#1F2937] mb-2">Cover Letter *</label>
+                    <textarea
+                      name="coverLetter"
+                      required
+                      value={formData.coverLetter}
+                      onChange={handleInputChange}
+                      rows={4}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all resize-none"
+                      placeholder="Tell us why you're interested in this position and what makes you a great fit..."
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="flex gap-3 pt-4">
                 <CustomButton type="button" variant="secondary" onClick={onClose} className="flex-1">
@@ -379,6 +449,7 @@ const ApplicationPopup: React.FC<{
     </AnimatePresence>
   )
 }
+
 
 const SuccessPopup: React.FC<{
   isOpen: boolean
@@ -474,6 +545,7 @@ function JobListingContent() {
   // Modal states
   const [showApplicationPopup, setShowApplicationPopup] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [customQAnswers, setCustomQAnswers] = useState<Record<string,string>>({});
 
   // Get user and profile data from context
   const { user, profile } = useUser();
@@ -605,15 +677,22 @@ function JobListingContent() {
     setShowSuccessPopup(false);
   };
 
-   const handleApplyClick = () => {
-    setShowApplicationPopup(true)
-  }
+  //  const handleApplyClick = () => {
+  //   setShowApplicationPopup(true)
+  // }
 
-  const handleApplicationSubmit = (formData: any) => {
-    console.log("Application submitted:", formData)
-    setShowApplicationPopup(false)
-    setShowSuccessPopup(true)
+const handleApplicationSubmit = (data: any) => {
+  console.log("Application submitted:", data)
+  setShowApplicationPopup(false)
+  
+  // If this was custom questions, call the actual API
+  if (job?.customQuestions && job.customQuestions.length > 0) {
+    handleActualApply() // Call your actual API
+  } else {
+    setShowSuccessPopup(true) // Show success for full form
   }
+}
+
 
   const handleCloseApplicationPopup = () => {
     setShowApplicationPopup(false)
@@ -622,6 +701,16 @@ function JobListingContent() {
   const handleCloseSuccessPopup = () => {
     setShowSuccessPopup(false)
   }
+  const handleApplyClick = () => {
+  if (job?.customQuestions && job?.customQuestions.length > 0) {
+    // show modal that only contains the custom Qs
+    setShowApplicationPopup(true);
+  } else {
+    // no questions → fire API right away
+    handleActualApply();
+  }
+};
+
   // Loading and error states
   if (loading) {
     return <LoadingSpinner />;
@@ -707,14 +796,14 @@ function JobListingContent() {
               <div className="flex flex-col lg:flex-row items-start justify-between">
                 <div className="flex items-start space-x-4 flex-1">
                   <CustomAvatar className="w-12 h-12 bg-[#7C3AED] text-white font-semibold text-lg">
-                    {job.company.name.charAt(0).toUpperCase()}
+                    {job.company.companyName.charAt(0).toUpperCase()}
                   </CustomAvatar>
                   <div className="flex-1">
                     <h1 className="text-xl font-semibold text-[#1F2937] mb-2">{job.title}</h1>
                     <p className="text-sm text-[#6B7280] leading-relaxed mb-8">
-                      {job.description}
+                      {job.companyDescription}
                     </p>
-                    <div className="text-sm text-[#6B7280] mt-auto">@{job.company.name.toLowerCase()}</div>
+                    <div className="text-sm text-[#6B7280] mt-auto">@{job.company.companyName.toLowerCase()}</div>
                   </div>
                 </div>
 
@@ -867,6 +956,7 @@ function JobListingContent() {
         isOpen={showApplicationPopup}
         onClose={handleCloseApplicationPopup}
         onSubmit={handleApplicationSubmit}  // This calls your actual API
+         job={job}
       />
 
       <SuccessPopup isOpen={showSuccessPopup}  onClose={handleCloseSuccessPopup} />
