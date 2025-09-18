@@ -666,6 +666,14 @@ export default function ProfileTab() {
   >(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
+  const getLocationDisplay = (location: any) => {
+    if (!location) return "";
+    if (typeof location === "string") return location;
+    if (typeof location === "object" && location.address)
+      return location.address;
+    return "";
+  };
+
   const [profileData, setProfileData] = useState(() => {
     try {
       if (profile && profile._id && profile.name) {
@@ -793,7 +801,7 @@ export default function ProfileTab() {
         // Also sync the profile form data for editing
         setProfileFormData({
           name: profile.name || "",
-          location: profile.location || "",
+          location: profile.locationData?.address || profile.location || "",
           bio: profile.bio || "",
           skills: profile.skills?.join(", ") || "",
           languages: profile.languages?.join(", ") || "English (Native)",
@@ -941,7 +949,7 @@ export default function ProfileTab() {
               {profile?.name ? profile?.name : user?.name ? user?.name : ""}
             </h2>
             <p className="text-gray-500 text-sm sm:text-base">
-              {profile?.location ? profile?.location : ""}
+              {getLocationDisplay(profile?.location)}
             </p>
           </div>
         </>
@@ -2028,7 +2036,8 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
                       <div className="flex items-center gap-2 text-gray-600">
                         <MapPin className="w-4 h-4" />
                         <span className="text-sm sm:text-base">
-                          {profileData.profile.location || "Location set"}
+                          {getLocationDisplay(profileData.profile.location)}{" "}
+                          Location set
                         </span>
                       </div>
                       <OlaMapComponent
