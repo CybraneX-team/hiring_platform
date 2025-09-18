@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Briefcase, Clock, Users } from "lucide-react";
+import { Briefcase, Clock, Users, MapPin } from "lucide-react";
 import type { Role } from "../../types";
 
 interface RoleCardProps {
@@ -11,6 +11,13 @@ interface RoleCardProps {
 }
 
 export default function RoleCard({ role, index, onSelect }: RoleCardProps) {
+  const departmentLabel = role.department?.trim() || "Department not specified";
+  const typeLabel = role.type?.trim() || "Unknown";
+  const statusLabel = role.status?.trim() || "Unknown";
+  const postedLabel = role.posted?.trim() || "Unknown";
+  const locationLabel = role.location?.trim();
+  const experienceLabel = role.experienceLevel?.trim();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -33,7 +40,7 @@ export default function RoleCard({ role, index, onSelect }: RoleCardProps) {
               {role.title}
             </h3>
             <p className="text-sm text-gray-500 mb-3 sm:mb-4">
-              {role.department}
+              {departmentLabel}
             </p>
 
             <div className="flex flex-wrap gap-2 sm:gap-3 mb-3 sm:mb-4">
@@ -41,25 +48,39 @@ export default function RoleCard({ role, index, onSelect }: RoleCardProps) {
                 whileHover={{ scale: 1.02 }}
                 className="px-2 sm:px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
               >
-                {role.type}
+                {typeLabel}
               </motion.span>
               <motion.span
                 whileHover={{ scale: 1.02 }}
                 className="px-2 sm:px-3 py-1 bg-green-100 text-green-600 text-xs rounded-full"
               >
-                {role.status}
+                {statusLabel}
               </motion.span>
+              {experienceLabel && (
+                <motion.span
+                  whileHover={{ scale: 1.02 }}
+                  className="px-2 sm:px-3 py-1 bg-blue-100 text-blue-600 text-xs rounded-full"
+                >
+                  {experienceLabel}
+                </motion.span>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-gray-400">
               <div className="flex items-center space-x-1">
                 <Clock className="w-3 h-3 flex-shrink-0" />
-                <span>Posted {role.posted}</span>
+                <span>Posted {postedLabel}</span>
               </div>
               <div className="flex items-center space-x-1">
                 <Users className="w-3 h-3 flex-shrink-0" />
                 <span>{role.applications} applications</span>
               </div>
+              {locationLabel && (
+                <div className="flex items-center space-x-1">
+                  <MapPin className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate max-w-[120px]">{locationLabel}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -8,7 +8,7 @@ import type {
 
 export const companies: Company[] = [
   {
-    id: 1,
+    id: "1",
     name: "TechCorp Solutions",
     logo: "T",
     activeRoles: 12,
@@ -17,7 +17,7 @@ export const companies: Company[] = [
     industry: "Technology",
   },
   {
-    id: 2,
+    id: "2",
     name: "InnovateLabs",
     logo: "I",
     activeRoles: 8,
@@ -26,7 +26,7 @@ export const companies: Company[] = [
     industry: "Software",
   },
   {
-    id: 3,
+    id: "3",
     name: "DataDrive Inc",
     logo: "D",
     activeRoles: 15,
@@ -35,7 +35,7 @@ export const companies: Company[] = [
     industry: "Data Analytics",
   },
   {
-    id: 4,
+    id: "4",
     name: "CloudFirst",
     logo: "C",
     activeRoles: 6,
@@ -47,7 +47,7 @@ export const companies: Company[] = [
 
 export const activeRoles: Role[] = [
   {
-    id: 1,
+    id: "1",
     title: "Senior Software Engineer",
     department: "Engineering",
     applications: 23,
@@ -57,7 +57,7 @@ export const activeRoles: Role[] = [
     status: "Active",
   },
   {
-    id: 2,
+    id: "2",
     title: "Product Manager",
     department: "Product",
     applications: 18,
@@ -67,7 +67,7 @@ export const activeRoles: Role[] = [
     status: "Active",
   },
   {
-    id: 3,
+    id: "3",
     title: "UX Designer",
     department: "Design",
     applications: 31,
@@ -80,7 +80,7 @@ export const activeRoles: Role[] = [
 
 export const applications: Application[] = [
   {
-    id: 1,
+    id: "1",
     name: "John Smith",
     email: "john.smith@email.com",
     phone: "+1 (555) 123-4567",
@@ -92,7 +92,7 @@ export const applications: Application[] = [
     currentRole: "Software Engineer at Meta",
   },
   {
-    id: 2,
+    id: "2",
     name: "Sarah Johnson",
     email: "sarah.j@email.com",
     phone: "+1 (555) 987-6543",
@@ -104,7 +104,7 @@ export const applications: Application[] = [
     currentRole: "Senior Developer at Google",
   },
   {
-    id: 3,
+    id: "3",
     name: "Mike Chen",
     email: "mike.chen@email.com",
     phone: "+1 (555) 456-7890",
@@ -116,7 +116,7 @@ export const applications: Application[] = [
     currentRole: "Frontend Developer at Spotify",
   },
   {
-    id: 4,
+    id: "4",
     name: "Emily Davis",
     email: "emily.davis@email.com",
     phone: "+1 (555) 321-0987",

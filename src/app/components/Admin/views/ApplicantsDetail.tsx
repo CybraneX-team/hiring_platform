@@ -29,6 +29,15 @@ export default function ApplicantDetailsView({
   onRequestDocuments,
   onDocumentVerification,
 }: ApplicantDetailsViewProps) {
+  const emailLabel = selectedApplicant.email || "Not provided";
+  const phoneLabel = selectedApplicant.phone || "Not provided";
+  const locationLabel = selectedApplicant.location || "Location unavailable";
+  const experienceLabel = selectedApplicant.experience
+    ? `${selectedApplicant.experience}`
+    : "Experience not specified";
+  const roleLabel = selectedRole.title || "Selected role";
+  const currentRoleLabel = selectedApplicant.currentRole || roleLabel;
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="bg-white rounded-xl p-4 sm:p-6">
@@ -38,14 +47,15 @@ export default function ApplicantDetailsView({
               whileHover={{ scale: 1.05 }}
               className="w-12 h-12 sm:w-16 sm:h-16 bg-[#C5BCFF] rounded-full flex items-center justify-center text-[#32343A] font-medium mr-3 sm:mr-4 text-lg sm:text-xl"
             >
-              {selectedApplicant.avatar}
+              {selectedApplicant.avatar ||
+                selectedApplicant.name.trim().charAt(0).toUpperCase()}
             </motion.div>
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-medium text-black line-clamp-1">
                 {selectedApplicant.name}
               </h1>
               <p className="text-gray-500 text-sm sm:text-base line-clamp-1">
-                {selectedApplicant.currentRole}
+                {currentRoleLabel}
               </p>
             </div>
           </div>
@@ -79,19 +89,19 @@ export default function ApplicantDetailsView({
               <div className="flex items-center space-x-3">
                 <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 <span className="text-sm text-gray-600 break-all">
-                  {selectedApplicant.email}
+                  {emailLabel}
                 </span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 <span className="text-sm text-gray-600">
-                  {selectedApplicant.phone}
+                  {phoneLabel}
                 </span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 <span className="text-sm text-gray-600">
-                  {selectedApplicant.location}
+                  {locationLabel}
                 </span>
               </div>
             </div>
@@ -111,13 +121,13 @@ export default function ApplicantDetailsView({
               <div className="flex items-center space-x-3">
                 <Briefcase className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 <span className="text-sm text-gray-600">
-                  {selectedApplicant.experience} of experience
+                  {experienceLabel}
                 </span>
               </div>
               <div className="flex items-center space-x-3">
                 <Building className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 <span className="text-sm text-gray-600 line-clamp-1">
-                  Applying for {selectedRole.title}
+                  Applying for {roleLabel}
                 </span>
               </div>
             </div>

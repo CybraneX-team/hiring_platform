@@ -2,24 +2,28 @@
 
 import { motion } from "framer-motion";
 import { CheckCircle } from "lucide-react";
-import type { Application, DocumentType } from "../../../types";
+import type { Application, DocumentType, SubmittedDocument } from "../../../types";
 
 interface RequestDocumentsViewProps {
   selectedApplicant: Application;
   documentTypes: DocumentType[];
   selectedDocs: number[];
+  existingDocs: SubmittedDocument[];
   onToggleDoc: (docId: number) => void;
   onCancel: () => void;
   onSendRequest: (docIds: number[]) => void;
+  isSubmitting?: boolean;
 }
 
 export default function RequestDocumentsView({
   selectedApplicant,
   documentTypes,
   selectedDocs,
+  existingDocs,
   onToggleDoc,
   onCancel,
   onSendRequest,
+  isSubmitting = false,
 }: RequestDocumentsViewProps) {
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -32,44 +36,69 @@ export default function RequestDocumentsView({
         </p>
 
         <div className="space-y-3">
-          {documentTypes.map((doc) => (
-            <motion.div
-              key={doc.id}
-              whileHover={{ scale: 1.01 }}
-              onClick={() => onToggleDoc(doc.id)}
-              className={`p-3 sm:p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                selectedDocs.includes(doc.id)
-                  ? "border-[#76FF82] bg-green-50"
-                  : "border-gray-200 hover:border-gray-300"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3 min-w-0">
-                  <div
-                    className={`w-4 h-4 sm:w-5 sm:h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                      selectedDocs.includes(doc.id)
-                        ? "border-[#76FF82] bg-[#76FF82]"
-                        : "border-gray-300"
-                    }`}
-                  >
-                    {selectedDocs.includes(doc.id) && (
-                      <CheckCircle className="w-2 h-2 sm:w-3 sm:h-3 text-black" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-sm font-medium text-gray-700 line-clamp-1">
-                      {doc.name}
-                    </span>
-                    {doc.required && (
-                      <span className="text-xs text-red-500 block">
-                        Required
+          {documentTypes.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
+              No document types configured.
+            </div>
+          ) : (
+            documentTypes.map((doc) => {
+              const existing = existingDocs.find((item) => item.id === doc.id);
+              const isSelected = selectedDocs.includes(doc.id);
+              const isDisabled = existing
+                ? ["requested", "submitted", "approved"].includes(existing.status)
+                : false;
+
+              return (
+                <motion.div
+                  key={doc.id}
+                  whileHover={isDisabled ? undefined : { scale: 1.01 }}
+                  onClick={() => {
+                    if (!isDisabled) {
+                      onToggleDoc(doc.id);
+                    }
+                  }}
+                  className={`p-3 sm:p-4 border-2 rounded-lg transition-all ${
+                    isDisabled
+                      ? "border-gray-200 bg-gray-50 cursor-not-allowed"
+                      : isSelected
+                      ? "border-[#76FF82] bg-green-50 cursor-pointer"
+                      : "border-gray-200 hover:border-gray-300 cursor-pointer"
+                  }`}
+                >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div
+                      className={`w-4 h-4 sm:w-5 sm:h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                        isSelected
+                          ? "border-[#76FF82] bg-[#76FF82]"
+                          : "border-gray-300"
+                      } ${isDisabled ? "opacity-50" : ""}`}
+                    >
+                      {isSelected && (
+                        <CheckCircle className="w-2 h-2 sm:w-3 sm:h-3 text-black" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium text-gray-700 line-clamp-1">
+                        {doc.name}
                       </span>
-                    )}
+                      {doc.required && (
+                        <span className="text-xs text-red-500 block">
+                          Required
+                        </span>
+                      )}
+                      {existing && (
+                        <span className="text-xs text-gray-500 block">
+                          Currently {existing.status}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+                </motion.div>
+              );
+            })
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
@@ -88,10 +117,10 @@ export default function RequestDocumentsView({
             }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onSendRequest(selectedDocs)}
-            disabled={selectedDocs.length === 0}
+            disabled={selectedDocs.length === 0 || isSubmitting}
             className="bg-[#76FF82] text-black font-medium px-4 sm:px-6 py-2 rounded-full text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Send Request ({selectedDocs.length})
+            {isSubmitting ? "Sending..." : `Send Request (${selectedDocs.length})`}
           </motion.button>
         </div>
       </div>

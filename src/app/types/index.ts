@@ -1,35 +1,41 @@
 export interface Company {
-  id: number;
+  id: string;
   name: string;
-  logo: string;
+  logo?: string;
+  logoUrl?: string | null;
   activeRoles: number;
   totalApplications: number;
-  location: string;
-  industry: string;
+  location?: string;
+  industry?: string;
+  orgSize?: string;
+  createdAt?: string | null;
 }
 
 export interface Role {
-  id: number;
+  id: string;
   title: string;
-  department: string;
+  department?: string;
   applications: number;
   salary: string;
   type: string;
   posted: string;
   status: string;
+  experienceLevel?: string;
+  location?: string;
 }
 
 export interface Application {
-  id: number;
+  id: string;
   name: string;
   email: string;
-  phone: string;
-  experience: string;
-  status: "selected" | "pending";
+  phone?: string;
+  experience?: string;
+  status: string;
   appliedDate: string;
-  avatar: string;
-  location: string;
-  currentRole: string;
+  avatar?: string;
+  location?: string;
+  currentRole?: string;
+  matchScore?: number;
 }
 
 export interface DocumentType {
@@ -41,8 +47,9 @@ export interface DocumentType {
 export interface SubmittedDocument {
   id: number;
   name: string;
-  status: "submitted" | "approved" | "rejected";
-  file: string;
+  status: "requested" | "submitted" | "approved" | "rejected";
+  file?: string | null;
+  fileUrl?: string | null;
 }
 
 export interface AnalyticsData {
@@ -68,13 +75,16 @@ export interface AnalyticsData {
 
 export interface InspectItem {
   id: string;
-  no: string;
   name: string;
-  company: string;
+  company?: string;
   status: "active" | "pending" | "completed";
-  lastActivity: string;
-  role: string;
-  email: string;
+  lastActivity?: string;
+  role?: string;
+  email?: string;
+  location?: string;
+  yearsOfExp?: string;
+  matchScore?: number;
+  profile: unknown;
 }
 
 export type ViewType =

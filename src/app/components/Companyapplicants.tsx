@@ -173,14 +173,24 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
                 Certifications from Industry
               </h3>
               <div className="flex flex-wrap gap-2">
-                {applicant.certificates.map((cert: string, index: number) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
-                  >
-                    {cert}
-                  </span>
-                ))}
+                {applicant.certificates.map((cert: any, index: number) => {
+                  const name =
+                    typeof cert === "string"
+                      ? cert
+                      : cert?.name || cert?.title || "Certification";
+                  const issuer =
+                    typeof cert === "string" ? undefined : cert?.issuer;
+                  const label = issuer ? `${name} · ${issuer}` : name;
+
+                  return (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
+                    >
+                      {label}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}
