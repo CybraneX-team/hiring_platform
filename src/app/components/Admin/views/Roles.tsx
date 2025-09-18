@@ -27,14 +27,20 @@ export default function RolesView({
       </div>
 
       <div className="space-y-4">
-        {roles.map((role, index) => (
-          <RoleCard
-            key={role.id}
-            role={role}
-            index={index}
-            onSelect={onRoleSelect}
-          />
-        ))}
+        {roles.length === 0 ? (
+          <div className="bg-white rounded-xl p-6 text-center text-sm text-gray-500">
+            No roles found for this company.
+          </div>
+        ) : (
+          roles.map((role, index) => (
+            <RoleCard
+              key={role.id}
+              role={role}
+              index={index}
+              onSelect={onRoleSelect}
+            />
+          ))
+        )}
       </div>
     </div>
   );

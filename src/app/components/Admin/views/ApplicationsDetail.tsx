@@ -14,13 +14,21 @@ export default function ApplicationsView({
   applications,
   onApplicantSelect,
 }: ApplicationsViewProps) {
-  const selectedApplications = applications.filter(
-    (app) => app.status === "selected"
-  );
-  const pendingApplications = applications.filter(
-    (app) => app.status === "pending"
-  );
-  const sortedApplications = [...selectedApplications, ...pendingApplications];
+  const statusPriority: Record<string, number> = {
+    selected: 0,
+    shortlisted: 1,
+    hired: 2,
+    interview: 3,
+    reviewing: 4,
+    pending: 5,
+    rejected: 6,
+  };
+
+  const sortedApplications = [...applications].sort((a, b) => {
+    const aStatus = a.status?.toLowerCase() ?? "";
+    const bStatus = b.status?.toLowerCase() ?? "";
+    return (statusPriority[aStatus] ?? 99) - (statusPriority[bStatus] ?? 99);
+  });
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -37,14 +45,20 @@ export default function ApplicationsView({
       </div>
 
       <div className="space-y-4">
-        {sortedApplications.map((applicant, index) => (
-          <ApplicationCard
-            key={applicant.id}
-            applicant={applicant}
-            index={index}
-            onSelect={onApplicantSelect}
-          />
-        ))}
+        {sortedApplications.length === 0 ? (
+          <div className="bg-white rounded-xl p-6 text-center text-sm text-gray-500">
+            No applications found for this role.
+          </div>
+        ) : (
+          sortedApplications.map((applicant, index) => (
+            <ApplicationCard
+              key={applicant.id}
+              applicant={applicant}
+              index={index}
+              onSelect={onApplicantSelect}
+            />
+          ))
+        )}
       </div>
     </div>
   );

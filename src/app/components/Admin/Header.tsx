@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ArrowLeft, Menu, X } from "lucide-react";
+import { Search, ArrowLeft, Menu, X, Bell } from "lucide-react";
 import type { ViewType } from "@/app/types";
+import Link from "next/link";
 
 interface HeaderProps {
   currentView: ViewType;
@@ -109,7 +110,18 @@ export default function Header({
           </div>
         </div>
         {/* Desktop Admin Profile */}
+        {/* Desktop Admin Profile with Bell Icon */}
+
         <div className="hidden sm:flex items-center space-x-3 ml-auto bg-[#F5F5F5] rounded-full px-3 lg:px-4 py-2">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <Link href="/notifications" >
+            <Bell className="w-4 h-4 lg:w-5 lg:h-5 text-gray-600" />
+            </Link>
+          </motion.button>
           <motion.div
             whileHover={{ scale: 1.05 }}
             className="w-6 h-6 lg:w-8 lg:h-8 bg-[#3159AB] rounded-full flex items-center justify-center text-white font-medium cursor-pointer text-xs lg:text-sm"

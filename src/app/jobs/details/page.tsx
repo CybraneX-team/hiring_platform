@@ -578,7 +578,7 @@ function JobListingContent() {
 
   // Handle actual job application (your original API call)
   const handleActualApply = async () => {
-    console.log("jobId || !user?.id || !profile?.id", jobId, user?.id, profile?._id);
+    // console.log("jobId || !user?.id || !profile?.id", jobId, user?.id, profile?._id);
     if (!jobId || !user?.id || !profile?._id) {
       toast.error(
         "Missing required information. Please ensure you're logged in and have a profile."
@@ -664,7 +664,7 @@ function JobListingContent() {
   }, [jobId]);
 
   useEffect(() => {
-    console.log("job is", job);
+    // console.log("job is", job);
     if (job && job.usersApplied && user?.id) {
       const applied = job.usersApplied.includes(user.id);
       setHasApplied(applied);
@@ -682,7 +682,7 @@ function JobListingContent() {
   // }
 
 const handleApplicationSubmit = (data: any) => {
-  console.log("Application submitted:", data)
+  // console.log("Application submitted:", data)
   setShowApplicationPopup(false)
   
   // If this was custom questions, call the actual API

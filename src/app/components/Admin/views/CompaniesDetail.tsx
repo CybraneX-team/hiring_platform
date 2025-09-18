@@ -23,16 +23,22 @@ export default function CompaniesView({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {companies.map((company, index) => (
-          <CompanyCard
-            key={company.id}
-            company={company}
-            index={index}
-            onSelect={onCompanySelect}
-          />
-        ))}
-      </div>
+      {companies.length === 0 ? (
+        <div className="bg-white rounded-xl p-6 text-center text-sm text-gray-500">
+          No companies found. Try adjusting your search or refresh the list.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {companies.map((company, index) => (
+            <CompanyCard
+              key={company.id}
+              company={company}
+              index={index}
+              onSelect={onCompanySelect}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

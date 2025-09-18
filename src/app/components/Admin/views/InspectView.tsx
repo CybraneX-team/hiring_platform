@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, MapPin, Clock, Plus } from "lucide-react";
 import type { InspectItem } from "@/app/types";
-import { inspectItems } from "../inspectData";
 import FileUploadModal from "../FileUploadModal";
-import Link from "next/link";
 
 interface InspectViewProps {
-  onItemSelect: (item: InspectItem) => void;
+  onItemSelect: (profile: unknown) => void;
 }
 
 const CircularProgress = ({ percentage }: { percentage: number }) => {
@@ -59,47 +57,106 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
-  const filters = [
-    { id: "all", label: "All Items", count: inspectItems.length },
-    {
-      id: "active",
-      label: "Active",
-      count: inspectItems.filter((item) => item.status === "active").length,
-    },
-    {
-      id: "pending",
-      label: "Pending",
-      count: inspectItems.filter((item) => item.status === "pending").length,
-    },
-    {
-      id: "completed",
-      label: "Completed",
-      count: inspectItems.filter((item) => item.status === "completed").length,
-    },
-    {
-      id: "assigned",
-      label: "Assigned",
-      count: inspectItems.filter((item) => item.company !== "Not Assigned")
-        .length,
-    },
-    {
-      id: "unassigned",
-      label: "Unassigned",
-      count: inspectItems.filter((item) => item.company === "Not Assigned")
-        .length,
-    },
-  ];
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchProfiles = async () => {
+  const formatRelative = useCallback((dateInput?: string) => {
+    if (!dateInput) return "Unknown";
+    const date = new Date(dateInput);
+    if (Number.isNaN(date.getTime())) return "Unknown";
+
+    const diffMs = Date.now() - date.getTime();
+    if (diffMs < 0) return "In the future";
+
+    const seconds = Math.floor(diffMs / 1000);
+    if (seconds < 60) return "Just now";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return minutes === 1 ? "1 minute ago" : `${minutes} minutes ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return hours === 1 ? "1 hour ago" : `${hours} hours ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return days === 1 ? "1 day ago" : `${days} days ago`;
+    const weeks = Math.floor(days / 7);
+    if (weeks < 4) return weeks === 1 ? "1 week ago" : `${weeks} weeks ago`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return months === 1 ? "1 month ago" : `${months} months ago`;
+    const years = Math.floor(days / 365);
+    return years === 1 ? "1 year ago" : `${years} years ago`;
+  }, []);
+
+  const determineStatus = useCallback((profile: any) => {
+    if (profile?.total_jobs_completed > 0) {
+      return "completed" as const;
+    }
+    if (Array.isArray(profile?.openToRoles) && profile.openToRoles.length > 0) {
+      return "active" as const;
+    }
+    return "pending" as const;
+  }, []);
+
+  const transformProfileToItem = useCallback(
+    (profile: any): InspectItem => {
+      const status = determineStatus(profile);
+      const companyName =
+        profile?.WorkExperience?.[0]?.company || "Not Assigned";
+      const primaryRole =
+        profile?.openToRoles?.[0] || profile?.WorkExperience?.[0]?.title || "";
+      const matchScore = profile?.average_rating
+        ? Math.min(100, Math.round(Number(profile.average_rating) * 10))
+        : undefined;
+
+      return {
+        id: profile?._id?.toString() || profile?.id || "",
+        name: profile?.name || profile?.user?.name || "Unnamed Inspector",
+        company: companyName,
+        status,
+        lastActivity: formatRelative(profile?.updatedAt || profile?.createdAt),
+        role: primaryRole,
+        email: profile?.user?.email || "",
+        location: profile?.location || "",
+        yearsOfExp: profile?.yearsOfExp || "",
+        matchScore,
+        profile,
+      };
+    },
+    [determineStatus, formatRelative]
+  );
+
+  const fetchProfiles = useCallback(async () => {
+    const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_API_URL;
+
+    if (!baseUrl) {
+      setError("API base URL is not configured.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/getProfile`);
+      const res = await fetch(`${baseUrl}/api/getProfile?limit=100&page=1`);
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch profiles (status ${res.status})`);
+      }
+
       const data = await res.json();
-      setItems(data.profiles);
-      setFilteredItems(data.profiles);
+      const rawProfiles = Array.isArray(data?.profiles) ? data.profiles : [];
+      const transformed = rawProfiles.map(transformProfileToItem);
+      setItems(transformed);
+      setFilteredItems(transformed);
+      setActiveFilter("all");
     } catch (err) {
       console.error("Failed to fetch profiles", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch inspector profiles"
+      );
+      setItems([]);
+      setFilteredItems([]);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [transformProfileToItem]);
 
   useEffect(() => {
     fetchProfiles();
@@ -108,13 +165,42 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
     const handler = () => fetchProfiles();
     window.addEventListener("resumeUploaded", handler);
     return () => window.removeEventListener("resumeUploaded", handler);
-  }, []);
+  }, [fetchProfiles]);
+
+  const filters = useMemo(() => {
+    const total = items.length;
+    const statusCounts = items.reduce(
+      (acc, item) => {
+        acc[item.status] = (acc[item.status] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
+    const assignedCount = items.filter(
+      (item) => item.company && item.company !== "Not Assigned"
+    ).length;
+    const unassignedCount = total - assignedCount;
+
+    return [
+      { id: "all", label: "All Profiles", count: total },
+      { id: "active", label: "Active", count: statusCounts.active || 0 },
+      { id: "pending", label: "Pending", count: statusCounts.pending || 0 },
+      {
+        id: "completed",
+        label: "Completed",
+        count: statusCounts.completed || 0,
+      },
+      { id: "assigned", label: "Assigned", count: assignedCount },
+      { id: "unassigned", label: "Unassigned", count: unassignedCount },
+    ];
+  }, [items]);
 
   const handleFilterChange = (filterId: string) => {
     setActiveFilter(filterId);
     setIsFilterOpen(false);
 
-    let filtered = inspectItems;
+    let filtered = items;
     switch (filterId) {
       case "active":
         filtered = items.filter((item) => item.status === "active");
@@ -199,17 +285,30 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
         </motion.button>
       </div>
 
+      {isLoading ? (
+        <div className="rounded-lg border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500">
+          Loading inspector profiles...
+        </div>
+      ) : error ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-center text-sm text-red-600">
+          {error}
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500">
+          No profiles match the selected filter.
+        </div>
+      ) : (
         <div className="space-y-4">
           <AnimatePresence>
-            {filteredItems.map((item : any, index) => (
+            {filteredItems.map((item, index) => (
               <motion.div
-                key={index}
+                key={item.id || index}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: index * 0.05 }}
                 className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => onItemSelect(item)}
+                onClick={() => onItemSelect(item.profile ?? item)}
               >
                 <div className="flex items-start justify-between">
                   {/* Left Section - Profile Info */}
@@ -227,11 +326,25 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
                     {/* Profile Details */}
                     <div className="flex-1 min-w-full w-full">
                       {/* Name and Title */}
-                      <div className="mb-5 w-full">
+                      <div className="mb-5 w-full flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                         <h3 className="text-lg font-semibold text-gray-900 mb-1">
                           {item.name}
                         </h3>
-                        <p className="text-gray-600 text-sm">{item.company}</p>
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 sm:flex-1 sm:justify-end sm:text-right min-w-0">
+                          <span className="font-medium text-gray-700 min-w-0 max-w-full whitespace-normal break-words">
+                            {item.role || "Role not specified"}
+                          </span>
+                          <span className="hidden sm:inline text-gray-300 flex-shrink-0">•</span>
+                          <span className="min-w-0 max-w-full whitespace-normal break-all">
+                            {item.company || "Not Assigned"}
+                          </span>
+                        </div>
+                        {typeof item.matchScore === "number" && (
+                          <div className="flex items-center gap-2 self-start sm:self-auto sm:ml-auto text-xs text-gray-500">
+                            <CircularProgress percentage={item.matchScore} />
+                            <span>Match Score</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Divider line after name section */}
@@ -244,30 +357,28 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
                             className={`w-2 h-2 rounded-full ${
                               item.status === "active"
                                 ? "bg-blue-500"
-                                : "bg-red-500"
+                                : item.status === "completed"
+                                ? "bg-green-500"
+                                : "bg-yellow-500"
                             }`}
-                          ></div>
-                          <span
-                            className={
-                              item.status === "active"
-                                ? "text-blue-600"
-                                : "text-red-600"
-                            }
-                          >
-                            {item.status === "active"
-                              ? "Available"
-                              : "Unavailable"}
+                          />
+                          <span className="capitalize text-gray-700">
+                            {item.status}
                           </span>
                         </div>
 
                         <div className="flex items-center gap-1">
                           <MapPin className="w-4 h-4" />
-                          <span>{item.location ?  item.location : ""}</span>
+                          <span>{item.location || "Location unavailable"}</span>
                         </div>
 
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          <span>{item.yearsOfExp ? item.yearsOfExp  :"" }</span>
+                          <span>{item.yearsOfExp || "Experience not specified"}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-gray-400">
+                          <Clock className="w-3 h-3" />
+                          <span>{item.lastActivity || "No recent activity"}</span>
                         </div>
                       </div>
                     </div>
@@ -277,16 +388,10 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
             ))}
           </AnimatePresence>
         </div>
-      {/* </Link> */}
+      )}
 
       {/* Empty State */}
-      {filteredItems.length === 0 && (
-        <div className="bg-white rounded-xl p-8 text-center shadow-sm">
-          <p className="text-gray-500">
-            No items found for the selected filter.
-          </p>
-        </div>
-      )}
+      
 
       <FileUploadModal
         isOpen={isUploadModalOpen}
