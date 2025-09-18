@@ -326,16 +326,16 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
                     {/* Profile Details */}
                     <div className="flex-1 min-w-full w-full">
                       {/* Name and Title */}
-                      <div className="mb-5 w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div className="mb-5 w-full flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                         <h3 className="text-lg font-semibold text-gray-900 mb-1">
                           {item.name}
                         </h3>
                         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 sm:flex-1 sm:justify-end sm:text-right min-w-0">
-                          <span className="font-medium text-gray-700 min-w-0 break-words">
+                          <span className="font-medium text-gray-700 min-w-0 max-w-full whitespace-normal break-words">
                             {item.role || "Role not specified"}
                           </span>
-                          <span className="hidden sm:inline text-gray-300">•</span>
-                          <span className="min-w-0 break-words">
+                          <span className="hidden sm:inline text-gray-300 flex-shrink-0">•</span>
+                          <span className="min-w-0 max-w-full whitespace-normal break-all">
                             {item.company || "Not Assigned"}
                           </span>
                         </div>
