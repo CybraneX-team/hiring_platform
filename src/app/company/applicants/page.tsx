@@ -1,7 +1,14 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, MapPin, Clock, CheckCircle, Download, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  MapPin,
+  Clock,
+  CheckCircle,
+  Download,
+  Loader2,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState, useEffect, Suspense } from "react";
 import { toJpeg } from "html-to-image";
@@ -16,7 +23,14 @@ const CircularProgress = ({ percentage }: { percentage: number }) => {
   return (
     <div className="relative w-12 h-12">
       <svg className="w-12 h-12 transform rotate-360" viewBox="0 0 44 44">
-        <circle cx="22" cy="22" r={radius} stroke="#E5E7EB" strokeWidth="3" fill="none" />
+        <circle
+          cx="22"
+          cy="22"
+          r={radius}
+          stroke="#E5E7EB"
+          strokeWidth="3"
+          fill="none"
+        />
         <circle
           cx="22"
           cy="22"
@@ -46,10 +60,18 @@ const LoadingSpinner = () => (
   </div>
 );
 
-const ErrorMessage = ({ message, onRetry }: { message: string; onRetry: () => void }) => (
+const ErrorMessage = ({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) => (
   <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
     <div className="bg-white rounded-xl shadow-sm border border-red-200 p-8 max-w-md text-center">
-      <div className="text-red-500 text-lg font-semibold mb-4">Error Loading Details</div>
+      <div className="text-red-500 text-lg font-semibold mb-4">
+        Error Loading Details
+      </div>
       <p className="text-gray-600 mb-6">{message}</p>
       <button
         onClick={onRetry}
@@ -65,13 +87,13 @@ function ApplicationDetailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const applicationId = searchParams.get("id");
-  
+
   const [applicant, setApplicant] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isShortlisted, setIsShortlisted] = useState(false);
   const [preparingPdf, setPreparingPdf] = useState(false);
-  
+
   const contentRef = useRef<HTMLDivElement>(null);
   const brandName = "Compscope";
   const brandInitial = brandName.charAt(0);
@@ -100,10 +122,12 @@ function ApplicationDetailContent() {
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
         setApplicant(data.data);
-        setIsShortlisted(data.data.applicationDetails?.status === 'shortlisted');
+        setIsShortlisted(
+          data.data.applicationDetails?.status === "shortlisted"
+        );
       } else {
         throw new Error(data.message || "Failed to fetch applicant details");
       }
@@ -123,29 +147,60 @@ function ApplicationDetailContent() {
     if (!applicationId) return;
 
     try {
-      const newStatus = isShortlisted ? 'pending' : 'shortlisted';
-      
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/${applicationId}/status`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            status: newStatus,
-            notes: `Application ${newStatus} via detailed view`
-          }),
-        }
-      );
+      if (isShortlisted) {
+        // If already shortlisted, we need to use the status update endpoint to change it back
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/${applicationId}/status`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              status: "pending",
+              notes: "Application status changed back to pending",
+            }),
+          }
+        );
 
-      if (response.ok) {
-        setIsShortlisted(!isShortlisted);
+        const result = await response.json();
+        if (result.success) {
+          setIsShortlisted(false);
+          // Optional: Show success message
+          // console.log("Candidate removed from shortlist successfully");
+        } else {
+          console.error("Failed to update application status:", result.message);
+          // Optional: Show error message to user
+        }
       } else {
-        console.error('Failed to update application status');
+        // Use the dedicated shortlist endpoint
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/${applicationId}/shortlist`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              shortlistReason: "Candidate shortlisted via detailed view",
+              notes: "Shortlisted based on profile review",
+            }),
+          }
+        );
+
+        const result = await response.json();
+        if (result.success) {
+          setIsShortlisted(true);
+          // Optional: Show success message
+          // console.log("Candidate shortlisted successfully");
+        } else {
+          console.error("Failed to shortlist candidate:", result.message);
+          // Optional: Show error message to user
+        }
       }
     } catch (error) {
-      console.error('Error updating application status:', error);
+      console.error("Error updating application status:", error);
+      // Optional: Show error message to user
     }
   };
 
@@ -153,10 +208,12 @@ function ApplicationDetailContent() {
     if (!contentRef.current || !applicant) return;
 
     setPreparingPdf(true);
-    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await new Promise((r) =>
+      requestAnimationFrame(() => requestAnimationFrame(r))
+    );
 
     try {
-      console.log("[v0] Starting consolidated PDF generation...");
+      // console.log("[v0] Starting consolidated PDF generation...");
 
       const pdf = new jsPDF("p", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
@@ -174,7 +231,8 @@ function ApplicationDetailContent() {
           const hasAttr = typeof n.getAttribute === "function";
           const ignore =
             hasAttr &&
-            (n.getAttribute("data-html2canvas-ignore") === "true" || n.getAttribute("data-pdf-hide") === "true");
+            (n.getAttribute("data-html2canvas-ignore") === "true" ||
+              n.getAttribute("data-pdf-hide") === "true");
           return !ignore;
         },
       });
@@ -196,7 +254,9 @@ function ApplicationDetailContent() {
       }
 
       console.log("[v0] Saving consolidated PDF...");
-      pdf.save(`${applicant.name.replace(/\s+/g, "-")}-Consolidated-Profile.pdf`);
+      pdf.save(
+        `${applicant.name.replace(/\s+/g, "-")}-Consolidated-Profile.pdf`
+      );
       console.log("[v0] PDF generation completed successfully!");
     } catch (error) {
       console.error("[v0] Error generating consolidated PDF:", error);
@@ -215,7 +275,12 @@ function ApplicationDetailContent() {
   }
 
   if (!applicant) {
-    return <ErrorMessage message="Applicant details not found" onRetry={fetchApplicantDetails} />;
+    return (
+      <ErrorMessage
+        message="Applicant details not found"
+        onRetry={fetchApplicantDetails}
+      />
+    );
   }
 
   return (
@@ -223,7 +288,9 @@ function ApplicationDetailContent() {
       <div className="sr-only" aria-live="polite">
         {isShortlisted ? "Shortlisted" : ""}
       </div>
-      <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">Compscope</h1>
+      <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">
+        Compscope
+      </h1>
       <div className="max-w-6xl mx-auto mt-12">
         <div className="mb-10 flex items-center justify-between">
           <motion.button
@@ -236,7 +303,10 @@ function ApplicationDetailContent() {
             Back
           </motion.button>
 
-          <div className="flex items-center gap-3" data-html2canvas-ignore="true">
+          <div
+            className="flex items-center gap-3"
+            data-html2canvas-ignore="true"
+          >
             <motion.button
               type="button"
               onClick={handleShortlist}
@@ -311,11 +381,15 @@ function ApplicationDetailContent() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-gray-200">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-semibold text-lg">{applicant.avatar}</span>
+                <span className="text-white font-semibold text-lg">
+                  {applicant.avatar}
+                </span>
               </div>
 
               <div>
-                <h2 className="text-2xl font-semibold text-gray-900 mb-1">{applicant.name}</h2>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-1">
+                  {applicant.name}
+                </h2>
                 <p className="text-gray-600">{applicant.title}</p>
               </div>
             </div>
@@ -360,7 +434,10 @@ function ApplicationDetailContent() {
             <div className="flex flex-wrap gap-2">
               {applicant.skills && applicant.skills.length > 0 ? (
                 applicant.skills.map((skill: string, index: number) => (
-                  <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">
+                  <span
+                    key={index}
+                    className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
+                  >
                     {skill}
                   </span>
                 ))
@@ -371,65 +448,108 @@ function ApplicationDetailContent() {
           </div>
 
           <div className="mb-8">
-            <h3 className="text-sm font-medium text-gray-900 mb-3">Certifications from Industry</h3>
-            <div className="flex flex-wrap gap-2">
-              {applicant.certifications && applicant.certifications.length > 0 ? (
-                applicant.certifications.map((cert: string, index: number) => (
-                  <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">
-                    {cert}
-                  </span>
+            <h3 className="text-sm font-medium text-gray-900 mb-3">
+              Certifications from Industry
+            </h3>
+            <div className="space-y-3">
+              {applicant.certifications &&
+              applicant.certifications.length > 0 ? (
+                applicant.certifications.map((cert: any, index: number) => (
+                  <div
+                    key={index}
+                    className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                  >
+                    <h4 className="font-semibold text-gray-900 mb-1">
+                      {cert.name}
+                    </h4>
+                    <p className="text-sm text-gray-600 mb-1">
+                      <span className="font-medium">Issuer:</span> {cert.issuer}
+                    </p>
+                    <p className="text-sm text-gray-600 mb-2">
+                      <span className="font-medium">Date:</span> {cert.date}
+                    </p>
+                    {cert.description && (
+                      <p className="text-sm text-gray-700">
+                        {cert.description}
+                      </p>
+                    )}
+                  </div>
                 ))
               ) : (
-                <span className="text-gray-500 text-sm">No certifications listed</span>
+                <span className="text-gray-500 text-sm">
+                  No certifications listed
+                </span>
               )}
             </div>
           </div>
 
           <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Experience</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Experience
+            </h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {applicant.experience_details && applicant.experience_details.length > 0 ? (
+              {applicant.experience_details &&
+              applicant.experience_details.length > 0 ? (
                 applicant.experience_details.map((exp: any, index: number) => (
                   <div key={index} className="bg-[#F5F5F5] rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-900 mb-1">{exp.title}</h4>
+                    <h4 className="font-semibold text-gray-900 mb-1">
+                      {exp.title}
+                    </h4>
                     <p className="text-sm text-gray-600 mb-3">{exp.company}</p>
                     <div className="space-y-2">
-                      {exp.description.map((desc: string, descIndex: number) => (
-                        <p key={descIndex} className="text-sm text-gray-700 leading-relaxed">
-                          {desc}
-                        </p>
-                      ))}
+                      {exp.description.map(
+                        (desc: string, descIndex: number) => (
+                          <p
+                            key={descIndex}
+                            className="text-sm text-gray-700 leading-relaxed"
+                          >
+                            {desc}
+                          </p>
+                        )
+                      )}
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm">No experience details available</p>
+                <p className="text-gray-500 text-sm">
+                  No experience details available
+                </p>
               )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Academics</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Academics
+              </h3>
               <div className="space-y-4">
                 {applicant.academics && applicant.academics.length > 0 ? (
                   applicant.academics.map((academic: any, index: number) => (
                     <div key={index} className="flex items-center gap-3">
                       <div className="w-3 h-3 rounded-full bg-[#76FF82] flex-shrink-0"></div>
                       <div>
-                        <p className="font-medium text-gray-900">{academic.level}</p>
-                        <p className="text-sm text-gray-600">{academic.institution}</p>
+                        <p className="font-medium text-gray-900">
+                          {academic.level}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {academic.institution}
+                        </p>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500 text-sm">No academic information available</p>
+                  <p className="text-gray-500 text-sm">
+                    No academic information available
+                  </p>
                 )}
               </div>
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Languages</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Languages
+              </h3>
               <div className="space-y-2">
                 {applicant.languages && applicant.languages.length > 0 ? (
                   applicant.languages.map((language: string, index: number) => (
@@ -438,20 +558,26 @@ function ApplicationDetailContent() {
                     </p>
                   ))
                 ) : (
-                  <p className="text-gray-500 text-sm">No language information available</p>
+                  <p className="text-gray-500 text-sm">
+                    No language information available
+                  </p>
                 )}
               </div>
             </div>
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Contact
+            </h3>
             <div className="space-y-2">
               <p className="text-gray-700">
-                <span className="font-medium">Phone No:</span> {applicant.contact?.phone || "Not provided"}
+                <span className="font-medium">Phone No:</span>{" "}
+                {applicant.contact?.phone || "Not provided"}
               </p>
               <p className="text-gray-700">
-                <span className="font-medium">Mail:</span> {applicant.contact?.email || "Not provided"}
+                <span className="font-medium">Mail:</span>{" "}
+                {applicant.contact?.email || "Not provided"}
               </p>
             </div>
           </div>

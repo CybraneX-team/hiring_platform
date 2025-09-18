@@ -15,7 +15,7 @@ export default function Otp() {
   const router = useRouter();
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [enteredOtp, setenteredOtp] = useState("");
-  const { userCreds, setuser, setUserCreds, mode, loginCreds } = useUser();
+  const { userCreds, setuser, setUserCreds, mode, loginCreds, setprofile } = useUser();
   const [loggingIn, setloggingIn] = useState(false);
 
   const finalMode = mode
@@ -95,6 +95,8 @@ export default function Otp() {
 
       // ✅ store user + token
       setUserCreds({ name: "", email: "", password: "" });
+      setuser(response.user);
+      setprofile(response.profile)
       localStorage.setItem("token", response.token);
       localStorage.setItem("profile", JSON.stringify(response.profile));
       localStorage.setItem("user", JSON.stringify(response.user));
