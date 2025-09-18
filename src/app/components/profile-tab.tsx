@@ -284,7 +284,7 @@ const OlaMapComponent = ({
       return;
     }
 
-    console.log("Adding marker at:", lat, lng, title);
+    // console.log("Adding marker at:", lat, lng, title);
 
     try {
       // Remove existing marker
@@ -407,12 +407,12 @@ const OlaMapComponent = ({
     }
 
     setIsDetecting(true);
-    console.log("Starting geolocation detection");
+    // console.log("Starting geolocation detection");
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        console.log("Geolocation detected:", latitude, longitude);
+        // console.log("Geolocation detected:", latitude, longitude);
 
         // Validate detected coordinates
         if (
@@ -731,54 +731,86 @@ export default function ProfileTab() {
   const [newCertificatesMeta, setNewCertificatesMeta] = useState<any[]>([]);
 
   useEffect(() => {
-    if (profile) {
-      const transformedProfile = {
-        profile: {
-          bio: profile.bio || "",
-          skills: profile.skills || [],
-          languages: ["English (Native)"],
-          availability: profile.availability || [],
-          location: profile.location || null,
-        },
-        education:
-          profile.education?.map((edu: any, index: any) => ({
-            id: index + 1,
-            type: edu.Degree || "Degree",
-            period: edu.Graduation
-              ? new Date(edu.Graduation).getFullYear().toString()
-              : "",
-            institution: edu.institure || edu.institute || "",
-            description: edu.GPA ? `GPA: ${edu.GPA}` : "",
-          })) || [],
-        experiences:
-          profile.WorkExperience?.map((exp: any, index: any) => ({
-            id: index + 1,
-            title: exp.title || "",
-            company: exp.company || "",
-            period: "",
-            description: exp.description || "",
-          })) || [],
-        certifications:
-          profile.certificates?.map((cert: any, index: any) => ({
-            id: index + 1,
-            name: cert.name || "",
-            issuer: cert.issuer || "",
-            date: cert.date || "",
-            description: cert.description || "",
-            certificateUrl: cert.fileUrl || "",
-            certificateFileName: cert.fileName || "",
-            certificateMime: cert.mimeType || "",
-          })) || [],
-        schedule: {
-          availability: "Monday - Friday, 9:00 AM - 6:00 PM EST",
-          timezone: "Eastern Standard Time",
-          preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
-        },
-      };
+    if (profile && profile._id && profile.name) {
+      try {
+        const transformedProfile = {
+          profile: {
+            bio: profile.bio || "",
+            skills: profile.skills || [],
+            languages: profile.languages || ["English (Native)"],
+            availability:
+              profile.availability?.map((slot: any) => ({
+                startDate: slot.startDate,
+                endDate: slot.endDate,
+                description:
+                  slot.description ||
+                  `${new Date(
+                    slot.startDate
+                  ).toLocaleDateString()} - ${new Date(
+                    slot.endDate
+                  ).toLocaleDateString()}`,
+              })) || [],
+            location: profile.locationData || null,
+          },
+          education:
+            profile.education?.map((edu: any, index: any) => ({
+              id: index + 1,
+              type: edu.Degree || "Degree",
+              period: edu.Graduation
+                ? new Date(edu.Graduation).getFullYear().toString()
+                : "",
+              institution: edu.institure || edu.institute || "", // Handle both field names
+              description: edu.GPA ? `GPA: ${edu.GPA}` : "",
+            })) || [],
+          experiences:
+            profile.WorkExperience?.map((exp: any, index: any) => ({
+              id: index + 1,
+              title: exp.title || "",
+              company: exp.company || "",
+              period: "", // You might want to add period field to your backend
+              description: exp.description || "",
+            })) || [],
+          schedule: {
+            availability: "Monday - Friday, 9:00 AM - 6:00 PM EST",
+            timezone: "Eastern Standard Time",
+            preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
+          },
+          certifications:
+            profile.certificates?.map((cert: any, index: any) => ({
+              id: index + 1,
+              name: cert.name || "",
+              issuer: cert.issuer || "",
+              date: cert.date || "",
+              description: cert.description || "",
+              certificateUrl: cert.fileUrl || "",
+              certificateFileName: cert.fileName || "",
+              certificateMime: cert.mimeType || "",
+            })) || [],
+        };
 
-      setProfileData(transformedProfile);
+        setProfileData(transformedProfile);
+
+        // Also sync the profile form data for editing
+        setProfileFormData({
+          name: profile.name || "",
+          location: profile.location || "",
+          bio: profile.bio || "",
+          skills: profile.skills?.join(", ") || "",
+          languages: profile.languages?.join(", ") || "English (Native)",
+          availability: profile.availability || [],
+          locationData: profile.locationData || null,
+        });
+
+        // Update availability slots
+        if (profile.availability) {
+          setAvailabilitySlots(profile.availability);
+        }
+      } catch (error) {
+        console.error("Error transforming profile data:", error);
+        // Don't update state if transformation fails
+      }
     }
-  }, [profile]);
+  }, [profile]); // Only depend on profile changes
 
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -816,7 +848,7 @@ export default function ProfileTab() {
   const [showLocationMap, setShowLocationMap] = useState(false);
 
   // New state for availability slot management
-  const [availabilitySlots, setAvailabilitySlots] = useState<string[]>(
+  const [availabilitySlots, setAvailabilitySlots] = useState<any[]>(
     profileData.profile.availability || []
   );
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
@@ -826,7 +858,9 @@ export default function ProfileTab() {
 
   // Map search query state
   const [mapSearchQuery, setMapSearchQuery] = useState("");
-
+  const getProfileId = () => {
+    return profile?._id || null;
+  };
   // Check if profile is complete
   const isProfileComplete = () => {
     return (
@@ -936,6 +970,8 @@ export default function ProfileTab() {
       </>
     );
   };
+  // console.log("profile?._id", profile?._id, profile);
+  // console.log("user?._id", user?.id, user);
 
   const handleProfileSave = async () => {
     try {
@@ -947,6 +983,7 @@ export default function ProfileTab() {
             .map((skill) => skill.trim())
             .filter((skill) => skill)
         : [];
+
       const languagesArray: string[] = profileFormData.languages
         ? profileFormData.languages
             .split(",")
@@ -954,91 +991,75 @@ export default function ProfileTab() {
             .filter((lang) => lang)
         : [];
 
-      // Prepare updated profile data
-      const updatedProfileData: any = {
-        ...profileData,
-        profile: {
-          ...profileData.profile,
-          bio: profileFormData.bio,
-          skills: skillsArray,
-          languages: languagesArray,
-          availability: availabilitySlots,
-          location: profileFormData.locationData,
-        },
-        education: profileData.education,
-        experiences: profileData.experiences,
-        schedule: profileData.schedule,
-      };
-
-      // Prepare FormData explicitly to support files along with JSON data
+      // Prepare FormData for API call
       const formData = new FormData();
-
-      formData.append("userId", user?.id || "");
-      formData.append("bio", updatedProfileData.profile.bio);
-      formData.append(
-        "skills",
-        JSON.stringify(updatedProfileData.profile.skills)
-      );
-      formData.append(
-        "languages",
-        JSON.stringify(updatedProfileData.profile.languages)
-      );
-      formData.append(
-        "availability",
-        JSON.stringify(updatedProfileData.profile.availability)
-      );
-      if (updatedProfileData.profile.location) {
-        formData.append(
-          "profileLocation",
-          JSON.stringify(updatedProfileData.profile.location)
-        );
-      }
-
-      // Add other sections
-      formData.append(
-        "education",
-        JSON.stringify(updatedProfileData.education)
-      );
-      formData.append(
-        "WorkExperience",
-        JSON.stringify(updatedProfileData.experiences)
-      );
-
-      // FIXED: Handle certificates conditionally without duplication
-      if (newCertificatesFiles && newCertificatesFiles.length > 0) {
-        // Only append new certificates and their metadata
-        formData.append("newCertificates", JSON.stringify(newCertificatesMeta));
-        newCertificatesFiles.forEach((file) => {
-          formData.append("certificateFiles", file);
-        });
-
-        // FIXED: Send existing certificates separately to avoid duplication
-        if (
-          profileData.certifications &&
-          profileData.certifications.length > 0
-        ) {
-          formData.append(
-            "certificates",
-            JSON.stringify(profileData.certifications)
-          );
-        }
-      } else if (
-        profileData.certifications &&
-        profileData.certifications.length > 0
-      ) {
-        // FIXED: Only send existing certificates when no new files are uploaded
-        formData.append(
-          "certificates",
-          JSON.stringify(profileData.certifications)
-        );
-      }
-
-      // Name and location fields outside profile
+      formData.append("userId", user?.id!);
       formData.append("name", profileFormData.name);
-      formData.append("location", profileFormData.location);
+      formData.append("location", profileFormData.location); // Basic location string
+      formData.append("bio", profileFormData.bio);
+      formData.append("skills", JSON.stringify(skillsArray));
+      formData.append("languages", JSON.stringify(languagesArray));
+      formData.append("availability", JSON.stringify(availabilitySlots));
+
+      // Handle location data with coordinates
+      if (
+        profileFormData.locationData &&
+        profileFormData.locationData.lat &&
+        profileFormData.locationData.lng
+      ) {
+        // Send structured location data with coordinates
+        formData.append(
+          "locationData",
+          JSON.stringify({
+            lat: profileFormData.locationData.lat,
+            lng: profileFormData.locationData.lng,
+            address:
+              profileFormData.locationData.address || profileFormData.location,
+          })
+        );
+      } else {
+        // Send just the basic location string
+        formData.append("locationData", profileFormData.location);
+      }
+
+      // Include existing sections with proper filtering
+      const validEducation = profileData.education
+        .filter((edu: any) => edu.institution && edu.institution.trim())
+        .map((edu: any) => ({
+          institure: edu.institution || edu.institure,
+          Graduation: edu.period ? new Date(`${edu.period}-12-31`) : undefined,
+          Degree: edu.type || edu.Degree,
+          GPA: edu.description?.includes("GPA")
+            ? edu.description.replace("GPA: ", "")
+            : edu.GPA,
+        }));
+
+      formData.append("education", JSON.stringify(validEducation));
+
+      const validWorkExperience = profileData.experiences
+        .filter((exp: any) => exp.company && exp.company.trim())
+        .map((exp: any) => ({
+          company: exp.company,
+          title: exp.title,
+          description: exp.description,
+        }));
+
+      formData.append("WorkExperience", JSON.stringify(validWorkExperience));
+
+      const validCertificates = profileData.certifications
+        .filter((cert: any) => cert.name && cert.issuer)
+        .map((cert: any) => ({
+          name: cert.name || "Unknown Certificate",
+          issuer: cert.issuer || "Unknown Issuer",
+          date: cert.date || "Unknown Date",
+          description: cert.description || "",
+        }));
+
+      formData.append("certificates", JSON.stringify(validCertificates));
 
       // Call API
-      const apiUrl = profile?._id
+      // console.log("profile?._id", profile?._id, profile);
+      const apiUrl = profile?._id // Use ._id instead of .id
         ? `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/edit-profile/${profile._id}`
         : `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/create-profile`;
       const method = profile?._id ? "PUT" : "POST";
@@ -1049,22 +1070,18 @@ export default function ProfileTab() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update profile");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update profile");
       }
 
       const result = await response.json();
-
-      if (result.profile && updateProfile) {
-        updateProfile(result.profile);
+      if (result.profile) {
+        updateProfile!(result.profile);
       }
-
-      // FIXED: Clear certificate states after successful save
-      setNewCertificatesFiles([]);
-      setNewCertificatesMeta([]);
 
       toast.success("Profile updated successfully!");
       setIsProfileEditOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to update profile:", error);
       toast.error("Failed to update profile. Please try again.");
     } finally {
@@ -1073,47 +1090,63 @@ export default function ProfileTab() {
   };
 
   // Availability slot management functions
-  const addAvailabilitySlot = () => {
-    if (newAvailabilityStartDate && newAvailabilityEndDate) {
-      const startDate = new Date(newAvailabilityStartDate).toLocaleDateString(
-        "en-US",
-        {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }
-      );
-
-      const endDate = new Date(newAvailabilityEndDate).toLocaleDateString(
-        "en-US",
-        {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }
-      );
-
-      const newSlot = `${startDate} - ${endDate}`;
-
-      if (!availabilitySlots.includes(newSlot)) {
-        setAvailabilitySlots([...availabilitySlots, newSlot]);
+const addAvailabilitySlot = () => {
+  if (newAvailabilityStartDate && newAvailabilityEndDate) {
+    try {
+      const startDate = new Date(newAvailabilityStartDate);
+      const endDate = new Date(newAvailabilityEndDate);
+      
+      // Validate dates
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        toast.error('Invalid date format');
+        return;
       }
-
+      
+      if (endDate <= startDate) {
+        toast.error('End date must be after start date');
+        return;
+      }
+      
+      const newSlot = {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        description: `Unavailable from ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`,
+      };
+      
+      // Check for duplicates
+      const isDuplicate = availabilitySlots.some((slot) => 
+        slot.startDate === newSlot.startDate && slot.endDate === newSlot.endDate
+      );
+      
+      if (!isDuplicate) {
+        setAvailabilitySlots([...availabilitySlots, newSlot]);
+        toast.success('Availability slot added successfully');
+      } else {
+        toast.warning('This availability slot already exists');
+      }
+      
       // Reset form
-      setNewAvailabilityDate("");
-      setNewAvailabilityStartDate("");
-      setNewAvailabilityEndDate("");
+      setNewAvailabilityStartDate('');
+      setNewAvailabilityEndDate('');
       setShowAvailabilityModal(false);
+    } catch (error) {
+      console.error('Error adding availability slot:', error);
+      toast.error('Error adding availability slot');
     }
-  };
+  } else {
+    toast.error('Please select both start and end dates');
+  }
+};
 
-  const removeAvailabilitySlot = (slotToRemove: string) => {
-    setAvailabilitySlots(
-      availabilitySlots.filter((slot) => slot !== slotToRemove)
-    );
-  };
+
+const removeAvailabilitySlot = (slotToRemove : any) => {
+  setAvailabilitySlots(availabilitySlots.filter(slot => 
+    slot.startDate !== slotToRemove.startDate || 
+    slot.endDate !== slotToRemove.endDate
+  ));
+  toast.success('Availability slot removed');
+};
+
 
   // Handle map location selection
   const handleMapLocationSelect = (location: {
@@ -1455,52 +1488,91 @@ export default function ProfileTab() {
       [field]: value,
     }));
   };
+  // Replace the complex updateSpecificSectionAPI with this simpler version
+  const updateSpecificSectionAPI = async (
+    sectionType: string,
+    sectionData: any
+  ) => {
+    try {
+      setIsLoading(true);
+
+      const formData = new FormData();
+      formData.append("userId", user?.id!);
+
+      if (sectionType === "education") {
+        const validEducation = sectionData
+          .filter((edu: any) => edu.institution && edu.institution.trim())
+          .map((edu: any) => ({
+            institure: edu.institution, // Map to backend field name
+            Graduation: edu.period
+              ? new Date(`${edu.period}-12-31`).toISOString()
+              : undefined,
+            Degree: edu.type || edu.Degree,
+            GPA: edu.description?.includes("GPA")
+              ? edu.description.replace("GPA: ", "")
+              : edu.GPA,
+          }));
+
+        formData.append("education", JSON.stringify(validEducation));
+      }
+
+      if (sectionType === "experience") {
+        const validExperiences = sectionData
+          .filter((exp: any) => exp.company && exp.company.trim())
+          .map((exp: any) => ({
+            company: exp.company,
+            title: exp.title,
+            description: exp.description || "",
+          }));
+
+        formData.append("WorkExperience", JSON.stringify(validExperiences));
+      }
+
+      const apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/edit-profile/${profile?._id}`;
+      const response = await fetch(apiUrl, {
+        method: "PUT",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Update failed");
+      }
+
+      const result = await response.json();
+      if (result.profile) {
+        updateProfile!(result.profile);
+      }
+      return result;
+    } catch (error: any) {
+      console.error(`Error updating ${sectionType}:`, error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    let updatedProfileData;
+    try {
+      let updatedSection;
 
-    if (isEditMode && editingItem && modalType) {
-      updatedProfileData = {
-        ...profileData,
-        [modalType === "certificate"
-          ? "certifications"
-          : modalType === "education"
-          ? "education"
-          : "experiences"]: profileData[
+      if (isEditMode && editingItem && modalType) {
+        // Update existing item
+        updatedSection = profileData[
           modalType === "certificate"
             ? "certifications"
             : modalType === "education"
             ? "education"
             : "experiences"
         ].map((item: any) =>
-          item.id === editingItem.id
-            ? {
-                ...item,
-                ...formData,
-                certificateUrl: formData.certificateUrl ?? item.certificateUrl,
-                certificateMime:
-                  formData.certificateMime ?? item.certificateMime,
-                certificateFileName:
-                  formData.certificateFileName ?? item.certificateFileName,
-              }
-            : item
-        ),
-      };
-    } else if (modalType) {
-      const newItem = {
-        ...formData,
-        id: Date.now(),
-      };
-
-      updatedProfileData = {
-        ...profileData,
-        [modalType === "certificate"
-          ? "certifications"
-          : modalType === "education"
-          ? "education"
-          : "experiences"]: [
+          item.id === editingItem.id ? { ...item, ...formData } : item
+        );
+      } else if (modalType) {
+        // Add new item
+        const newItem = { ...formData, id: Date.now() };
+        updatedSection = [
           ...profileData[
             modalType === "certificate"
               ? "certifications"
@@ -1509,29 +1581,31 @@ export default function ProfileTab() {
               : "experiences"
           ],
           newItem,
-        ],
-      };
-    }
-
-    if (updatedProfileData) {
-      try {
-        // Update local state first (optimistic update)
-        setProfileData(updatedProfileData);
-
-        // Call API to update profile
-        const result = await updateProfileAPI(updatedProfileData);
-
-        // Only update localStorage if API call was successful
-        localStorage.setItem("profile", JSON.stringify(updatedProfileData));
-
-        toast.success("Profile updated successfully!");
-      } catch (error) {
-        console.error("Failed to update profile:", error);
-        setProfileData(profileData);
+        ];
       }
-    }
 
-    closeModal();
+      if (updatedSection) {
+        // Update local state optimistically
+        setProfileData((prev: any) => ({
+          ...prev,
+          [modalType === "certificate"
+            ? "certifications"
+            : modalType === "education"
+            ? "education"
+            : "experiences"]: updatedSection,
+        }));
+
+        // Call API
+        await updateSpecificSectionAPI(modalType!, updatedSection);
+        toast.success(`${modalType} updated successfully!`);
+        closeModal();
+      }
+    } catch (error: any) {
+      console.error("Failed to update:", error);
+      toast.error(error.message || "Update failed. Please try again.");
+      // Revert optimistic update on error
+      setProfileData(profileData);
+    }
   };
 
   const handleProfileFieldUpdate = async (field: string, value: any) => {
@@ -1915,6 +1989,7 @@ export default function ProfileTab() {
                 </motion.div>
 
                 {/* Availability Section */}
+                {/* Availability Section */}
                 {profileData.profile.availability.length > 0 && (
                   <motion.div variants={itemVariants}>
                     <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
@@ -1925,20 +2000,20 @@ export default function ProfileTab() {
                       variants={containerVariants}
                       transition={{ staggerChildren: 0.1 }}
                     >
-                      {profileData.profile.availability.map(
-                        (slot: string, index: number) => (
-                          <motion.div
-                            key={index}
-                            variants={skillVariants}
-                            whileHover={{ scale: 1.05, y: -2 }}
-                            transition={{ duration: 0.3, ease: "easeOut" }}
-                            className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm font-medium cursor-default flex items-center gap-2"
-                          >
-                            <Clock className="w-3 h-3" />
-                            {slot}
-                          </motion.div>
-                        )
-                      )}
+                      {profileData.profile.availability.map((slot : any, index : any) => (
+                        <motion.div
+                          key={index}
+                          variants={skillVariants}
+                          whileHover={{ scale: 1.05, y: -2 }}
+                          transition={{ duration: 0.3, ease: "easeOut" }}
+                          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm font-medium cursor-default flex items-center gap-2"
+                        >
+                          <Clock className="w-3 h-3" />
+                          <span>
+                            {typeof slot === "string" ? slot : slot.description}
+                          </span>
+                        </motion.div>
+                      ))}
                     </motion.div>
                   </motion.div>
                 )}
@@ -2701,7 +2776,8 @@ export default function ProfileTab() {
                           className="flex items-center gap-2 px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium"
                         >
                           <Calendar className="w-3 h-3" />
-                          {slot}
+                          <span>{slot.description}</span>{" "}
+                          {/* ✅ Render specific property */}
                           <button
                             onClick={() => removeAvailabilitySlot(slot)}
                             className="ml-1 p-0.5 rounded-full hover:bg-red-200 transition-colors"
