@@ -1,8 +1,8 @@
 export default function CTASection() {
   return (
     <section className="py-24 bg-white relative overflow-hidden">
-      <div className="absolute inset-0 bg-cover bg-center bg-[url('/images/join.avif')]">
-        <div className="absolute inset-0 bg-[#0000006f] bg-opacity-50"></div>
+      <div className="absolute inset-0 bg-cover bg-center bg-[url('/images/news.png')]">
+        <div className="absolute inset-0 bg-[#00000040] bg-opacity-50"></div>
       </div>
 
       <div className="relative z-10 max-w-4xl mx-auto px-6 text-center text-white">

@@ -19,15 +19,16 @@ import {
   Calendar,
   Clock,
   Plus,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import CalendarSection from "./calender";
-import { useRouter } from "next/navigation";
-import ResumeUpload from "./ResumeUpload";
-import JobMatching from "./JobMatching";
-import { useUser } from "../context/UserContext";
-import { toast } from "react-toastify";
-import ApplicationDetailView from "./cv";
+  Phone,
+} from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import CalendarSection from "./calender"
+import { useRouter } from "next/navigation"
+import ResumeUpload from "./ResumeUpload"
+import JobMatching from "./JobMatching"
+import { useUser } from "../context/UserContext"
+import { toast } from "react-toastify"
+import ApplicationDetailView from "./cv"
 
 // OlaMaps integration
 let OlaMaps: any = null;
@@ -40,6 +41,19 @@ const initializeOlaMaps = async () => {
       OlaMaps = module.OlaMaps;
       olaMaps = new OlaMaps({
         apiKey: process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY || "",
+      });
+      
+      // Ensure Marker and Popup constructors are available
+      if (!olaMaps.Marker) {
+        olaMaps.Marker = (module as any).Marker || (OlaMaps as any).Marker;
+      }
+      if (!olaMaps.Popup) {
+        olaMaps.Popup = (module as any).Popup || (OlaMaps as any).Popup;
+      }
+      
+      console.log("OlaMaps initialized successfully with constructors:", {
+        hasMarker: !!olaMaps.Marker,
+        hasPopup: !!olaMaps.Popup
       });
     } catch (error) {
       console.error("Failed to initialize OlaMaps:", error);
@@ -95,13 +109,44 @@ const OlaMapComponent = ({
             }
           }
 
-          mapInstanceRef.current = olaMaps.init({
-            style:
-              "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
-            container: mapRef.current,
-            center: [mapCenter.lng, mapCenter.lat],
-            zoom: 12,
-          });
+          // Use 2D-only style to avoid 3D layer errors
+          try {
+            // Try default light style first
+            mapInstanceRef.current = olaMaps.init({
+              style: "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
+              container: mapRef.current,
+              center: [mapCenter.lng, mapCenter.lat],
+              zoom: 12,
+              pitch: 0,
+              bearing: 0,
+              maxPitch: 0, // Force 2D mode
+            });
+          } catch (styleError) {
+            console.warn("Failed to load default style, trying satellite style:", styleError);
+            try {
+              // Try satellite style as fallback
+              mapInstanceRef.current = olaMaps.init({
+                style: "https://api.olamaps.io/tiles/vector/v1/styles/satellite/style.json",
+                container: mapRef.current,
+                center: [mapCenter.lng, mapCenter.lat],
+                zoom: 12,
+                pitch: 0,
+                bearing: 0,
+                maxPitch: 0,
+              });
+            } catch (satelliteError) {
+              console.warn("Failed to load satellite style, using minimal config:", satelliteError);
+              // Final fallback with minimal configuration
+              mapInstanceRef.current = olaMaps.init({
+                container: mapRef.current,
+                center: [mapCenter.lng, mapCenter.lat],
+                zoom: 12,
+                pitch: 0,
+                bearing: 0,
+                maxPitch: 0,
+              });
+            }
+          }
 
           mapInstanceRef.current.on("load", () => {
             setIsMapLoaded(true);
@@ -129,8 +174,15 @@ const OlaMapComponent = ({
             reverseGeocode(lat, lng);
           });
 
-          // Add error handling
+          // Add error handling with 3D model error filtering
           mapInstanceRef.current.on("error", (e: any) => {
+            // Suppress 3D model layer errors as they're expected when using 2D mode
+            if (e.error && e.error.message && 
+                (e.error.message.includes('3d_model') || 
+                 e.error.message.includes('Source layer') && e.error.message.includes('does not exist'))) {
+              console.warn("Suppressing 3D model layer error (expected in 2D mode):", e.error.message);
+              return;
+            }
             console.error("Map error:", e);
             setDebugInfo("Map loading error");
           });
@@ -208,7 +260,7 @@ const OlaMapComponent = ({
             typeof lat === "number" &&
             typeof lng === "number" &&
             !isNaN(lat) &&
-            !isNaN(lng) &&
+            isNaN(lng) &&
             isFinite(lat) &&
             isFinite(lng)
           ) {
@@ -271,6 +323,12 @@ const OlaMapComponent = ({
       return;
     }
 
+    if (!isMapLoaded) {
+      console.warn("Map not fully loaded, delaying marker creation");
+      setTimeout(() => addMarker(lat, lng, title), 500);
+      return;
+    }
+
     // Validate coordinates
     if (
       typeof lat !== "number" ||
@@ -293,36 +351,37 @@ const OlaMapComponent = ({
         markerRef.current = null;
       }
 
-      // Create marker element
+      // Create custom location pin marker element
       const markerElement = document.createElement("div");
       markerElement.className = "custom-marker";
+      markerElement.innerHTML = `
+        <svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 0C7.163 0 0 7.163 0 16C0 24.837 16 40 16 40S32 24.837 32 16C32 7.163 24.837 0 16 0Z" fill="#3b82f6"/>
+          <path d="M16 2C23.732 2 30 8.268 30 16C30 22.5 16 36.5 16 36.5S2 22.5 2 16C2 8.268 8.268 2 16 2Z" fill="#ffffff" stroke="#3b82f6" stroke-width="0.5"/>
+          <circle cx="16" cy="16" r="6" fill="#3b82f6"/>
+          <circle cx="16" cy="16" r="3" fill="#ffffff"/>
+        </svg>
+      `;
       markerElement.style.cssText = `
-        width: 30px; 
-        height: 30px; 
-        background-color: #3b82f6; 
-        border: 3px solid white; 
-        border-radius: 50%; 
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        width: 32px; 
+        height: 40px; 
         cursor: pointer;
         z-index: 1000;
         position: relative;
+        filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+        transform: translate(-50%, -100%);
       `;
 
-      const innerDot = document.createElement("div");
-      innerDot.style.cssText = `
-        width: 12px; 
-        height: 12px; 
-        background-color: white; 
-        border-radius: 50%;
-      `;
-      markerElement.appendChild(innerDot);
+      // Wait for OlaMaps to be fully available
+      if (!olaMaps) {
+        console.error("OlaMaps not initialized");
+        return;
+      }
 
-      // Ensure we have the Marker constructor
-      if (!olaMaps || !olaMaps.Marker) {
-        console.error("OlaMaps Marker not available");
+      // Import and check for Marker constructor
+      if (!olaMaps.Marker) {
+        console.error("OlaMaps.Marker constructor not available");
+        console.log("Available OlaMaps properties:", Object.keys(olaMaps));
         return;
       }
 
@@ -333,18 +392,23 @@ const OlaMapComponent = ({
         .setLngLat([lng, lat])
         .addTo(mapInstanceRef.current);
 
-      // Add popup if available
+      // Add info window/popup
       if (olaMaps.Popup) {
         const popup = new olaMaps.Popup({
           offset: 25,
+          closeButton: true,
+          closeOnClick: false,
         }).setHTML(
-          `<div style="padding: 8px; font-size: 14px; font-weight: 500;">${title}</div>`
+          `<div style="padding: 8px; font-size: 14px; font-weight: 500; color: #333;">${title}</div>`
         );
 
         markerRef.current.setPopup(popup);
       }
+
+      console.log("Marker added successfully at:", lat, lng);
     } catch (error) {
       console.error("Error adding marker:", error);
+      console.error("OlaMaps object:", olaMaps);
       setDebugInfo("Error adding marker");
     }
   };
@@ -511,9 +575,6 @@ const OlaMapComponent = ({
           )}
         </motion.button>
 
-        <div className="px-2 sm:px-3 py-1 bg-gray-700 text-white text-xs rounded-full">
-          Click to pin
-        </div>
       </div>
     </div>
   );
@@ -723,10 +784,13 @@ export default function ProfileTab() {
         return transformedProfile;
       }
 
-      const savedProfile = localStorage.getItem("profileData");
-      if (savedProfile) {
-        const parsedProfile = JSON.parse(savedProfile);
-        return parsedProfile;
+      // Check if we're in the browser before accessing localStorage
+      if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+        const savedProfile = localStorage.getItem("profileData");
+        if (savedProfile) {
+          const parsedProfile = JSON.parse(savedProfile);
+          return parsedProfile;
+        }
       }
 
       return initialProfileData;
@@ -802,6 +866,7 @@ export default function ProfileTab() {
         setProfileFormData({
           name: profile.name || "",
           location: profile.locationData?.address || profile.location || "",
+          phone: profile.phone || "",
           bio: profile.bio || "",
           skills: profile.skills?.join(", ") || "",
           languages: profile.languages?.join(", ") || "English (Native)",
@@ -840,6 +905,7 @@ export default function ProfileTab() {
   const [profileFormData, setProfileFormData] = useState({
     name: "",
     location: "",
+    phone: "",
     bio: "",
     skills: "",
     languages: "",
@@ -907,6 +973,13 @@ export default function ProfileTab() {
       setAvailabilitySlots(profileData.profile.availability);
     }
   }, [profileData.profile.availability]);
+
+  useEffect(() => {
+    // Check if profile is loaded and phone is missing
+    if (profileData.profile && !profileData.profile.phone && profileData.profile.name) {
+      toast("Complete Your Profile: Please enter your phone number to complete your profile")
+    }
+  }, [profileData.profile, toast])
 
   // Profile picture handling
   const handleProfilePictureUpload = (
@@ -1219,6 +1292,7 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
     setProfileFormData({
       name: profile?.name || user?.name || "",
       location: profile?.location || "",
+      phone: profileData.profile.phone || "",
       bio: profileData.profile.bio || "",
       skills: profileData.profile.skills.join(", ") || "",
       languages: profileData.profile.languages.join(", ") || "",
@@ -1626,9 +1700,9 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
         },
       };
 
-      setProfileData(updatedProfileData);
-      await updateProfileAPI(updatedProfileData);
-      localStorage.setItem("profile", JSON.stringify(updatedProfileData));
+      setProfileData(updatedProfileData)
+      await updateProfileAPI(updatedProfileData)
+      localStorage.setItem("profile", JSON.stringify(updatedProfileData))
     } catch (error) {
       console.error("Failed to update profile field:", error);
       alert("Failed to update profile. Please try again.");
@@ -2040,10 +2114,13 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
                           Location set
                         </span>
                       </div>
-                      <OlaMapComponent
-                        location={profileData.profile.location}
-                        searchQuery=""
-                      />
+                      {profileData.profile.phone && (
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Phone className="w-4 h-4" />
+                          <span className="text-sm sm:text-base">Phone: {profileData.profile.phone}</span>
+                        </div>
+                      )}
+                      <OlaMapComponent location={profileData.profile.location} searchQuery="" />
                     </div>
                   </motion.div>
                 )}
@@ -2138,18 +2215,10 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
 
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 pr-10">
-                  {exp.title}
-                </h3>
-                <p className="text-blue-600 font-medium text-sm sm:text-base mb-2">
-                  {exp.company}
-                </p>
-                <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">
-                  {exp.period}
-                </p>
-                <p className="text-gray-600 text-sm sm:text-base">
-                  {exp.description}
-                </p>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 pr-10">{exp.title}</h3>
+                <p className="text-blue-600 font-medium text-sm sm:text-base mb-2">{exp.company}</p>
+                <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">{exp.period}</p>
+                <p className="text-gray-600 text-sm:text-base">{exp.description}</p>
               </motion.div>
             ))}
 
@@ -2754,6 +2823,22 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
                       }))
                     }
                     placeholder="e.g., English (Native), Spanish (Intermediate) (comma separated)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={profileFormData.phone}
+                    onChange={(e) =>
+                      setProfileFormData((prev) => ({
+                        ...prev,
+                        phone: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g., +1 (555) 123-4567"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

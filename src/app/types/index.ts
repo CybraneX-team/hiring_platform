@@ -77,6 +77,7 @@ export interface InspectItem {
   id: string;
   name: string;
   company?: string;
+  no? :  string;
   status: "active" | "pending" | "completed";
   lastActivity?: string;
   role?: string;
@@ -84,7 +85,7 @@ export interface InspectItem {
   location?: string;
   yearsOfExp?: string;
   matchScore?: number;
-  profile: unknown;
+  profile ?: unknown;
 }
 
 export type ViewType =

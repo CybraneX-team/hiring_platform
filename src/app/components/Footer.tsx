@@ -57,11 +57,11 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 className="font-semibold mb-6 text-black">Products</h3>
+            <h3 className="font-semibold mb-6 text-black">Sectors</h3>
             <ul className="space-y-3 text-sm">
               <li>
                 <Link
-                  href="#"
+                  href="#sectors"
                   className="text-gray-400 hover:text-black transition-colors"
                 >
                   Solar Power
@@ -69,7 +69,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="#"
+         href="#sectors"
                   className="text-gray-400 hover:text-black transition-colors"
                 >
                   Wind Energy
@@ -77,7 +77,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="#"
+               href="#sectors"
                   className="text-gray-400 hover:text-black transition-colors"
                 >
                   Energy Storage
@@ -85,7 +85,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="#sectors"
                   className="text-gray-400 hover:text-black transition-colors"
                 >
                   Smart Grid

@@ -30,6 +30,21 @@ export default function DarkImpactSection() {
       description:
         "Verification of weld quality, piping systems, pressure  vessels, and storage tanks.",
     },
+    {
+      title: "QA/QC & Inspection",
+      description:
+        "Ensuring quality, compliance, integrity",
+    },
+    {
+      title: "Expediting & Follow-Up",
+      description:
+        "Procurement tracking, vendor deliverables, on-call support",
+    },
+    {
+      title: "Project & Safety Management",
+      description:
+        "Risk, HS&E compliance, team coordination",
+    },
   ];
 
   return (
@@ -56,11 +71,7 @@ export default function DarkImpactSection() {
           ))}
         </div>
 
-        <div className="text-center mt-10">
-          <button className="text-[#8D8D8D] px-8 py-3 rounded-lg transition-colors cursor-pointer">
-            View more v
-          </button>
-        </div>
+      
       </div>
     </section>
   );

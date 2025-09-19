@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function ImpactSection() {
   return (
     <section className="py-0 bg-white">
@@ -17,9 +19,11 @@ export default function ImpactSection() {
                 <p className="text-lg mb-8 text-white font-light">
                   Created to redefine how energy  professionals and organizations connect, collaborate, and execute projects with precision and  excellence. Leveraging decades of expertise in hydrocarbon industrial projects, inspection, and  advanced energy solutions, Compscope ensures that every connection on Projectmatch is backed  by trust, technical depth, and verified credibility.
                 </p>
+                <Link href="/signup">
                 <button className="bg-black  text-white font-medium px-8 py-3 rounded-lg transition-colors">
                   Get started
                 </button>
+                </Link>
               </div>
             </div>
           </div>
