@@ -14,7 +14,7 @@ import BackedSection from "./components/Backed";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white ">
       {/* <Header /> */}
       <HeroSection />
       {/* <AboutSection /> */}
@@ -25,7 +25,7 @@ export default function Home() {
       <DarkImpactSection />
       <WorksSection />
       <BackedSection />
-      <TestimonialsSection />
+      {/* <TestimonialsSection /> */}
       <CTASection />
       <Footer />
     </div>

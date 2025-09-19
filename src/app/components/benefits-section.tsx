@@ -6,6 +6,28 @@ const ACCENT = "#76FF83";
 
 export default function BenefitsSection() {
   const [open, setOpen] = useState<number | null>(null);
+   const [selectedSector, setSelectedSector] = useState(0)
+
+  const sectors = [
+  
+    {
+      title: "Oil and gas",
+      image: "/images/Oil-gas.png",
+    },
+    {
+      title: "Infrastructure projects",
+      image: "/images/Infrastructure.png",
+    },
+    {
+      title: "hydrogen",
+      image: "/images/hydrogen.png",
+    },
+    {
+      title: "solar and wind",
+      image:
+        "/images/solar-wind.png",
+    },
+  ]
 
   const benefits = [
     {
@@ -61,6 +83,27 @@ export default function BenefitsSection() {
                 Our approach
               </a>
             </div>
+
+             <div className="mt-10 md:mt-24">
+              <div className="">
+                 <span className="text-lg md:text-xl font-medium text-gray-900 ">
+                      Compscope environment
+                      </span>
+                {sectors.map((sector, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedSector(index)}
+                    className={`block w-full text-left py-3 px-4 rounded-lg mt-5 transition-all duration-200 ${
+                      selectedSector === index
+                        ? "bg-gray-100 text-gray-900 font-medium"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    }`}
+                  >
+                    {sector.title}
+                  </button>
+                ))}
+              </div>
+            </div>
           </aside>
 
           {/* Right content */}
@@ -78,7 +121,7 @@ export default function BenefitsSection() {
               </h2>
             </div>
 
-            {/* Accordion with top and bottom borders; uniform row padding and clean dividers */}
+         
             <div className="border-y border-gray-200">
               {benefits.map((b, i) => {
                 const isOpen = open === i;
@@ -86,7 +129,7 @@ export default function BenefitsSection() {
                   <div key={b.num} className="border-b border-gray-200">
                     <button
                       type="button"
-                      onClick={() => setOpen(isOpen ? null : i)}
+                      // onClick={() => setOpen(isOpen ? null : i)}
                       className="w-full grid grid-cols-[56px_1fr_24px] items-center gap-4 py-7 pl-8 pr-6 text-left hover:bg-gray-50 transition-colors"
                       aria-expanded={isOpen}
                       aria-controls={`benefit-panel-${i}`}
@@ -97,11 +140,11 @@ export default function BenefitsSection() {
                       <span className="text-lg md:text-xl font-medium text-gray-900">
                         {b.title}
                       </span>
-                      <ChevronDown
+                      {/* <ChevronDown
                         className={`h-5 w-5 justify-self-end text-gray-600 transition-transform ${
                           isOpen ? "rotate-180" : ""
                         }`}
-                      />
+                      /> */}
                     </button>
 
                     {isOpen && (
@@ -115,13 +158,12 @@ export default function BenefitsSection() {
                 );
               })}
             </div>
-
-            {/* Large image directly below rows, aligned to right column */}
-            <div className="mt-8 md:mt-10">
+            
+ <div className="mt-8 md:mt-10">
               <img
-                src="/images/about.png"
-                alt="Solar panels under a blue sky"
-                className="h-80 w-full object-cover md:h-[420px] rounded-xl"
+                src={sectors[selectedSector].image || "/placeholder.svg"}
+                alt={`${sectors[selectedSector].title} sector visualization`}
+                className="h-80 w-full object-cover md:h-[420px] rounded-xl transition-opacity duration-300"
               />
             </div>
           </div>
@@ -131,7 +173,7 @@ export default function BenefitsSection() {
   );
 }
 
-// Minimal inline chevron (no UI libs)
+
 function ChevronDown({ className = "" }: { className?: string }) {
   return (
     <svg

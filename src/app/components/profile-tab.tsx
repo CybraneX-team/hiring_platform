@@ -19,15 +19,16 @@ import {
   Calendar,
   Clock,
   Plus,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import CalendarSection from "./calender";
-import { useRouter } from "next/navigation";
-import ResumeUpload from "./ResumeUpload";
-import JobMatching from "./JobMatching";
-import { useUser } from "../context/UserContext";
-import { toast } from "react-toastify";
-import ApplicationDetailView from "./cv";
+  Phone,
+} from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import CalendarSection from "./calender"
+import { useRouter } from "next/navigation"
+import ResumeUpload from "./ResumeUpload"
+import JobMatching from "./JobMatching"
+import { useUser } from "../context/UserContext"
+import { toast } from "react-toastify"
+import ApplicationDetailView from "./cv"
 
 // OlaMaps integration
 let OlaMaps: any = null;
@@ -259,7 +260,7 @@ const OlaMapComponent = ({
             typeof lat === "number" &&
             typeof lng === "number" &&
             !isNaN(lat) &&
-            !isNaN(lng) &&
+            isNaN(lng) &&
             isFinite(lat) &&
             isFinite(lng)
           ) {
@@ -865,6 +866,7 @@ export default function ProfileTab() {
         setProfileFormData({
           name: profile.name || "",
           location: profile.locationData?.address || profile.location || "",
+          phone: profile.phone || "",
           bio: profile.bio || "",
           skills: profile.skills?.join(", ") || "",
           languages: profile.languages?.join(", ") || "English (Native)",
@@ -903,6 +905,7 @@ export default function ProfileTab() {
   const [profileFormData, setProfileFormData] = useState({
     name: "",
     location: "",
+    phone: "",
     bio: "",
     skills: "",
     languages: "",
@@ -970,6 +973,13 @@ export default function ProfileTab() {
       setAvailabilitySlots(profileData.profile.availability);
     }
   }, [profileData.profile.availability]);
+
+  useEffect(() => {
+    // Check if profile is loaded and phone is missing
+    if (profileData.profile && !profileData.profile.phone && profileData.profile.name) {
+      toast("Complete Your Profile: Please enter your phone number to complete your profile")
+    }
+  }, [profileData.profile, toast])
 
   // Profile picture handling
   const handleProfilePictureUpload = (
@@ -1282,6 +1292,7 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
     setProfileFormData({
       name: profile?.name || user?.name || "",
       location: profile?.location || "",
+      phone: profileData.profile.phone || "",
       bio: profileData.profile.bio || "",
       skills: profileData.profile.skills.join(", ") || "",
       languages: profileData.profile.languages.join(", ") || "",
@@ -1689,9 +1700,9 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
         },
       };
 
-      setProfileData(updatedProfileData);
-      await updateProfileAPI(updatedProfileData);
-      localStorage.setItem("profile", JSON.stringify(updatedProfileData));
+      setProfileData(updatedProfileData)
+      await updateProfileAPI(updatedProfileData)
+      localStorage.setItem("profile", JSON.stringify(updatedProfileData))
     } catch (error) {
       console.error("Failed to update profile field:", error);
       alert("Failed to update profile. Please try again.");
@@ -2103,10 +2114,13 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
                           Location set
                         </span>
                       </div>
-                      <OlaMapComponent
-                        location={profileData.profile.location}
-                        searchQuery=""
-                      />
+                      {profileData.profile.phone && (
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Phone className="w-4 h-4" />
+                          <span className="text-sm sm:text-base">Phone: {profileData.profile.phone}</span>
+                        </div>
+                      )}
+                      <OlaMapComponent location={profileData.profile.location} searchQuery="" />
                     </div>
                   </motion.div>
                 )}
@@ -2201,18 +2215,10 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
 
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 pr-10">
-                  {exp.title}
-                </h3>
-                <p className="text-blue-600 font-medium text-sm sm:text-base mb-2">
-                  {exp.company}
-                </p>
-                <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">
-                  {exp.period}
-                </p>
-                <p className="text-gray-600 text-sm sm:text-base">
-                  {exp.description}
-                </p>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 pr-10">{exp.title}</h3>
+                <p className="text-blue-600 font-medium text-sm sm:text-base mb-2">{exp.company}</p>
+                <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">{exp.period}</p>
+                <p className="text-gray-600 text-sm:text-base">{exp.description}</p>
               </motion.div>
             ))}
 
@@ -2817,6 +2823,22 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
                       }))
                     }
                     placeholder="e.g., English (Native), Spanish (Intermediate) (comma separated)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={profileFormData.phone}
+                    onChange={(e) =>
+                      setProfileFormData((prev) => ({
+                        ...prev,
+                        phone: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g., +1 (555) 123-4567"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
