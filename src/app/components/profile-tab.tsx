@@ -655,6 +655,7 @@ const tabs = [
   { id: "certifications", label: "Certifications" },
   { id: "schedule", label: "Schedule" },
   { id: "resume", label: "Resume & Jobs" },
+  { id: "jobsApplied", label: "Jobs Applied" }
 ];
 
 const initialProfileData = {
@@ -726,6 +727,84 @@ export default function ProfileTab() {
     "education" | "experience" | "certificate" | null
   >(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  // Add these state variables
+const [applications, setApplications] = useState<any[]>([]);
+const [loadingApplications, setLoadingApplications] = useState(false);
+const [documentUploadModal, setDocumentUploadModal] = useState<{
+  isOpen: boolean;
+  applicationId: string;
+  documents: any[];
+}>({
+  isOpen: false,
+  applicationId: "",
+  documents: [],
+});
+const [uploadingDocument, setUploadingDocument] = useState(false);
+
+const fetchUserApplications = async () => {
+  if (!user?.id) return;
+  
+  setLoadingApplications(true);
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/allApplicationsOfUser?userId=${user.id}`
+    );
+    
+    if (response.ok) {
+      const data = await response.json();
+      setApplications(data);
+    } else {
+      console.error("Failed to fetch applications");
+      toast.error("Failed to load applications");
+    }
+  } catch (error) {
+    console.error("Error fetching applications:", error);
+    toast.error("Error loading applications");
+  } finally {
+    setLoadingApplications(false);
+  }
+};
+
+// Call this function when the component mounts
+useEffect(() => {
+  if (activeTab === "jobsApplied") {
+    fetchUserApplications();
+  }
+}, [activeTab, user?.id]);
+
+const uploadDocument = async (applicationId: string, docId: number, file: File) => {
+  setUploadingDocument(true);
+  try {
+    const formData = new FormData();
+    formData.append("document", file);
+    formData.append("docId", docId.toString());
+    
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/${applicationId}/upload-document`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+    
+    if (response.ok) {
+      toast.success("Document uploaded successfully!");
+      // Refresh applications to get updated status
+      fetchUserApplications();
+      // Close modal
+      setDocumentUploadModal({ isOpen: false, applicationId: "", documents: [] });
+    } else {
+      const errorData = await response.json();
+      toast.error(errorData.message || "Failed to upload document");
+    }
+  } catch (error) {
+    console.error("Error uploading document:", error);
+    toast.error("Error uploading document");
+  } finally {
+    setUploadingDocument(false);
+  }
+};
+
 
   const getLocationDisplay = (location: any) => {
     if (!location) return "";
@@ -738,13 +817,15 @@ export default function ProfileTab() {
   const [profileData, setProfileData] = useState(() => {
     try {
       if (profile && profile._id && profile.name) {
+        console.log("profile", profile, profile.unavailability)
         const transformedProfile = {
           profile: {
             bio: profile.bio || "",
             skills: profile.skills || [],
             languages: [],
-            availability: [],
+            unavailability: profile.unavailability || [],
             location: null,
+            phoneNumber: profile.phoneNumber ||"",
           },
           education:
             profile.education?.map((edu: any, index: any) => ({
@@ -810,8 +891,9 @@ export default function ProfileTab() {
             bio: profile.bio || "",
             skills: profile.skills || [],
             languages: profile.languages || ["English (Native)"],
-            availability:
-              profile.availability?.map((slot: any) => ({
+            phoneNumber: profile.phoneNumber ||"",
+            unavailability:
+              profile.unavailability?.map((slot: any) => ({
                 startDate: slot.startDate,
                 endDate: slot.endDate,
                 description:
@@ -870,7 +952,7 @@ export default function ProfileTab() {
           bio: profile.bio || "",
           skills: profile.skills?.join(", ") || "",
           languages: profile.languages?.join(", ") || "English (Native)",
-          availability: profile.availability || [],
+          unavailability: profile.unavailability || [],
           locationData: profile.locationData || null,
         });
 
@@ -909,7 +991,7 @@ export default function ProfileTab() {
     bio: "",
     skills: "",
     languages: "",
-    availability: "",
+    unavailability: "",
     locationData: null as { lat: number; lng: number; address: string } | null,
   });
   const profileFileInputRef = useRef<HTMLInputElement>(null);
@@ -923,7 +1005,7 @@ export default function ProfileTab() {
 
   // New state for availability slot management
   const [availabilitySlots, setAvailabilitySlots] = useState<any[]>(
-    profileData.profile.availability || []
+    profileData.profile.unavailability || []
   );
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [newAvailabilityDate, setNewAvailabilityDate] = useState("");
@@ -969,10 +1051,10 @@ export default function ProfileTab() {
 
   // Initialize availability slots from profile data
   useEffect(() => {
-    if (profileData.profile.availability) {
-      setAvailabilitySlots(profileData.profile.availability);
+    if (profileData.profile.unavailability) {
+      setAvailabilitySlots(profileData.profile.unavailability);
     }
-  }, [profileData.profile.availability]);
+  }, [profileData.profile.unavailability]);
 
   useEffect(() => {
     // Check if profile is loaded and phone is missing
@@ -1076,6 +1158,7 @@ export default function ProfileTab() {
       const formData = new FormData();
       formData.append("userId", user?.id!);
       formData.append("name", profileFormData.name);
+      formData.append("phoneNumber", profileFormData.phone);
       formData.append("location", profileFormData.location); // Basic location string
       formData.append("bio", profileFormData.bio);
       formData.append("skills", JSON.stringify(skillsArray));
@@ -1292,16 +1375,16 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
     setProfileFormData({
       name: profile?.name || user?.name || "",
       location: profile?.location || "",
-      phone: profileData.profile.phone || "",
+      phone: profileData.profile.phoneNumber || "",
       bio: profileData.profile.bio || "",
       skills: profileData.profile.skills.join(", ") || "",
       languages: profileData.profile.languages.join(", ") || "",
-      availability: profileData.profile.availability?.join(", ") || "",
+      unavailability: profileData.profile.unavailability?.join(", ") || "",
       locationData: profileData.profile.location || null,
     });
 
     // Initialize availability slots
-    setAvailabilitySlots(profileData.profile.availability || []);
+    setAvailabilitySlots(profileData.profile.unavailability || []);
 
     // FIXED: Clear certificate states to prevent duplication
     setNewCertificatesFiles([]);
@@ -2072,7 +2155,7 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
 
                 {/* Availability Section */}
                 {/* Availability Section */}
-                {profileData.profile.availability.length > 0 && (
+                {profileData.profile.unavailability.length > 0 && (
                   <motion.div variants={itemVariants}>
                     <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
                       Availability
@@ -2082,7 +2165,7 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
                       variants={containerVariants}
                       transition={{ staggerChildren: 0.1 }}
                     >
-                      {profileData.profile.availability.map((slot : any, index : any) => (
+                      {profileData.profile.unavailability.map((slot : any, index : any) => (
                         <motion.div
                           key={index}
                           variants={skillVariants}
@@ -2114,10 +2197,10 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
                           Location set
                         </span>
                       </div>
-                      {profileData.profile.phone && (
+                      {profileData.profile.phoneNumber && (
                         <div className="flex items-center gap-2 text-gray-600">
                           <Phone className="w-4 h-4" />
-                          <span className="text-sm sm:text-base">Phone: {profileData.profile.phone}</span>
+                          <span className="text-sm sm:text-base">Phone: {profileData.profile.phoneNumber}</span>
                         </div>
                       )}
                       <OlaMapComponent location={profileData.profile.location} searchQuery="" />
@@ -2231,6 +2314,120 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
             )}
           </motion.div>
         );
+        case "jobsApplied":
+  return (
+    <motion.div
+      key="jobsApplied"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="space-y-6"
+    >
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-semibold text-gray-900">
+          My Applications
+        </h3>
+        <span className="text-sm text-gray-500">
+          {applications.length} applications
+        </span>
+      </div>
+
+      {loadingApplications ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      ) : applications.length === 0 ? (
+        <motion.div variants={itemVariants} className="text-center py-12">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            No Applications Yet
+          </h3>
+          <p className="text-gray-600 mb-6">
+            You haven't applied to any jobs yet. Start exploring opportunities!
+          </p>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => router.push("/jobs")}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
+          >
+            Browse Jobs
+          </motion.button>
+        </motion.div>
+      ) : (
+        <div className="space-y-4">
+          {applications.map((application, index) => (
+            <motion.div
+              key={application._id}
+              variants={cardVariants}
+              whileHover={{
+                y: -2,
+                boxShadow: "0 8px 25px rgba(0, 0, 0, 0.1)",
+              }}
+              transition={{ duration: 0.3 }}
+              className="bg-white rounded-xl p-6 shadow-sm border"
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                    Job Application {index + 1}
+                  </h4>
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <span>Applied: {new Date(application.appliedDate).toLocaleDateString()}</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      application.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      application.status === 'reviewing' ? 'bg-blue-100 text-blue-800' :
+                      application.status === 'shortlisted' ? 'bg-green-100 text-green-800' :
+                      application.status === 'interview' ? 'bg-purple-100 text-purple-800' :
+                      application.status === 'hired' ? 'bg-green-200 text-green-900' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                    </span>
+                  </div>
+                </div>
+                
+                {application.documents && application.documents.length > 0 && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setDocumentUploadModal({
+                      isOpen: true,
+                      applicationId: application._id,
+                      documents: application.documents,
+                    })}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload Documents
+                  </motion.button>
+                )}
+              </div>
+
+              {application.matchDetails && (
+                <div className="mb-4">
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="text-gray-600">Match Score:</span>
+                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{ width: `${application.matchDetails.overallScore}%` }}
+                      />
+                    </div>
+                    <span className="font-medium text-blue-600">
+                      {application.matchDetails.overallScore}%
+                    </span>
+                  </div>
+                </div>
+              )}
+
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
 
       case "certifications":
         return (
@@ -2480,6 +2677,105 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
           Logo
         </h1>
       </motion.div>
+      {/* Document Upload Modal */}
+<AnimatePresence>
+  {documentUploadModal.isOpen && (
+    <motion.div
+      key="document-upload-modal"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      aria-modal="true"
+      role="dialog"
+    >
+      <motion.div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={() => setDocumentUploadModal({ isOpen: false, applicationId: "", documents: [] })}
+      />
+
+      <motion.div
+        className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[80vh] overflow-y-auto"
+        initial={{ y: 24, opacity: 0, scale: 0.98 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        exit={{ y: 24, opacity: 0, scale: 0.98 }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Upload Required Documents
+          </h2>
+          <button
+            onClick={() => setDocumentUploadModal({ isOpen: false, applicationId: "", documents: [] })}
+            aria-label="Close"
+            className="p-2 rounded-full hover:bg-gray-100"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {documentUploadModal.documents.map((doc) => (
+            <div key={doc.docId} className="border rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h4 className="font-medium text-gray-900">{doc.name}</h4>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    doc.status === 'requested' ? 'bg-yellow-100 text-yellow-800' :
+                    doc.status === 'submitted' ? 'bg-blue-100 text-blue-800' :
+                    doc.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
+                  </span>
+                </div>
+              </div>
+
+              {doc.status === 'requested' && (
+                <div className="mt-3">
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        uploadDocument(documentUploadModal.applicationId, doc.docId, file);
+                      }
+                    }}
+                    className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    disabled={uploadingDocument}
+                  />
+                </div>
+              )}
+
+              {doc.fileUrl && (
+                <div className="mt-3">
+                  <a
+                    href={doc.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100"
+                  >
+                    <FileText className="w-4 h-4" />
+                    View Uploaded
+                  </a>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {uploadingDocument && (
+          <div className="mt-6 flex justify-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
 
       <div className="pt-16 sm:pt-24 pb-8 sm:pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">

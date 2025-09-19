@@ -17,6 +17,7 @@ import ResumeManager from "../../components/Company/ResumeManager";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/app/context/UserContext";
 // import { toast } from "react-toastify";
+import JobStatusDropdown from '@/app/components/JobStatusDropdown';
 
 // OlaMaps integration
 let OlaMaps: any = null;
@@ -39,7 +40,6 @@ const initializeOlaMaps = async () => {
 const tabs = [
   { id: "profile", label: "Profile" },
   { id: "jobs", label: "Jobs" },
-  { id: "resumes", label: "Resume Management" },
 ];
 
 // Team size options
@@ -708,9 +708,12 @@ export default function ProfileTab() {
     );
   };
 
-  const [applications, setApplications] = useState([]);
+  const [applications, setApplications] = useState<any>([]);
   const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [applicationsError, setApplicationsError] = useState<any>(null);
+  const [updatingJobStatus, setUpdatingJobStatus] = useState<string | null>(
+    null
+  );
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<any>(null);
 
@@ -806,7 +809,7 @@ export default function ProfileTab() {
       toast({
         title: data.message || "Profile updated successfully",
         duration: 5000,
-        variant : "success"
+        variant: "success",
       });
     } catch (error: any) {
       console.error("Error updating profile:", error);
@@ -815,7 +818,7 @@ export default function ProfileTab() {
         title: "Error updating profile",
         description: error.message || "Please try again",
         duration: 5000,
-        variant : "destructive"
+        variant: "destructive",
       });
     } finally {
       setApplicationsLoading(false);
@@ -1067,6 +1070,66 @@ export default function ProfileTab() {
     );
   };
 
+  const handleJobStatusUpdate = async (newStatus: string, jobId: string) => {
+    if (!user?.id || !profile?._id) {
+      toast({
+        title: "Error",
+        description: "User information missing",
+        duration: 2000,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUpdatingJobStatus(jobId);
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs/updateJobStatus`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            statusToUpdate: newStatus,
+            jobId: jobId,
+            userId: user.id,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update job status");
+      }
+
+      // Update the local state
+      setApplications((prevApps: any) =>
+        prevApps.map((job: any) =>
+          job._id === jobId ? { ...job, jobStatus: newStatus } : job
+        )
+      );
+
+      toast({
+        title: "Status Updated",
+        description: `Job status updated to ${newStatus}`,
+        duration: 5000,
+        variant: "success",
+      });
+    } catch (error: any) {
+      console.error("Error updating job status:", error);
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update job status",
+        duration: 5000,
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingJobStatus(null);
+    }
+  };
   const renderTabContent = () => {
     switch (activeTab) {
       case "profile":
@@ -1238,7 +1301,8 @@ export default function ProfileTab() {
               {!applicationsLoading &&
                 !applicationsError &&
                 applications.length > 0 &&
-                applications.map((job: any, index: number) => (
+                applications.map((job: any, index: number) =>{
+                  return (
                   <motion.div
                     key={job._id || index}
                     variants={cardVariants}
@@ -1246,13 +1310,23 @@ export default function ProfileTab() {
                     className="bg-white rounded-lg p-4 sm:p-6 min-h-[200px] sm:min-h-[250px] flex flex-col justify-between"
                   >
                     <div>
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
-                        {job.title || "Untitled Job"}
-                      </h3>
+                      {/* Job Title and Status Row */}
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 line-clamp-2 flex-1 mr-2">
+                          {job.title || "Untitled Job"}
+                        </h3>
+                        <JobStatusDropdown
+                          value={job.jobStatus || "Open"}
+                          onChange={handleJobStatusUpdate}
+                          jobId={job._id}
+                          isUpdating={updatingJobStatus === job._id}
+                        />
+                      </div>
 
                       <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
                         {job.totalApplications || 0} Applicants
                       </p>
+
                       {job.description && (
                         <p className="text-xs text-gray-600 line-clamp-2 mb-2">
                           {job.description
@@ -1276,6 +1350,7 @@ export default function ProfileTab() {
                             )
                           : "No date"}
                       </span>
+
                       <Link href={`/company/applications?jobId=${job._id}`}>
                         <motion.button
                           whileHover={{ scale: 1.05 }}
@@ -1287,23 +1362,8 @@ export default function ProfileTab() {
                       </Link>
                     </div>
                   </motion.div>
-                ))}
+                )})}
             </motion.div>
-          </motion.div>
-        );
-
-      case "resumes":
-        return (
-          <motion.div
-            key="resumes"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="w-full"
-          >
-            <ResumeManager />
           </motion.div>
         );
 
