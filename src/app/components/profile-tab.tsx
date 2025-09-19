@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Star,
   Upload,
@@ -20,15 +20,15 @@ import {
   Clock,
   Plus,
   Phone,
-} from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
-import CalendarSection from "./calender"
-import { useRouter } from "next/navigation"
-import ResumeUpload from "./ResumeUpload"
-import JobMatching from "./JobMatching"
-import { useUser } from "../context/UserContext"
-import { toast } from "react-toastify"
-import ApplicationDetailView from "./cv"
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import CalendarSection from "./calender";
+import { useRouter } from "next/navigation";
+import ResumeUpload from "./ResumeUpload";
+import JobMatching from "./JobMatching";
+import { useUser } from "../context/UserContext";
+import { toast } from "react-toastify";
+import ApplicationDetailView from "./cv";
 
 // OlaMaps integration
 let OlaMaps: any = null;
@@ -42,7 +42,7 @@ const initializeOlaMaps = async () => {
       olaMaps = new OlaMaps({
         apiKey: process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY || "",
       });
-      
+
       // Ensure Marker and Popup constructors are available
       if (!olaMaps.Marker) {
         olaMaps.Marker = (module as any).Marker || (OlaMaps as any).Marker;
@@ -50,10 +50,10 @@ const initializeOlaMaps = async () => {
       if (!olaMaps.Popup) {
         olaMaps.Popup = (module as any).Popup || (OlaMaps as any).Popup;
       }
-      
+
       console.log("OlaMaps initialized successfully with constructors:", {
         hasMarker: !!olaMaps.Marker,
-        hasPopup: !!olaMaps.Popup
+        hasPopup: !!olaMaps.Popup,
       });
     } catch (error) {
       console.error("Failed to initialize OlaMaps:", error);
@@ -113,7 +113,8 @@ const OlaMapComponent = ({
           try {
             // Try default light style first
             mapInstanceRef.current = olaMaps.init({
-              style: "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
+              style:
+                "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
               container: mapRef.current,
               center: [mapCenter.lng, mapCenter.lat],
               zoom: 12,
@@ -122,11 +123,15 @@ const OlaMapComponent = ({
               maxPitch: 0, // Force 2D mode
             });
           } catch (styleError) {
-            console.warn("Failed to load default style, trying satellite style:", styleError);
+            console.warn(
+              "Failed to load default style, trying satellite style:",
+              styleError
+            );
             try {
               // Try satellite style as fallback
               mapInstanceRef.current = olaMaps.init({
-                style: "https://api.olamaps.io/tiles/vector/v1/styles/satellite/style.json",
+                style:
+                  "https://api.olamaps.io/tiles/vector/v1/styles/satellite/style.json",
                 container: mapRef.current,
                 center: [mapCenter.lng, mapCenter.lat],
                 zoom: 12,
@@ -135,7 +140,10 @@ const OlaMapComponent = ({
                 maxPitch: 0,
               });
             } catch (satelliteError) {
-              console.warn("Failed to load satellite style, using minimal config:", satelliteError);
+              console.warn(
+                "Failed to load satellite style, using minimal config:",
+                satelliteError
+              );
               // Final fallback with minimal configuration
               mapInstanceRef.current = olaMaps.init({
                 container: mapRef.current,
@@ -177,10 +185,17 @@ const OlaMapComponent = ({
           // Add error handling with 3D model error filtering
           mapInstanceRef.current.on("error", (e: any) => {
             // Suppress 3D model layer errors as they're expected when using 2D mode
-            if (e.error && e.error.message && 
-                (e.error.message.includes('3d_model') || 
-                 e.error.message.includes('Source layer') && e.error.message.includes('does not exist'))) {
-              console.warn("Suppressing 3D model layer error (expected in 2D mode):", e.error.message);
+            if (
+              e.error &&
+              e.error.message &&
+              (e.error.message.includes("3d_model") ||
+                (e.error.message.includes("Source layer") &&
+                  e.error.message.includes("does not exist")))
+            ) {
+              console.warn(
+                "Suppressing 3D model layer error (expected in 2D mode):",
+                e.error.message
+              );
               return;
             }
             console.error("Map error:", e);
@@ -574,7 +589,6 @@ const OlaMapComponent = ({
             </>
           )}
         </motion.button>
-
       </div>
     </div>
   );
@@ -648,15 +662,6 @@ const LocationInputWithSearch = ({
   );
 };
 
-const tabs = [
-  { id: "profile", label: "Profile" },
-  { id: "education", label: "Education" },
-  { id: "experiences", label: "Experiences" },
-  { id: "certifications", label: "Certifications" },
-  { id: "schedule", label: "Schedule" },
-  { id: "resume", label: "Resume & Jobs" },
-  { id: "jobsApplied", label: "Jobs Applied" }
-];
 
 const initialProfileData = {
   profile: {
@@ -723,88 +728,136 @@ export default function ProfileTab() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [httpMethod, sethttpMethod] = useState<string>("PUT");
+  const [applications, setApplications] = useState<any[]>([]);
   const [modalType, setModalType] = useState<
     "education" | "experience" | "certificate" | null
   >(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   // Add these state variables
-const [applications, setApplications] = useState<any[]>([]);
-const [loadingApplications, setLoadingApplications] = useState(false);
-const [documentUploadModal, setDocumentUploadModal] = useState<{
-  isOpen: boolean;
-  applicationId: string;
-  documents: any[];
-}>({
-  isOpen: false,
-  applicationId: "",
-  documents: [],
-});
-const [uploadingDocument, setUploadingDocument] = useState(false);
-
-const fetchUserApplications = async () => {
-  if (!user?.id) return;
-  
-  setLoadingApplications(true);
-  try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/allApplicationsOfUser?userId=${user.id}`
+  const [loadingApplications, setLoadingApplications] = useState(false);
+  const [documentUploadModal, setDocumentUploadModal] = useState<{
+    isOpen: boolean;
+    applicationId: string;
+    documents: any[];
+  }>({
+    isOpen: false,
+    applicationId: "",
+    documents: [],
+  });
+  const [uploadingDocument, setUploadingDocument] = useState(false);
+  const hasApplicationsWithDocuments = useMemo(() => {
+    return applications.some(
+      (application) =>
+        application.documents &&
+        application.documents.length > 0 &&
+        application.documents.some((doc: any) => doc.status === "requested")
     );
-    
-    if (response.ok) {
-      const data = await response.json();
-      setApplications(data);
-    } else {
-      console.error("Failed to fetch applications");
-      toast.error("Failed to load applications");
+  }, [applications]);
+
+  const tabs = useMemo(() => {
+    const baseTabs = [
+      { id: "profile", label: "Profile" },
+      { id: "education", label: "Education" },
+      { id: "experiences", label: "Experiences" },
+      { id: "certifications", label: "Certifications" },
+      { id: "schedule", label: "Schedule" },
+      { id: "resume", label: "Resume & Jobs" },
+    ];
+
+    // Only add "Jobs Applied" tab if there are applications with requested documents
+    if (hasApplicationsWithDocuments) {
+      baseTabs.push({ id: "jobsApplied", label: "Jobs Applied" });
     }
-  } catch (error) {
-    console.error("Error fetching applications:", error);
-    toast.error("Error loading applications");
-  } finally {
-    setLoadingApplications(false);
-  }
-};
 
-// Call this function when the component mounts
-useEffect(() => {
-  if (activeTab === "jobsApplied") {
-    fetchUserApplications();
-  }
-}, [activeTab, user?.id]);
+    return baseTabs;
+  }, [hasApplicationsWithDocuments]);
 
-const uploadDocument = async (applicationId: string, docId: number, file: File) => {
-  setUploadingDocument(true);
-  try {
-    const formData = new FormData();
-    formData.append("document", file);
-    formData.append("docId", docId.toString());
-    
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/${applicationId}/upload-document`,
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
-    
-    if (response.ok) {
-      toast.success("Document uploaded successfully!");
-      // Refresh applications to get updated status
+  // Add this useEffect to fetch applications on component mount
+  useEffect(() => {
+    if (user?.id) {
       fetchUserApplications();
-      // Close modal
-      setDocumentUploadModal({ isOpen: false, applicationId: "", documents: [] });
-    } else {
-      const errorData = await response.json();
-      toast.error(errorData.message || "Failed to upload document");
     }
-  } catch (error) {
-    console.error("Error uploading document:", error);
-    toast.error("Error uploading document");
-  } finally {
-    setUploadingDocument(false);
-  }
-};
+  }, [user?.id]);
 
+  // Keep the existing useEffect for refreshing when tab becomes active
+  useEffect(() => {
+    if (activeTab === "jobsApplied" && user?.id) {
+      fetchUserApplications();
+    }
+  }, [activeTab, user?.id]);
+
+  const fetchUserApplications = async () => {
+    if (!user?.id) return;
+
+    setLoadingApplications(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/allApplicationsOfUser?userId=${user.id}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setApplications(data);
+      } else {
+        console.error("Failed to fetch applications");
+        toast.error("Failed to load applications");
+      }
+    } catch (error) {
+      console.error("Error fetching applications:", error);
+      toast.error("Error loading applications");
+    } finally {
+      setLoadingApplications(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "jobsApplied") {
+      fetchUserApplications();
+    }
+  }, [activeTab, user?.id]);
+
+  // Add this computed property inside your ProfileTab component
+
+  const uploadDocument = async (
+    applicationId: string,
+    docId: number,
+    file: File
+  ) => {
+    setUploadingDocument(true);
+    try {
+      const formData = new FormData();
+      formData.append("document", file);
+      formData.append("docId", docId.toString());
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/${applicationId}/upload-document`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (response.ok) {
+        toast.success("Document uploaded successfully!");
+        // Refresh applications to get updated status
+        fetchUserApplications();
+        // Close modal
+        setDocumentUploadModal({
+          isOpen: false,
+          applicationId: "",
+          documents: [],
+        });
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || "Failed to upload document");
+      }
+    } catch (error) {
+      console.error("Error uploading document:", error);
+      toast.error("Error uploading document");
+    } finally {
+      setUploadingDocument(false);
+    }
+  };
 
   const getLocationDisplay = (location: any) => {
     if (!location) return "";
@@ -817,7 +870,7 @@ const uploadDocument = async (applicationId: string, docId: number, file: File) 
   const [profileData, setProfileData] = useState(() => {
     try {
       if (profile && profile._id && profile.name) {
-        console.log("profile", profile, profile.unavailability)
+        console.log("profile", profile, profile.unavailability);
         const transformedProfile = {
           profile: {
             bio: profile.bio || "",
@@ -825,7 +878,7 @@ const uploadDocument = async (applicationId: string, docId: number, file: File) 
             languages: [],
             unavailability: profile.unavailability || [],
             location: null,
-            phoneNumber: profile.phoneNumber ||"",
+            phoneNumber: profile.phoneNumber || "",
           },
           education:
             profile.education?.map((edu: any, index: any) => ({
@@ -866,7 +919,10 @@ const uploadDocument = async (applicationId: string, docId: number, file: File) 
       }
 
       // Check if we're in the browser before accessing localStorage
-      if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      if (
+        typeof window !== "undefined" &&
+        typeof localStorage !== "undefined"
+      ) {
         const savedProfile = localStorage.getItem("profileData");
         if (savedProfile) {
           const parsedProfile = JSON.parse(savedProfile);
@@ -891,7 +947,7 @@ const uploadDocument = async (applicationId: string, docId: number, file: File) 
             bio: profile.bio || "",
             skills: profile.skills || [],
             languages: profile.languages || ["English (Native)"],
-            phoneNumber: profile.phoneNumber ||"",
+            phoneNumber: profile.phoneNumber || "",
             unavailability:
               profile.unavailability?.map((slot: any) => ({
                 startDate: slot.startDate,
@@ -979,7 +1035,6 @@ const uploadDocument = async (applicationId: string, docId: number, file: File) 
   } | null>(null);
   const router = useRouter();
 
-  // New state for profile management
   const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
   const [profilePicture, setProfilePicture] = useState("");
   const [isProfilePictureModalOpen, setIsProfilePictureModalOpen] =
@@ -1049,21 +1104,24 @@ const uploadDocument = async (applicationId: string, docId: number, file: File) 
     }
   }, [activeTab]);
 
-  // Initialize availability slots from profile data
   useEffect(() => {
     if (profileData.profile.unavailability) {
       setAvailabilitySlots(profileData.profile.unavailability);
     }
   }, [profileData.profile.unavailability]);
 
-  useEffect(() => {
-    // Check if profile is loaded and phone is missing
-    if (profileData.profile && !profileData.profile.phone && profileData.profile.name) {
-      toast("Complete Your Profile: Please enter your phone number to complete your profile")
-    }
-  }, [profileData.profile, toast])
+  // useEffect(() => {
+  //   if (
+  //     profileData.profile &&
+  //     !profileData.profile.phone &&
+  //     !profileData.profile.name
+  //   ) {
+  //     toast(
+  //       "Complete Your Profile: Please enter your phone number to complete your profile"
+  //     );
+  //   }
+  // }, [profileData.profile, toast]);
 
-  // Profile picture handling
   const handleProfilePictureUpload = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -1254,63 +1312,66 @@ const uploadDocument = async (applicationId: string, docId: number, file: File) 
   };
 
   // Availability slot management functions
-const addAvailabilitySlot = () => {
-  if (newAvailabilityStartDate && newAvailabilityEndDate) {
-    try {
-      const startDate = new Date(newAvailabilityStartDate);
-      const endDate = new Date(newAvailabilityEndDate);
-      
-      // Validate dates
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        toast.error('Invalid date format');
-        return;
+  const addAvailabilitySlot = () => {
+    if (newAvailabilityStartDate && newAvailabilityEndDate) {
+      try {
+        const startDate = new Date(newAvailabilityStartDate);
+        const endDate = new Date(newAvailabilityEndDate);
+
+        // Validate dates
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          toast.error("Invalid date format");
+          return;
+        }
+
+        if (endDate <= startDate) {
+          toast.error("End date must be after start date");
+          return;
+        }
+
+        const newSlot = {
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          description: `Unavailable from ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`,
+        };
+
+        // Check for duplicates
+        const isDuplicate = availabilitySlots.some(
+          (slot) =>
+            slot.startDate === newSlot.startDate &&
+            slot.endDate === newSlot.endDate
+        );
+
+        if (!isDuplicate) {
+          setAvailabilitySlots([...availabilitySlots, newSlot]);
+          toast.success("Availability slot added successfully");
+        } else {
+          toast.warning("This availability slot already exists");
+        }
+
+        // Reset form
+        setNewAvailabilityStartDate("");
+        setNewAvailabilityEndDate("");
+        setShowAvailabilityModal(false);
+      } catch (error) {
+        console.error("Error adding availability slot:", error);
+        toast.error("Error adding availability slot");
       }
-      
-      if (endDate <= startDate) {
-        toast.error('End date must be after start date');
-        return;
-      }
-      
-      const newSlot = {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        description: `Unavailable from ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`,
-      };
-      
-      // Check for duplicates
-      const isDuplicate = availabilitySlots.some((slot) => 
-        slot.startDate === newSlot.startDate && slot.endDate === newSlot.endDate
-      );
-      
-      if (!isDuplicate) {
-        setAvailabilitySlots([...availabilitySlots, newSlot]);
-        toast.success('Availability slot added successfully');
-      } else {
-        toast.warning('This availability slot already exists');
-      }
-      
-      // Reset form
-      setNewAvailabilityStartDate('');
-      setNewAvailabilityEndDate('');
-      setShowAvailabilityModal(false);
-    } catch (error) {
-      console.error('Error adding availability slot:', error);
-      toast.error('Error adding availability slot');
+    } else {
+      toast.error("Please select both start and end dates");
     }
-  } else {
-    toast.error('Please select both start and end dates');
-  }
-};
+  };
 
-
-const removeAvailabilitySlot = (slotToRemove : any) => {
-  setAvailabilitySlots(availabilitySlots.filter(slot => 
-    slot.startDate !== slotToRemove.startDate || 
-    slot.endDate !== slotToRemove.endDate
-  ));
-  toast.success('Availability slot removed');
-};
-
+  const removeAvailabilitySlot = (slotToRemove: any) => {
+    setAvailabilitySlots(
+      availabilitySlots.filter(
+        (slot) =>
+          slot.startDate !== slotToRemove.startDate ||
+          slot.endDate !== slotToRemove.endDate
+      )
+    );
+    toast.success("Availability slot removed");
+  };
 
   // Handle map location selection
   const handleMapLocationSelect = (location: {
@@ -1783,9 +1844,9 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
         },
       };
 
-      setProfileData(updatedProfileData)
-      await updateProfileAPI(updatedProfileData)
-      localStorage.setItem("profile", JSON.stringify(updatedProfileData))
+      setProfileData(updatedProfileData);
+      await updateProfileAPI(updatedProfileData);
+      localStorage.setItem("profile", JSON.stringify(updatedProfileData));
     } catch (error) {
       console.error("Failed to update profile field:", error);
       alert("Failed to update profile. Please try again.");
@@ -2165,20 +2226,24 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
                       variants={containerVariants}
                       transition={{ staggerChildren: 0.1 }}
                     >
-                      {profileData.profile.unavailability.map((slot : any, index : any) => (
-                        <motion.div
-                          key={index}
-                          variants={skillVariants}
-                          whileHover={{ scale: 1.05, y: -2 }}
-                          transition={{ duration: 0.3, ease: "easeOut" }}
-                          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm font-medium cursor-default flex items-center gap-2"
-                        >
-                          <Clock className="w-3 h-3" />
-                          <span>
-                            {typeof slot === "string" ? slot : slot.description}
-                          </span>
-                        </motion.div>
-                      ))}
+                      {profileData.profile.unavailability.map(
+                        (slot: any, index: any) => (
+                          <motion.div
+                            key={index}
+                            variants={skillVariants}
+                            whileHover={{ scale: 1.05, y: -2 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
+                            className="px-3 sm:px-4 py-1.5 sm:py-2 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm font-medium cursor-default flex items-center gap-2"
+                          >
+                            <Clock className="w-3 h-3" />
+                            <span>
+                              {typeof slot === "string"
+                                ? slot
+                                : slot.description}
+                            </span>
+                          </motion.div>
+                        )
+                      )}
                     </motion.div>
                   </motion.div>
                 )}
@@ -2200,10 +2265,15 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
                       {profileData.profile.phoneNumber && (
                         <div className="flex items-center gap-2 text-gray-600">
                           <Phone className="w-4 h-4" />
-                          <span className="text-sm sm:text-base">Phone: {profileData.profile.phoneNumber}</span>
+                          <span className="text-sm sm:text-base">
+                            Phone: {profileData.profile.phoneNumber}
+                          </span>
                         </div>
                       )}
-                      <OlaMapComponent location={profileData.profile.location} searchQuery="" />
+                      <OlaMapComponent
+                        location={profileData.profile.location}
+                        searchQuery=""
+                      />
                     </div>
                   </motion.div>
                 )}
@@ -2298,10 +2368,18 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
 
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 pr-10">{exp.title}</h3>
-                <p className="text-blue-600 font-medium text-sm sm:text-base mb-2">{exp.company}</p>
-                <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">{exp.period}</p>
-                <p className="text-gray-600 text-sm:text-base">{exp.description}</p>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 pr-10">
+                  {exp.title}
+                </h3>
+                <p className="text-blue-600 font-medium text-sm sm:text-base mb-2">
+                  {exp.company}
+                </p>
+                <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">
+                  {exp.period}
+                </p>
+                <p className="text-gray-600 text-sm:text-base">
+                  {exp.description}
+                </p>
               </motion.div>
             ))}
 
@@ -2314,120 +2392,123 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
             )}
           </motion.div>
         );
-        case "jobsApplied":
-  return (
-    <motion.div
-      key="jobsApplied"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="space-y-6"
-    >
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-semibold text-gray-900">
-          My Applications
-        </h3>
-        <span className="text-sm text-gray-500">
-          {applications.length} applications
-        </span>
-      </div>
-
-      {loadingApplications ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      ) : applications.length === 0 ? (
-        <motion.div variants={itemVariants} className="text-center py-12">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            No Applications Yet
-          </h3>
-          <p className="text-gray-600 mb-6">
-            You haven't applied to any jobs yet. Start exploring opportunities!
-          </p>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => router.push("/jobs")}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
+      case "jobsApplied":
+        return (
+          <motion.div
+            key="jobsApplied"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="space-y-6"
           >
-            Browse Jobs
-          </motion.button>
-        </motion.div>
-      ) : (
-        <div className="space-y-4">
-          {applications.map((application, index) => (
-            <motion.div
-              key={application._id}
-              variants={cardVariants}
-              whileHover={{
-                y: -2,
-                boxShadow: "0 8px 25px rgba(0, 0, 0, 0.1)",
-              }}
-              transition={{ duration: 0.3 }}
-              className="bg-white rounded-xl p-6 shadow-sm border"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                    Job Application {index + 1}
-                  </h4>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span>Applied: {new Date(application.appliedDate).toLocaleDateString()}</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      application.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      application.status === 'reviewing' ? 'bg-blue-100 text-blue-800' :
-                      application.status === 'shortlisted' ? 'bg-green-100 text-green-800' :
-                      application.status === 'interview' ? 'bg-purple-100 text-purple-800' :
-                      application.status === 'hired' ? 'bg-green-200 text-green-900' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                    </span>
-                  </div>
-                </div>
-                
-                {application.documents && application.documents.length > 0 && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setDocumentUploadModal({
-                      isOpen: true,
-                      applicationId: application._id,
-                      documents: application.documents,
-                    })}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
-                  >
-                    <Upload className="w-4 h-4" />
-                    Upload Documents
-                  </motion.button>
-                )}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">
+                My Applications
+              </h3>
+              <span className="text-sm text-gray-500">
+                {applications.length} applications
+              </span>
+            </div>
+
+            {loadingApplications ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
+            ) : applications.length === 0 ? (
+              <motion.div variants={itemVariants} className="text-center py-12">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  No Applications Yet
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  You haven't applied to any jobs yet. Start exploring
+                  opportunities!
+                </p>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => router.push("/jobs")}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
+                >
+                  Browse Jobs
+                </motion.button>
+              </motion.div>
+            ) : (
+              <div className="space-y-4">
+                {applications.map((application, index) => (
+                  <motion.div
+                    key={application._id}
+                    variants={cardVariants}
+                    whileHover={{
+                      y: -2,
+                      boxShadow: "0 8px 25px rgba(0, 0, 0, 0.1)",
+                    }}
+                    transition={{ duration: 0.3 }}
+                    className="bg-white rounded-xl p-6 shadow-sm border"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                          Job Application {application.job.title || ""}
+                        </h4>
+                        <h4 className="text-sm font-light text-gray-900 mb-2">
+                           {application.job.description.substring(0, 120) + "..." || ""}
+                        </h4>
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <span>
+                            Applied:{" "}
+                            {new Date(
+                              application.appliedDate
+                            ).toLocaleDateString()}
+                          </span>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              application.status === "pending"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : application.status === "reviewing"
+                                ? "bg-blue-100 text-blue-800"
+                                : application.status === "shortlisted"
+                                ? "bg-green-100 text-green-800"
+                                : application.status === "interview"
+                                ? "bg-purple-100 text-purple-800"
+                                : application.status === "hired"
+                                ? "bg-green-200 text-green-900"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {application.status.charAt(0).toUpperCase() +
+                              application.status.slice(1)}
+                          </span>
+                        </div>
+                      </div>
 
-              {application.matchDetails && (
-                <div className="mb-4">
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="text-gray-600">Match Score:</span>
-                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${application.matchDetails.overallScore}%` }}
-                      />
+                      {application.documents &&
+                        application.documents.length > 0 && (
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() =>
+                              setDocumentUploadModal({
+                                isOpen: true,
+                                applicationId: application._id,
+                                documents: application.documents,
+                              })
+                            }
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                          >
+                            <Upload className="w-4 h-4" />
+                            Upload Documents
+                          </motion.button>
+                        )}
                     </div>
-                    <span className="font-medium text-blue-600">
-                      {application.matchDetails.overallScore}%
-                    </span>
-                  </div>
-                </div>
-              )}
 
-            </motion.div>
-          ))}
-        </div>
-      )}
-    </motion.div>
-  );
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        );
 
       case "certifications":
         return (
@@ -2678,104 +2759,128 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
         </h1>
       </motion.div>
       {/* Document Upload Modal */}
-<AnimatePresence>
-  {documentUploadModal.isOpen && (
-    <motion.div
-      key="document-upload-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      aria-modal="true"
-      role="dialog"
-    >
-      <motion.div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={() => setDocumentUploadModal({ isOpen: false, applicationId: "", documents: [] })}
-      />
-
-      <motion.div
-        className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[80vh] overflow-y-auto"
-        initial={{ y: 24, opacity: 0, scale: 0.98 }}
-        animate={{ y: 0, opacity: 1, scale: 1 }}
-        exit={{ y: 24, opacity: 0, scale: 0.98 }}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Upload Required Documents
-          </h2>
-          <button
-            onClick={() => setDocumentUploadModal({ isOpen: false, applicationId: "", documents: [] })}
-            aria-label="Close"
-            className="p-2 rounded-full hover:bg-gray-100"
+      <AnimatePresence>
+        {documentUploadModal.isOpen && (
+          <motion.div
+            key="document-upload-modal"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            aria-modal="true"
+            role="dialog"
           >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
+            <motion.div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() =>
+                setDocumentUploadModal({
+                  isOpen: false,
+                  applicationId: "",
+                  documents: [],
+                })
+              }
+            />
 
-        <div className="space-y-4">
-          {documentUploadModal.documents.map((doc) => (
-            <div key={doc.docId} className="border rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h4 className="font-medium text-gray-900">{doc.name}</h4>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    doc.status === 'requested' ? 'bg-yellow-100 text-yellow-800' :
-                    doc.status === 'submitted' ? 'bg-blue-100 text-blue-800' :
-                    doc.status === 'approved' ? 'bg-green-100 text-green-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
-                  </span>
-                </div>
+            <motion.div
+              className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[80vh] overflow-y-auto"
+              initial={{ y: 24, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 24, opacity: 0, scale: 0.98 }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Upload Required Documents
+                </h2>
+                <button
+                  onClick={() =>
+                    setDocumentUploadModal({
+                      isOpen: false,
+                      applicationId: "",
+                      documents: [],
+                    })
+                  }
+                  aria-label="Close"
+                  className="p-2 rounded-full hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
               </div>
 
-              {doc.status === 'requested' && (
-                <div className="mt-3">
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        uploadDocument(documentUploadModal.applicationId, doc.docId, file);
-                      }
-                    }}
-                    className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    disabled={uploadingDocument}
-                  />
+              <div className="space-y-4">
+                {documentUploadModal.documents.map((doc) => (
+                  <div key={doc.docId} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="font-medium text-gray-900">
+                          {doc.name}
+                        </h4>
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            doc.status === "requested"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : doc.status === "submitted"
+                              ? "bg-blue-100 text-blue-800"
+                              : doc.status === "approved"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {doc.status.charAt(0).toUpperCase() +
+                            doc.status.slice(1)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {doc.status === "requested" && (
+                      <div className="mt-3">
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              uploadDocument(
+                                documentUploadModal.applicationId,
+                                doc.docId,
+                                file
+                              );
+                            }
+                          }}
+                          className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          disabled={uploadingDocument}
+                        />
+                      </div>
+                    )}
+
+                    {doc.fileUrl && (
+                      <div className="mt-3">
+                        <a
+                          href={doc.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100"
+                        >
+                          <FileText className="w-4 h-4" />
+                          View Uploaded
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {uploadingDocument && (
+                <div className="mt-6 flex justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                 </div>
               )}
-
-              {doc.fileUrl && (
-                <div className="mt-3">
-                  <a
-                    href={doc.fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100"
-                  >
-                    <FileText className="w-4 h-4" />
-                    View Uploaded
-                  </a>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {uploadingDocument && (
-          <div className="mt-6 flex justify-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-          </div>
+            </motion.div>
+          </motion.div>
         )}
-      </motion.div>
-    </motion.div>
-  )}
-</AnimatePresence>
+      </AnimatePresence>
 
       <div className="pt-16 sm:pt-24 pb-8 sm:pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -3124,7 +3229,9 @@ const removeAvailabilitySlot = (slotToRemove : any) => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">Phone Number</label>
+                  <label className="text-sm font-medium text-gray-700">
+                    Phone Number
+                  </label>
                   <input
                     type="tel"
                     value={profileFormData.phone}
