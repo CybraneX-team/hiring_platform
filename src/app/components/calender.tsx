@@ -1,221 +1,289 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Pencil, ChevronLeft, ChevronRight, Calendar, Plus, Trash2 } from "lucide-react"
+import { useMemo, useState } from "react";
+import {
+  Pencil,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Plus,
+  Trash2,
+} from "lucide-react";
 
-const CalendarSection = () => {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 2, 1)) // March 2025
-  const [selectedDate, setSelectedDate] = useState(12)
-  const [showDatePicker, setShowDatePicker] = useState(false)
-  const [tempDate, setTempDate] = useState({
-    month: 2, // March (0-indexed)
-    year: 2025,
-  })
+export type AttendanceStatus = "present" | "absent" | "holiday" | "none";
 
-  const [attendanceData, setAttendanceData] = useState({
-    presentDays: [13, 14, 18, 19], // Green border days
-    absentDays: [15], // Red border days
-    eventDays: [12, 21], // Days with blue dots
-    totalAttended: 20,
-    totalHolidays: 4,
-  })
+export interface DailyRecord {
+  id?: string;
+  time: string;
+  activity: string;
+  notes?: string;
+}
 
-  const [showUpdateModal, setShowUpdateModal] = useState(false)
+interface CalendarSummary {
+  totalPresent: number;
+  totalAbsent: number;
+  totalHolidays: number;
+  totalLoggedDays: number;
+}
 
-  const [dailyRecordsPerDate, setDailyRecordsPerDate] = useState<
-    Record<string, Array<{ id: number; time: string; activity: string }>>
-  >({
-    "2025-2-12": [
-      { id: 1, time: "4:30 pm", activity: "Work Log Out" },
-      { id: 2, time: "6:30 pm", activity: "Interview at Riverleaf" },
-    ],
-  })
+interface CalendarMarkers {
+  presentDays: number[];
+  absentDays: number[];
+  holidayDays: number[];
+  daysWithLogs: number[];
+  summary: CalendarSummary;
+}
 
-  const getCurrentDateKey = () => {
-    return `${currentDate.getFullYear()}-${currentDate.getMonth()}-${selectedDate}`
-  }
+interface CalendarSectionProps {
+  month: number; // 0-indexed
+  year: number;
+  selectedDay: number;
+  onSelectDay: (day: number) => void;
+  onShiftMonth: (direction: number) => void;
+  onSetMonth: (month: number, year: number) => void;
+  markers: CalendarMarkers;
+  dayLogs: DailyRecord[];
+  onSaveLogs: (records: DailyRecord[]) => Promise<void>;
+  onMarkStatus: (status: AttendanceStatus) => Promise<void>;
+  isLoading: boolean;
+  isSavingLogs: boolean;
+  isUpdatingStatus: boolean;
+  isEnsuringProfile: boolean;
+  canUpdateAttendance: boolean;
+  attendanceDisabledReason?: string | null;
+  error?: string | null;
+}
 
-  const getCurrentDayLogs = () => {
-    const dateKey = getCurrentDateKey()
-    return dailyRecordsPerDate[dateKey] || []
-  }
+const months = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
-  const [editingRecords, setEditingRecords] = useState<Array<{ id: number; time: string; activity: string }>>([])
+const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-  const markAsPresent = () => {
-    if (selectedDate && !attendanceData.presentDays.includes(selectedDate)) {
-      setAttendanceData((prev) => ({
-        ...prev,
-        presentDays: [...prev.presentDays, selectedDate],
-        absentDays: prev.absentDays.filter((day) => day !== selectedDate),
-        totalAttended: prev.totalAttended + 1,
-      }))
-    }
-  }
+const CalendarSection = ({
+  month,
+  year,
+  selectedDay,
+  onSelectDay,
+  onShiftMonth,
+  onSetMonth,
+  markers,
+  dayLogs,
+  onSaveLogs,
+  onMarkStatus,
+  isLoading,
+  isSavingLogs,
+  isUpdatingStatus,
+  isEnsuringProfile,
+  canUpdateAttendance,
+  attendanceDisabledReason,
+  error,
+}: CalendarSectionProps) => {
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [tempDate, setTempDate] = useState({ month, year });
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [editingRecords, setEditingRecords] = useState<DailyRecord[]>([]);
+
+  const currentDate = useMemo(() => new Date(year, month, 1), [month, year]);
+
+  const presentSet = useMemo(() => new Set(markers.presentDays), [markers.presentDays]);
+  const absentSet = useMemo(() => new Set(markers.absentDays), [markers.absentDays]);
+  const holidaySet = useMemo(() => new Set(markers.holidayDays), [markers.holidayDays]);
+  const logsSet = useMemo(() => new Set(markers.daysWithLogs), [markers.daysWithLogs]);
 
   const getDaysInMonth = (date: Date): number => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
-  }
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
 
   const getFirstDayOfMonth = (date: Date): number => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay()
-  }
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
 
   const navigateMonth = (direction: number): void => {
-    const newDate = new Date(currentDate)
-    newDate.setMonth(currentDate.getMonth() + direction)
-    setCurrentDate(newDate)
-  }
+    onShiftMonth(direction);
+  };
 
   const openDatePicker = () => {
-    setTempDate({
-      month: currentDate.getMonth(),
-      year: currentDate.getFullYear(),
-    })
-    setShowDatePicker(true)
-  }
+    setTempDate({ month, year });
+    setShowDatePicker(true);
+  };
 
   const applyDateSelection = () => {
-    setCurrentDate(new Date(tempDate.year, tempDate.month, 1))
-    setShowDatePicker(false)
-  }
+    onSetMonth(tempDate.month, tempDate.year);
+    setShowDatePicker(false);
+  };
+
+  const openUpdateModal = () => {
+    setEditingRecords(
+      dayLogs.length > 0
+        ? dayLogs.map((record) => ({ ...record }))
+        : [{ id: `${Date.now()}`, time: "", activity: "", notes: "" }]
+    );
+    setShowUpdateModal(true);
+  };
+
+  const deleteRecord = (id?: string) => {
+    setEditingRecords((prev) => prev.filter((record) => record.id !== id));
+  };
+
+  const updateRecord = (id: string | undefined, field: keyof DailyRecord, value: string) => {
+    setEditingRecords((prev) =>
+      prev.map((record) => (record.id === id ? { ...record, [field]: value } : record))
+    );
+  };
+
+  const addNewRecord = () => {
+    const newRecord: DailyRecord = { id: `${Date.now()}`, time: "", activity: "", notes: "" };
+    setEditingRecords((prev) => [...prev, newRecord]);
+  };
+
+  const cancelEdit = () => {
+    setShowUpdateModal(false);
+  };
+
+  const saveRecords = async () => {
+    try {
+      await onSaveLogs(editingRecords);
+      setShowUpdateModal(false);
+    } catch (err) {
+      // Parent handles error display; keep modal open for correction
+      console.error("Failed to save daily records:", err);
+    }
+  };
 
   const renderCalendarDays = () => {
-    const daysInMonth = getDaysInMonth(currentDate)
-    const firstDay = getFirstDayOfMonth(currentDate)
-    const days = []
+    const daysInMonth = getDaysInMonth(currentDate);
+    const firstDay = getFirstDayOfMonth(currentDate);
+    const days = [];
 
-    // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-16"></div>)
+      days.push(<div key={`empty-${i}`} className="h-16"></div>);
     }
 
-    // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      const isSelected = day === selectedDate
-      const isPresent = attendanceData.presentDays.includes(day)
-      const isAbsent = attendanceData.absentDays.includes(day)
-      const hasEvent = attendanceData.eventDays.includes(day)
-      const isSunday = (firstDay + day - 1) % 7 === 0
+      const isSelected = day === selectedDay;
+      const isPresent = presentSet.has(day);
+      const isAbsent = absentSet.has(day);
+      const isHoliday = holidaySet.has(day);
+      const hasLogs = logsSet.has(day);
+      const weekdayIndex = (firstDay + day - 1) % 7;
+      const isSunday = weekdayIndex === 0;
 
       let cellClasses =
-        "h-16 flex items-center justify-center text-sm font-medium cursor-pointer relative rounded-md transition-colors duration-150 "
+        "h-16 flex items-center justify-center text-sm font-medium cursor-pointer relative rounded-md transition-colors duration-150 ";
 
       if (isSunday) {
-        cellClasses += "bg-rose-100 text-gray-800 "
+        cellClasses += "bg-rose-100 text-gray-800 ";
       } else {
-        cellClasses += "bg-gray-50 hover:bg-gray-100 text-gray-800 "
+        cellClasses += "bg-gray-50 hover:bg-gray-100 text-gray-800 ";
       }
 
       if (isSelected) {
-        cellClasses += "border-2 border-blue-400 bg-white "
+        cellClasses += "border-2 border-blue-400 bg-white ";
       } else if (isPresent) {
-        cellClasses += "border-2 border-green-400 "
+        cellClasses += "border-2 border-green-400 ";
       } else if (isAbsent) {
-        cellClasses += "border-2 border-red-400 "
+        cellClasses += "border-2 border-red-400 ";
+      } else if (isHoliday) {
+        cellClasses += "border-2 border-yellow-500 ";
       }
 
       days.push(
-        <div key={day} onClick={() => setSelectedDate(day)} className={cellClasses}>
+        <div
+          key={day}
+          onClick={() => onSelectDay(day)}
+          className={cellClasses}
+        >
           {day}
-          {hasEvent && (
+          {hasLogs && (
             <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
               <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
               <div className="w-1 h-1 bg-blue-500 rounded-full mt-0.5"></div>
             </div>
           )}
-        </div>,
-      )
+        </div>
+      );
     }
 
-    return days
-  }
-
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ]
-
-  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-
-  const openUpdateModal = () => {
-    const dateKey = getCurrentDateKey()
-    setEditingRecords(dailyRecordsPerDate[dateKey] || [])
-    setShowUpdateModal(true)
-  }
-
-  const deleteRecord = (id: number) => {
-    setEditingRecords((prev) => prev.filter((record) => record.id !== id))
-  }
-
-  const updateRecord = (id: number, field: string, value: string) => {
-    setEditingRecords((prev) => prev.map((record) => (record.id === id ? { ...record, [field]: value } : record)))
-  }
-
-  const addNewRecord = () => {
-    const newRecord = { id: Date.now(), time: "", activity: "" }
-    setEditingRecords((prev) => [...prev, newRecord])
-  }
-
-  const cancelEdit = () => {
-    setShowUpdateModal(false)
-  }
-
-  const saveRecords = () => {
-    const dateKey = getCurrentDateKey()
-    setDailyRecordsPerDate((prev) => ({
-      ...prev,
-      [dateKey]: editingRecords,
-    }))
-    setShowUpdateModal(false)
-  }
+    return days;
+  };
 
   return (
     <>
       <div className="bg-white w-full shadow-sm rounded-lg overflow-hidden">
-        {/* Header with navigation and Mark as Present button */}
         <div className="flex items-center justify-between p-8 bg-white border-b border-gray-200">
           <div className="flex items-center space-x-6">
-            <button onClick={() => navigateMonth(-1)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <button
+              onClick={() => navigateMonth(-1)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              disabled={isLoading}
+            >
               <ChevronLeft className="w-5 h-5 text-gray-600" />
             </button>
 
             <div className="flex items-center space-x-3">
-              <span className="text-2xl font-semibold text-gray-900">{selectedDate}</span>
+              <span className="text-2xl font-semibold text-gray-900">{selectedDay}</span>
               <button
                 onClick={openDatePicker}
                 className="flex items-center space-x-2 px-3 py-1 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <span className="text-2xl font-semibold text-gray-900">{months[currentDate.getMonth()]}</span>
-                <span className="text-2xl font-semibold text-gray-900">{currentDate.getFullYear()}</span>
+                <span className="text-2xl font-semibold text-gray-900">{months[month]}</span>
+                <span className="text-2xl font-semibold text-gray-900">{year}</span>
                 <Calendar className="w-4 h-4 text-gray-500" />
               </button>
             </div>
 
-            <button onClick={() => navigateMonth(1)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <button
+              onClick={() => navigateMonth(1)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              disabled={isLoading}
+            >
               <ChevronRight className="w-5 h-5 text-gray-600" />
             </button>
           </div>
 
           <button
-            onClick={markAsPresent}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors"
+            onClick={() => onMarkStatus("present")}
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            disabled={
+              isUpdatingStatus ||
+              isLoading ||
+              isSavingLogs ||
+              isEnsuringProfile ||
+              !canUpdateAttendance
+            }
           >
-            Mark as Present
+            {isUpdatingStatus
+              ? "Updating..."
+              : isEnsuringProfile
+              ? "Preparing profile..."
+              : "Mark as Present"}
           </button>
         </div>
 
-        {/* Days of week header */}
+        {!canUpdateAttendance && attendanceDisabledReason && (
+          <div className="px-8 pb-4 text-xs text-red-600">
+            {attendanceDisabledReason}
+          </div>
+        )}
+
+        {error && (
+          <div className="px-8 py-3 bg-red-50 border-b border-red-100 text-sm text-red-600">
+            {error}
+          </div>
+        )}
+
         <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
           {daysOfWeek.map((day, index) => (
             <div
@@ -229,18 +297,26 @@ const CalendarSection = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-3 p-8 border-b border-gray-200">{renderCalendarDays()}</div>
+        <div className="grid grid-cols-7 gap-3 p-8 border-b border-gray-200">
+          {isLoading ? (
+            <div className="col-span-7 flex justify-center items-center py-12 text-sm text-gray-500">
+              Loading attendance...
+            </div>
+          ) : (
+            renderCalendarDays()
+          )}
+        </div>
 
-        {/* Attendance statistics section */}
         <div className="px-8 py-6 border-b border-gray-200">
           <div className="flex items-center justify-between text-sm text-gray-600">
             <span>
-              Total Attended days : <span className="font-semibold text-gray-900">{attendanceData.totalAttended}</span>
+              Total Attended days :{" "}
+              <span className="font-semibold text-gray-900">{markers.summary.totalPresent}</span>
             </span>
             <span>
               Total holidays taken :{" "}
               <span className="font-semibold text-gray-900">
-                {String(attendanceData.totalHolidays).padStart(2, "0")}
+                {String(markers.summary.totalHolidays).padStart(2, "0")}
               </span>
             </span>
           </div>
@@ -252,12 +328,13 @@ const CalendarSection = () => {
               <h3 className="text-lg font-semibold text-gray-900">Daily Record</h3>
               <div className="flex items-center gap-4">
                 <span className="text-xs text-gray-500">
-                  Updated on {selectedDate.toString().padStart(2, "0")}-
-                  {(currentDate.getMonth() + 1).toString().padStart(2, "0")}-{currentDate.getFullYear()}
+                  Updated on {selectedDay.toString().padStart(2, "0")}-
+                  {(month + 1).toString().padStart(2, "0")}-{year}
                 </span>
                 <button
                   onClick={openUpdateModal}
                   className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                  disabled={isLoading}
                 >
                   <Pencil className="w-4 h-4" />
                   Update Record
@@ -266,8 +343,8 @@ const CalendarSection = () => {
             </div>
 
             <div className="space-y-4">
-              {getCurrentDayLogs().length > 0 ? (
-                getCurrentDayLogs().map((record) => (
+              {dayLogs.length > 0 ? (
+                dayLogs.map((record) => (
                   <div key={record.id} className="flex items-center gap-3 text-sm">
                     <span className="font-semibold text-gray-900 min-w-[60px]">{record.time}</span>
                     <span className="text-gray-600">|</span>
@@ -278,8 +355,7 @@ const CalendarSection = () => {
                 <div className="text-center py-8 text-gray-500">
                   <p className="text-sm">No logs found for this date</p>
                   <p className="text-xs mt-1">
-                    Click "Update Record" to add logs for {selectedDate} {months[currentDate.getMonth()]}{" "}
-                    {currentDate.getFullYear()}
+                    Click "Update Record" to add logs for {selectedDay} {months[month]} {year}
                   </p>
                 </div>
               )}
@@ -288,7 +364,6 @@ const CalendarSection = () => {
         </div>
       </div>
 
-      {/* Date picker dialog */}
       {showDatePicker && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-80">
@@ -302,14 +377,14 @@ const CalendarSection = () => {
                   onChange={(e) =>
                     setTempDate((prev) => ({
                       ...prev,
-                      month: Number.parseInt(e.target.value),
+                      month: Number.parseInt(e.target.value, 10),
                     }))
                   }
                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  {months.map((month, index) => (
-                    <option key={month} value={index}>
-                      {month}
+                  {months.map((label, index) => (
+                    <option key={label} value={index}>
+                      {label}
                     </option>
                   ))}
                 </select>
@@ -323,12 +398,12 @@ const CalendarSection = () => {
                   onChange={(e) =>
                     setTempDate((prev) => ({
                       ...prev,
-                      year: Number.parseInt(e.target.value),
+                      year: Number.parseInt(e.target.value, 10),
                     }))
                   }
                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   min="2020"
-                  max="2030"
+                  max="2035"
                 />
               </div>
             </div>
@@ -352,7 +427,7 @@ const CalendarSection = () => {
       )}
 
       {showUpdateModal && (
-        <div className="fixed inset-0 bg-[#00000057]  flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-[#00000057] flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[80vh] overflow-hidden">
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">Update Daily Records</h3>
@@ -362,7 +437,7 @@ const CalendarSection = () => {
             <div className="p-6 max-h-96 overflow-y-auto">
               <div className="space-y-4">
                 {editingRecords.map((record, index) => (
-                  <div key={record.id} className="border border-gray-200 rounded-lg p-4">
+                  <div key={record.id ?? index} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm font-medium text-gray-700">Record {index + 1}</span>
                       <button
@@ -380,7 +455,7 @@ const CalendarSection = () => {
                           value={record.time}
                           onChange={(e) => updateRecord(record.id, "time", e.target.value)}
                           placeholder="e.g., 4:30 pm"
-                          className="w-full px-3 py-2 border border-gray-300 text-gray-400 font-semibold rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
                       <div>
@@ -390,7 +465,17 @@ const CalendarSection = () => {
                           value={record.activity}
                           onChange={(e) => updateRecord(record.id, "activity", e.target.value)}
                           placeholder="e.g., Work Log Out"
-                          className="w-full px-3 py-2 border border-gray-300 text-gray-400 font-semibold rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Notes (optional)</label>
+                        <input
+                          type="text"
+                          value={record.notes || ""}
+                          onChange={(e) => updateRecord(record.id, "notes", e.target.value)}
+                          placeholder="Add notes"
+                          className="w-full px-3 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
                     </div>
@@ -411,21 +496,23 @@ const CalendarSection = () => {
               <button
                 onClick={cancelEdit}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                disabled={isSavingLogs}
               >
                 Cancel
               </button>
               <button
                 onClick={saveRecords}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                disabled={isSavingLogs}
               >
-                Save Changes
+                {isSavingLogs ? "Saving..." : "Save Changes"}
               </button>
             </div>
           </div>
         </div>
       )}
     </>
-  )
-}
+  );
+};
 
-export default CalendarSection
+export default CalendarSection;
