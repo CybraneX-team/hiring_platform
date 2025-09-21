@@ -1184,7 +1184,7 @@ export default function ProfileTab() {
                 <h3 className="text-xs sm:text-sm font-medium text-[#A1A1A1]">
                   Company description
                 </h3>
-                <p className="text-xs sm:text-sm text-gray-600 leading-relaxed border border-[#A6ACA6] p-3 sm:p-4 rounded-lg">
+                <p className="text-xs sm:text-sm text-gray-600 leading-relaxed p-3 sm:p-4 rounded-lg">
                   {formState.companyDescription ||
                     "Enter company description..."}
                 </p>
@@ -1194,16 +1194,14 @@ export default function ProfileTab() {
                 variants={itemVariants}
                 className="space-y-3 mt-6 sm:mt-10 pb-6 sm:pb-10"
               >
-                <h3 className="text-xs sm:text-sm font-medium text-[#A1A1A1]">
+                <h3 className="text-xs sm:text-sm text-[#A1A1A1]">
                   No of People in Organization
                 </h3>
-                <div className="text-lg sm:text-xl max-w-full sm:max-w-sm font-semibold text-gray-900 border border-[#A6ACA6] p-3 sm:p-4 rounded-lg">
+                <div className="text-md  max-w-full sm:max-w-sm  text-gray-900 p-3 sm:p-4 rounded-lg">
                   {formState.orgSize || "Enter team size"}
                 </div>
               </motion.div>
-            </div>
-
-            <motion.div
+              <motion.div
               variants={itemVariants}
               className="space-y-3 sm:space-y-4"
             >
@@ -1220,6 +1218,9 @@ export default function ProfileTab() {
                 selectedLocation={selectedLocation ?? undefined}
               />
             </motion.div>
+            </div>
+
+            
           </motion.div>
         );
 

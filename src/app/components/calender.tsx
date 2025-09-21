@@ -1,5 +1,143 @@
 "use client";
 
+import { useState } from "react"
+import { Pencil, ChevronLeft, ChevronRight, Calendar, Plus, Trash2, Download } from "lucide-react"
+import jsPDF from "jspdf"
+import autoTable from "jspdf-autotable"
+
+declare module "jspdf" {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF
+  }
+}
+
+const CalendarSection = () => {
+  const [currentDate, setCurrentDate] = useState(new Date(2025, 2, 1)) // March 2025
+  const [selectedDate, setSelectedDate] = useState(12)
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const [tempDate, setTempDate] = useState({
+    month: 2, // March (0-indexed)
+    year: 2025,
+  })
+
+  const [attendanceData, setAttendanceData] = useState({
+    presentDays: [13, 14, 18, 19], // Green border days
+    absentDays: [15], // Red border days
+    eventDays: [12, 21], // Days with blue dots
+    totalAttended: 20,
+    totalHolidays: 4,
+  })
+
+  const [showUpdateModal, setShowUpdateModal] = useState(false)
+
+  const [dailyRecordsPerDate, setDailyRecordsPerDate] = useState<
+    Record<string, Array<{ id: number; time: string; activity: string }>>
+  >({
+    "2025-2-12": [
+      { id: 1, time: "4:30 pm", activity: "Work Log Out" },
+      { id: 2, time: "6:30 pm", activity: "Interview at Riverleaf" },
+    ],
+  })
+
+  const getCurrentDateKey = () => {
+    return `${currentDate.getFullYear()}-${currentDate.getMonth()}-${selectedDate}`
+  }
+
+  const getCurrentDayLogs = () => {
+    const dateKey = getCurrentDateKey()
+    return dailyRecordsPerDate[dateKey] || []
+  }
+
+  const [editingRecords, setEditingRecords] = useState<Array<{ id: number; time: string; activity: string }>>([])
+
+  const markAsPresent = () => {
+    if (selectedDate && !attendanceData.presentDays.includes(selectedDate)) {
+      setAttendanceData((prev) => ({
+        ...prev,
+        presentDays: [...prev.presentDays, selectedDate],
+        absentDays: prev.absentDays.filter((day) => day !== selectedDate),
+        totalAttended: prev.totalAttended + 1,
+      }))
+    }
+  }
+
+  const getDaysInMonth = (date: Date): number => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+  }
+
+  const getFirstDayOfMonth = (date: Date): number => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay()
+  }
+
+  const navigateMonth = (direction: number): void => {
+    const newDate = new Date(currentDate)
+    newDate.setMonth(currentDate.getMonth() + direction)
+    setCurrentDate(newDate)
+  }
+
+  const openDatePicker = () => {
+    setTempDate({
+      month: currentDate.getMonth(),
+      year: currentDate.getFullYear(),
+    })
+    setShowDatePicker(true)
+  }
+
+  const applyDateSelection = () => {
+    setCurrentDate(new Date(tempDate.year, tempDate.month, 1))
+    setShowDatePicker(false)
+  }
+
+  const renderCalendarDays = () => {
+    const daysInMonth = getDaysInMonth(currentDate)
+    const firstDay = getFirstDayOfMonth(currentDate)
+    const days = []
+
+    // Empty cells for days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="h-16"></div>)
+    }
+
+    // Days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const isSelected = day === selectedDate
+      const isPresent = attendanceData.presentDays.includes(day)
+      const isAbsent = attendanceData.absentDays.includes(day)
+      const hasEvent = attendanceData.eventDays.includes(day)
+      const isSunday = (firstDay + day - 1) % 7 === 0
+
+      let cellClasses =
+        "h-16 flex items-center justify-center text-sm font-medium cursor-pointer relative rounded-md transition-colors duration-150 "
+
+      if (isSunday) {
+        cellClasses += "bg-rose-100 text-gray-800 "
+      } else {
+        cellClasses += "bg-gray-50 hover:bg-gray-100 text-gray-800 "
+      }
+
+      if (isSelected) {
+        cellClasses += "border-2 border-blue-400 bg-white "
+      } else if (isPresent) {
+        cellClasses += "border-2 border-green-400 "
+      } else if (isAbsent) {
+        cellClasses += "border-2 border-red-400 "
+      }
+
+      days.push(
+        <div key={day} onClick={() => setSelectedDate(day)} className={cellClasses}>
+          {day}
+          {hasEvent && (
+            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
+              <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+              <div className="w-1 h-1 bg-blue-500 rounded-full mt-0.5"></div>
+            </div>
+          )}
+        </div>,
+      )
+    }
+
+    return days
+  }
 import { useMemo, useState } from "react";
 import {
   Pencil,
@@ -149,6 +287,86 @@ const CalendarSection = ({
   };
 
   const cancelEdit = () => {
+    setShowUpdateModal(false)
+  }
+
+  const saveRecords = () => {
+    const dateKey = getCurrentDateKey()
+    setDailyRecordsPerDate((prev) => ({
+      ...prev,
+      [dateKey]: editingRecords,
+    }))
+    setShowUpdateModal(false)
+  }
+
+  const downloadAttendanceData = () => {
+    const dateKey = getCurrentDateKey()
+    const currentLogs = dailyRecordsPerDate[dateKey] || []
+    const isPresent = attendanceData.presentDays.includes(selectedDate)
+    const isAbsent = attendanceData.absentDays.includes(selectedDate)
+
+    // Determine attendance status
+    let attendanceStatus = "Not Marked"
+    if (isPresent) attendanceStatus = "Present"
+    if (isAbsent) attendanceStatus = "Absent"
+
+    // Format date for display
+    const formattedDate = `${selectedDate.toString().padStart(2, "0")}-${(currentDate.getMonth() + 1).toString().padStart(2, "0")}-${currentDate.getFullYear()}`
+
+    // Create new PDF document
+    const doc = new jsPDF()
+
+    // Add title
+    doc.setFontSize(16)
+    doc.text("Attendance Report", 20, 20)
+
+    // Add date and attendance status
+    doc.setFontSize(12)
+    doc.text(`Date: ${formattedDate}`, 20, 35)
+    doc.text(`Attendance Status: ${attendanceStatus}`, 20, 45)
+
+    // Prepare table data
+    const tableData = []
+
+    if (currentLogs.length > 0) {
+      currentLogs.forEach((log) => {
+        tableData.push([formattedDate, attendanceStatus, log.time, log.activity])
+      })
+    } else {
+      tableData.push([formattedDate, attendanceStatus, "No logs", "No activities recorded for this date"])
+    }
+
+    autoTable(doc, {
+      head: [["Date", "Attendance Status", "Time", "Activity"]],
+      body: tableData,
+      startY: 55,
+      theme: "grid",
+      styles: {
+        fontSize: 10,
+        cellPadding: 5,
+      },
+      headStyles: {
+        fillColor: [66, 139, 202],
+        textColor: 255,
+        fontStyle: "bold",
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+      columnStyles: {
+        0: { cellWidth: 30 },
+        1: { cellWidth: 40 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 80 },
+      },
+    })
+
+    // Generate filename with date
+    const filename = `Attendance_${formattedDate.replace(/-/g, "_")}.pdf`
+
+    // Download the PDF file
+    doc.save(filename)
+  }
     setShowUpdateModal(false);
   };
 
@@ -253,6 +471,21 @@ const CalendarSection = ({
             </button>
           </div>
 
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={downloadAttendanceData}
+              className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Download
+            </button>
+            <button
+              onClick={markAsPresent}
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Mark as Present
+            </button>
+          </div>
           <button
             onClick={() => onMarkStatus("present")}
             className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
@@ -365,7 +598,7 @@ const CalendarSection = ({
       </div>
 
       {showDatePicker && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-[#00000050]  flex items-center justify-center z-50 text-black">
           <div className="bg-white rounded-lg shadow-xl p-6 w-80">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Date</h3>
 

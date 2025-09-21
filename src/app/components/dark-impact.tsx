@@ -55,7 +55,7 @@ export default function DarkImpactSection() {
 
       <div className="relative z-10 max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-medium mb-6 leading-tight max-w-4xl mx-auto">
+          <h2 className="text-xl md:text-4xl font-medium mb-6 leading-tight max-w-4xl mx-auto">
          Core Disciplines & On-Site Capabilities
           </h2>
         </div>
@@ -63,8 +63,8 @@ export default function DarkImpactSection() {
         <div className="grid md:grid-cols-2 gap-12 mb-20">
           {stats.map((stat, index) => (
             <div key={index} className="text-center md:text-left">
-              <h3 className="text-xl font-medium mb-4">{stat.title}</h3>
-              <p className="text-gray-200 leading-relaxed font-light">
+              <h3 className="md:text-xl text-base font-medium mb-4">{stat.title}</h3>
+              <p className="text-gray-200 md:text-base text-sm leading-relaxed font-light">
                 {stat.description}
               </p>
             </div>

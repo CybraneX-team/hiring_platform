@@ -127,13 +127,13 @@ export default function SolutionsSection() {
   }
 
   return (
-    <section className="py-24 bg-white" id="sectors">
+    <section className="py-14 bg-white" id="sectors">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex justify-between items-center mb-16">
           <div>
-            <h2 className="text-4xl md:text-5xl font-medium text-gray-900 leading-tight">Core Sectors</h2>
+            <h2 className="text-2xl md:text-4xl font-medium text-gray-900 leading-tight">Core Sectors</h2>
           </div>
-          <button className="text-black font-light text-sm rounded-lg transition-colors">View all →</button>
+          <button className="text-black font-light text-xs md:text-sm rounded-lg transition-colors">View all →</button>
         </div>
 
   <div className="overflow-x-auto">
@@ -192,11 +192,7 @@ export default function SolutionsSection() {
         </div>
         </div>
 
-        {expandedCard === null && (
-          <button className="bg-transparent text-black border border-black rounded-md px-10 py-3 w-44 transition-colors text-sm font-medium mt-10">
-            View Roles →
-          </button>
-        )}
+
       </div>
     </section>
   )

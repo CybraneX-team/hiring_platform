@@ -224,7 +224,7 @@ function ApplicationsListContent() {
       <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">
         {jobInfo?.title || "Job Applications"}
       </h1>
-      <div className="max-w-6xl mx-auto mt-12">
+      <div className="max-w-4xl mx-auto mt-12">
         {/* Header */}
         <div className="mb-10">
           <motion.button
@@ -272,7 +272,7 @@ function ApplicationsListContent() {
         )}
 
         {/* Applications List */}
-        <div className="space-y-4">
+        <div className="space-y-4 ">
           <AnimatePresence>
             {filteredApplicants.map((applicant, index) => {
               console.log("applicant-applicant", applicant) 
@@ -300,7 +300,7 @@ function ApplicationsListContent() {
                     <div className="flex-1 min-w-full w-full">
                       {/* Name and Title */}
                       <div className="mb-5 w-full">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1 max-w-[200px] ">
                           {applicant.name}
                         </h3>
                         <p className="text-gray-600 text-sm">
@@ -345,7 +345,7 @@ function ApplicationsListContent() {
                       <div className="mb-6 -mx-14">
                         <p className="text-xs text-gray-500 mb-2">Skills</p>
                         <div className="flex flex-wrap gap-2">
-                          {applicant.skills.slice(0, 5).map((skill, skillIndex) => (
+                          {applicant.skills.slice(0, 4).map((skill, skillIndex) => (
                             <span
                               key={skillIndex}
                               className="px-3 py-1 bg-[#F5F5F5] text-gray-700 text-xs rounded-full"
@@ -353,7 +353,7 @@ function ApplicationsListContent() {
                               {skill}
                             </span>
                           ))}
-                          {applicant.skills.length > 5 && (
+                          {applicant.skills.length > 4 && (
                             <span className="px-3 py-1 bg-[#F5F5F5] text-gray-700 text-xs rounded-full">
                               +{applicant.skills.length - 5} more
                             </span>
@@ -381,6 +381,15 @@ function ApplicationsListContent() {
                             </span>
                           )}
                         </div>
+                        <Link href={`/company/applicants?id=${applicant.applicationId}`} className="flex justify-end">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="px-8 py-2 bg-[#76FF82] hover:bg-green-400 text-black font-medium rounded-full transition-colors w-40 mr-10 mt-5 md:hidden"
+                      >
+                        Open
+                      </motion.button>
+                    </Link>
                       </div>
                     </div>
                   </div>
@@ -402,7 +411,7 @@ function ApplicationsListContent() {
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className="px-8 py-2 bg-[#76FF82] hover:bg-green-400 text-black font-medium rounded-full transition-colors w-40 mt-32"
+                        className="px-8 py-2 bg-[#76FF82] hover:bg-green-400 text-black font-medium rounded-full transition-colors w-40  hidden md:mt-44 md:block"
                       >
                         Open
                       </motion.button>
