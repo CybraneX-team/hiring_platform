@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Star,
   Upload,
@@ -22,10 +22,7 @@ import {
   Phone,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import CalendarSection, {
-  AttendanceStatus,
-  DailyRecord,
-} from "./calender";
+import CalendarSection from "./calender";
 import { useRouter } from "next/navigation";
 import ResumeUpload from "./ResumeUpload";
 import JobMatching from "./JobMatching";
@@ -84,16 +81,6 @@ const OlaMapComponent = ({
   const [isDetecting, setIsDetecting] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>("");
-
-  const isMapEnabled = Boolean(process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY);
-
-  if (!isMapEnabled) {
-    return (
-      <div className="bg-gray-100 rounded-lg p-4 text-sm text-gray-600">
-        Map features are unavailable because the Ola Maps API key is not configured.
-      </div>
-    );
-  }
 
   useEffect(() => {
     const loadMap = async () => {
@@ -677,7 +664,6 @@ const LocationInputWithSearch = ({
 
 
 const initialProfileData = {
-  profileId: null as string | null,
   profile: {
     bio: "",
     skills: [],
@@ -735,30 +721,6 @@ const skillVariants = {
   },
 };
 
-type AttendanceRecord = {
-  id?: string;
-  date: string;
-  day: number;
-  status: AttendanceStatus;
-  logs: DailyRecord[];
-};
-
-interface AttendanceState {
-  month: number;
-  year: number;
-  records: AttendanceRecord[];
-  presentDays: number[];
-  absentDays: number[];
-  holidayDays: number[];
-  daysWithLogs: number[];
-  summary: {
-    totalPresent: number;
-    totalAbsent: number;
-    totalHolidays: number;
-    totalLoggedDays: number;
-  };
-}
-
 export default function ProfileTab() {
   const [activeTab, setActiveTab] = useState("resume");
   const { user, profile, updateProfile } = useUser();
@@ -783,27 +745,6 @@ export default function ProfileTab() {
     documents: [],
   });
   const [uploadingDocument, setUploadingDocument] = useState(false);
-  const [profileData, setProfileData] = useState(initialProfileData);
-  const [scheduleMonth, setScheduleMonth] = useState(() => {
-    const now = new Date();
-    return { month: now.getMonth(), year: now.getFullYear() };
-  });
-  const [selectedScheduleDay, setSelectedScheduleDay] = useState(() => {
-    const today = new Date();
-    return today.getDate();
-  });
-  const scheduleViewRef = useRef<{ month: number; year: number }>({
-    month: scheduleMonth.month,
-    year: scheduleMonth.year,
-  });
-  const [attendanceState, setAttendanceState] = useState<AttendanceState | null>(null);
-  const [attendanceLoading, setAttendanceLoading] = useState(false);
-  const [attendanceError, setAttendanceError] = useState<string | null>(null);
-  const [savingDailyLogs, setSavingDailyLogs] = useState(false);
-  const [updatingAttendanceStatus, setUpdatingAttendanceStatus] = useState(false);
-  useEffect(() => {
-    scheduleViewRef.current = scheduleMonth;
-  }, [scheduleMonth]);
   const hasApplicationsWithDocuments = useMemo(() => {
     return applications.some(
       (application) =>
@@ -812,7 +753,6 @@ export default function ProfileTab() {
         application.documents.some((doc: any) => doc.status === "requested")
     );
   }, [applications]);
-  const [isEnsuringProfile, setIsEnsuringProfile] = useState(false);
 
   const tabs = useMemo(() => {
     const baseTabs = [
@@ -927,486 +867,75 @@ export default function ProfileTab() {
     return "";
   };
 
-  const ensureProfileId = useCallback(async (): Promise<string | null> => {
-    if (profile?._id) {
-      return profile._id.toString();
-    }
-
-    if (profileData.profileId) {
-      return profileData.profileId;
-    }
-
-    if (!user?.id) {
-      toast.error("Your session is missing user details. Please sign in again.");
-      return null;
-    }
-
-    const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_API_URL;
-    if (!baseUrl) {
-      toast.error("API base URL is not configured.");
-      return null;
-    }
-
-    setIsEnsuringProfile(true);
+  const [profileData, setProfileData] = useState(() => {
     try {
-      const response = await fetch(`${baseUrl}/api/profile/ensure`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          name: user.name,
-          email: user.email,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorPayload = await response.json().catch(() => null);
-        throw new Error(
-          errorPayload?.message || `Failed to ensure profile (status ${response.status})`
-        );
-      }
-
-      const payload = await response.json();
-      const ensuredProfile = payload?.profile;
-
-      if (!ensuredProfile?._id) {
-        throw new Error("Profile response did not include an identifier");
-      }
-
-      updateProfile(ensuredProfile);
-      setProfileData((prev) => ({
-        ...prev,
-        profileId: ensuredProfile._id.toString(),
-      }));
-
-      return ensuredProfile._id.toString();
-    } catch (error) {
-      console.error("Failed to ensure profile:", error);
-      const message =
-        error instanceof Error ? error.message : "Failed to prepare profile for attendance";
-      toast.error(message);
-      return null;
-    } finally {
-      setIsEnsuringProfile(false);
-    }
-  }, [profile?._id, profileData.profileId, user?.id, user?.name, user?.email, updateProfile]);
-
-  const normalizeAttendanceRecord = useCallback((rawRecord: any): AttendanceRecord => {
-    const recordDate = rawRecord?.date ? new Date(rawRecord.date) : new Date();
-
-    return {
-      id: rawRecord?.id || rawRecord?._id || recordDate.toISOString(),
-      date: recordDate.toISOString(),
-      day: recordDate.getUTCDate(),
-      status: (rawRecord?.status || "none") as AttendanceStatus,
-      logs: Array.isArray(rawRecord?.logs)
-        ? rawRecord.logs.map((log: any) => ({
-            id: log?.id || log?._id || undefined,
-            time: log?.time || "",
-            activity: log?.activity || "",
-            notes: log?.notes || "",
-          }))
-        : [],
-    };
-  }, []);
-
-  const mergeAttendanceRecord = useCallback(
-    (nextRecord: AttendanceRecord) => {
-      setAttendanceState((prev) => {
-        const recordDate = new Date(nextRecord.date);
-        const recordMonth = recordDate.getUTCMonth();
-        const recordYear = recordDate.getUTCFullYear();
-
-        const currentState: AttendanceState = prev &&
-          prev.month === recordMonth &&
-          prev.year === recordYear
-          ? prev
-          : {
-              month: recordMonth,
-              year: recordYear,
-              records: [],
-              presentDays: [],
-              absentDays: [],
-              holidayDays: [],
-              daysWithLogs: [],
-              summary: {
-                totalPresent: 0,
-                totalAbsent: 0,
-                totalHolidays: 0,
-                totalLoggedDays: 0,
-              },
-            };
-
-        const dayNumber = nextRecord.day;
-        const updatedRecords = currentState.records
-          .filter((entry) => entry.day !== dayNumber)
-          .concat(nextRecord)
-          .sort((a, b) => a.day - b.day);
-
-        const presentSet = new Set(currentState.presentDays);
-        const absentSet = new Set(currentState.absentDays);
-        const holidaySet = new Set(currentState.holidayDays);
-        const logsSet = new Set(currentState.daysWithLogs);
-
-        presentSet.delete(dayNumber);
-        absentSet.delete(dayNumber);
-        holidaySet.delete(dayNumber);
-        logsSet.delete(dayNumber);
-
-        if (nextRecord.status === "present") {
-          presentSet.add(dayNumber);
-        } else if (nextRecord.status === "absent") {
-          absentSet.add(dayNumber);
-        } else if (nextRecord.status === "holiday") {
-          holidaySet.add(dayNumber);
-        }
-
-        if (nextRecord.logs && nextRecord.logs.length > 0) {
-          logsSet.add(dayNumber);
-        }
-
-        const summary = {
-          totalPresent: presentSet.size,
-          totalAbsent: absentSet.size,
-          totalHolidays: holidaySet.size,
-          totalLoggedDays: logsSet.size,
-        };
-
-        return {
-          ...currentState,
-          records: updatedRecords,
-          presentDays: Array.from(presentSet).sort((a, b) => a - b),
-          absentDays: Array.from(absentSet).sort((a, b) => a - b),
-          holidayDays: Array.from(holidaySet).sort((a, b) => a - b),
-          daysWithLogs: Array.from(logsSet).sort((a, b) => a - b),
-          summary,
-        };
-      });
-    },
-    []
-  );
-
-  const fetchAttendanceForMonth = useCallback(
-    async (targetMonth: number, targetYear: number) => {
-      const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_API_URL;
-      if (!baseUrl) {
-        setAttendanceError("API base URL is not configured.");
-        setAttendanceState(null);
-        return;
-      }
-
-      setAttendanceLoading(true);
-      setAttendanceError(null);
-
-      try {
-        const activeProfileId = await ensureProfileId();
-        if (!activeProfileId) {
-          setAttendanceState(null);
-          setAttendanceError("Create your profile to start tracking attendance.");
-          return;
-        }
-
-        const response = await fetch(
-          `${baseUrl}/api/profile/${activeProfileId}/attendance?month=${targetMonth + 1}&year=${targetYear}`
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch attendance (status ${response.status})`);
-        }
-
-        const payload = await response.json();
-        if (!payload?.success) {
-          throw new Error(payload?.message || "Failed to fetch attendance data");
-        }
-
-        const data = payload.data || {};
-        const normalizedRecords: AttendanceRecord[] = Array.isArray(data.records)
-          ? data.records.map((record: any) => normalizeAttendanceRecord(record))
-          : [];
-
-        const normalizedMonth =
-          typeof data.month === "number" && !Number.isNaN(data.month)
-            ? Math.max(0, data.month - 1)
-            : targetMonth;
-        const normalizedYear = data.year || targetYear;
-
-        const normalizedState: AttendanceState = {
-          month: normalizedMonth,
-          year: normalizedYear,
-          records: normalizedRecords,
-          presentDays: Array.isArray(data.presentDays)
-            ? data.presentDays.map((value: any) => Number(value)).filter((value: number) => !Number.isNaN(value))
-            : [],
-          absentDays: Array.isArray(data.absentDays)
-            ? data.absentDays.map((value: any) => Number(value)).filter((value: number) => !Number.isNaN(value))
-            : [],
-          holidayDays: Array.isArray(data.holidayDays)
-            ? data.holidayDays.map((value: any) => Number(value)).filter((value: number) => !Number.isNaN(value))
-            : [],
-          daysWithLogs: Array.isArray(data.daysWithLogs)
-            ? data.daysWithLogs.map((value: any) => Number(value)).filter((value: number) => !Number.isNaN(value))
-            : [],
-          summary: {
-            totalPresent: data.summary?.totalPresent || 0,
-            totalAbsent: data.summary?.totalAbsent || 0,
-            totalHolidays: data.summary?.totalHolidays || 0,
-            totalLoggedDays: data.summary?.totalLoggedDays || 0,
+      if (profile && profile._id && profile.name) {
+        console.log("profile", profile, profile.unavailability);
+        const transformedProfile = {
+          profile: {
+            bio: profile.bio || "",
+            skills: profile.skills || [],
+            languages: [],
+            unavailability: profile.unavailability || [],
+            location: null,
+            phoneNumber: profile.phoneNumber || "",
           },
+          education:
+            profile.education?.map((edu: any, index: any) => ({
+              id: index + 1,
+              type: edu.Degree || "Degree",
+              period: edu.Graduation
+                ? new Date(edu.Graduation).getFullYear().toString()
+                : "",
+              institution: edu.institure || edu.institute || "",
+              description: edu.GPA ? `GPA: ${edu.GPA}` : "",
+            })) || [],
+          experiences:
+            profile.WorkExperience?.map((exp: any, index: any) => ({
+              id: index + 1,
+              title: exp.title || "",
+              company: exp.company || "",
+              period: "",
+              description: exp.description || "",
+            })) || [],
+          schedule: {
+            availability: "Monday - Friday, 9:00 AM - 6:00 PM EST",
+            timezone: "Eastern Standard Time",
+            preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
+          },
+          certifications:
+            profile.certificates?.map((cert: any, index: any) => ({
+              id: index + 1,
+              name: cert.name || "",
+              issuer: cert.issuer || "",
+              date: cert.date || "",
+              description: cert.description || "",
+              certificateUrl: cert.fileUrl || "",
+              certificateFileName: cert.fileName || "",
+              certificateMime: cert.mimeType || "",
+            })) || [],
         };
-
-        if (
-          scheduleViewRef.current.month === targetMonth &&
-          scheduleViewRef.current.year === targetYear
-        ) {
-          setAttendanceState(normalizedState);
-
-          const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
-          setSelectedScheduleDay((prev) => {
-            const safePrev = prev || 1;
-            return safePrev > daysInMonth ? Math.min(daysInMonth, safePrev) : safePrev;
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching attendance:", error);
-        const message =
-          error instanceof Error ? error.message : "Failed to fetch attendance data";
-        setAttendanceError(message);
-        setAttendanceState(null);
-      } finally {
-        setAttendanceLoading(false);
-      }
-    },
-    [ensureProfileId, normalizeAttendanceRecord]
-  );
-
-  const handleShiftScheduleMonth = useCallback((direction: number) => {
-    setScheduleMonth((prev) => {
-      const tentative = new Date(prev.year, prev.month + direction, 1);
-      const nextMonth = tentative.getMonth();
-      const nextYear = tentative.getFullYear();
-
-      if (prev.month === nextMonth && prev.year === nextYear) {
-        return prev;
+        return transformedProfile;
       }
 
-      setAttendanceState(null);
-      setAttendanceError(null);
-
-      const daysInNextMonth = new Date(nextYear, nextMonth + 1, 0).getDate();
-      setSelectedScheduleDay((currentDay) => {
-        const safeDay = currentDay || 1;
-        return Math.min(safeDay, daysInNextMonth) || 1;
-      });
-
-      return { month: nextMonth, year: nextYear };
-    });
-  }, []);
-
-  const handleSetScheduleMonth = useCallback((targetMonth: number, targetYear: number) => {
-    setScheduleMonth((prev) => {
-      const tentative = new Date(targetYear, targetMonth, 1);
-      const nextMonth = tentative.getMonth();
-      const nextYear = tentative.getFullYear();
-
-      if (prev.month === nextMonth && prev.year === nextYear) {
-        return prev;
+      // Check if we're in the browser before accessing localStorage
+      if (
+        typeof window !== "undefined" &&
+        typeof localStorage !== "undefined"
+      ) {
+        const savedProfile = localStorage.getItem("profileData");
+        if (savedProfile) {
+          const parsedProfile = JSON.parse(savedProfile);
+          return parsedProfile;
+        }
       }
 
-      setAttendanceState(null);
-      setAttendanceError(null);
-
-      const daysInNextMonth = new Date(nextYear, nextMonth + 1, 0).getDate();
-      setSelectedScheduleDay((currentDay) => {
-        const safeDay = currentDay || 1;
-        return Math.min(safeDay, daysInNextMonth) || 1;
-      });
-
-      return { month: nextMonth, year: nextYear };
-    });
-  }, []);
-
-  const handleAttendanceStatus = useCallback(
-    async (status: AttendanceStatus) => {
-      const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_API_URL;
-      if (!baseUrl) {
-        toast.error("API base URL is not configured.");
-        return;
-      }
-
-      setUpdatingAttendanceStatus(true);
-
-      try {
-        const activeProfileId = await ensureProfileId();
-        if (!activeProfileId) {
-          return;
-        }
-
-        if (!selectedScheduleDay) {
-          return;
-        }
-
-        const isoDate = new Date(
-          Date.UTC(scheduleMonth.year, scheduleMonth.month, selectedScheduleDay)
-        ).toISOString();
-
-        const response = await fetch(
-          `${baseUrl}/api/profile/${activeProfileId}/attendance/${encodeURIComponent(isoDate)}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ status }),
-          }
-        );
-
-        if (!response.ok) {
-          const errorPayload = await response.json().catch(() => null);
-          throw new Error(
-            errorPayload?.message || `Failed to update attendance (status ${response.status})`
-          );
-        }
-
-        const payload = await response.json();
-        if (!payload?.success) {
-          throw new Error(payload?.message || "Failed to update attendance");
-        }
-
-        const rawRecord = payload.data || {};
-        const normalizedRecord = normalizeAttendanceRecord(rawRecord);
-        mergeAttendanceRecord(normalizedRecord);
-        toast.success("Attendance status updated");
-      } catch (error) {
-        console.error("Error updating attendance status:", error);
-        const message =
-          error instanceof Error ? error.message : "Failed to update attendance status";
-        toast.error(message);
-      } finally {
-        setUpdatingAttendanceStatus(false);
-      }
-    },
-    [
-      ensureProfileId,
-      selectedScheduleDay,
-      scheduleMonth.month,
-      scheduleMonth.year,
-      normalizeAttendanceRecord,
-      mergeAttendanceRecord,
-    ]
-  );
-
-  const handleSaveDailyLogs = useCallback(
-    async (records: DailyRecord[]) => {
-      const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_API_URL;
-      if (!baseUrl) {
-        const message = "API base URL is not configured.";
-        toast.error(message);
-        throw new Error(message);
-      }
-
-      setSavingDailyLogs(true);
-
-      try {
-        const activeProfileId = await ensureProfileId();
-        if (!activeProfileId) {
-          throw new Error("Unable to ensure profile");
-        }
-
-        if (!selectedScheduleDay) {
-          throw new Error("No day selected");
-        }
-
-        const isoDate = new Date(
-          Date.UTC(scheduleMonth.year, scheduleMonth.month, selectedScheduleDay)
-        ).toISOString();
-
-        const payloadLogs = records
-          .map((record) => ({
-            time: record.time?.trim() || "",
-            activity: record.activity?.trim() || "",
-            notes: record.notes ? record.notes.trim() : undefined,
-          }))
-          .filter((record) => record.time && record.activity);
-
-        const response = await fetch(
-          `${baseUrl}/api/profile/${activeProfileId}/attendance/${encodeURIComponent(isoDate)}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ logs: payloadLogs }),
-          }
-        );
-
-        if (!response.ok) {
-          const errorPayload = await response.json().catch(() => null);
-          throw new Error(
-            errorPayload?.message || `Failed to save daily records (status ${response.status})`
-          );
-        }
-
-        const payload = await response.json();
-        if (!payload?.success) {
-          throw new Error(payload?.message || "Failed to save daily records");
-        }
-
-        const normalizedRecord = normalizeAttendanceRecord(payload.data || {});
-        mergeAttendanceRecord(normalizedRecord);
-        toast.success("Daily records updated");
-      } catch (error) {
-        console.error("Error saving daily logs:", error);
-        const message = error instanceof Error ? error.message : "Failed to save daily records";
-        toast.error(message);
-        throw error;
-      } finally {
-        setSavingDailyLogs(false);
-      }
-    },
-    [
-      ensureProfileId,
-      selectedScheduleDay,
-      scheduleMonth.month,
-      scheduleMonth.year,
-      normalizeAttendanceRecord,
-      mergeAttendanceRecord,
-    ]
-  );
-
-  useEffect(() => {
-    if (activeTab === "schedule") {
-      fetchAttendanceForMonth(scheduleMonth.month, scheduleMonth.year);
-    }
-  }, [activeTab, scheduleMonth.month, scheduleMonth.year, fetchAttendanceForMonth]);
-
-  useEffect(() => {
-    if (activeTab === "schedule") {
-      if (!profile?._id && !profileData.profileId) {
-        ensureProfileId();
-      }
-    }
-  }, [activeTab, profile?._id, profileData.profileId, ensureProfileId]);
-  useEffect(() => {
-    if (profile && profile._id && profile.name) {
-      return;
-    }
-
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    try {
-      const savedProfile = localStorage.getItem("profileData");
-      if (savedProfile) {
-        const parsed = JSON.parse(savedProfile);
-        setProfileData({ ...initialProfileData, ...parsed });
-      }
+      return initialProfileData;
     } catch (error) {
-      console.error("Error parsing profile data from localStorage:", error);
+      console.error("Error parsing profile data:", error);
+      return initialProfileData;
     }
-  }, [profile]);
+  });
   const [newCertificatesFiles, setNewCertificatesFiles] = useState<File[]>([]);
   const [newCertificatesMeta, setNewCertificatesMeta] = useState<any[]>([]);
 
@@ -1414,7 +943,6 @@ export default function ProfileTab() {
     if (profile && profile._id && profile.name) {
       try {
         const transformedProfile = {
-          profileId: profile._id?.toString() || null,
           profile: {
             bio: profile.bio || "",
             skills: profile.skills || [],
@@ -1471,13 +999,6 @@ export default function ProfileTab() {
         };
 
         setProfileData(transformedProfile);
-        if (typeof window !== "undefined") {
-          try {
-            localStorage.setItem("profileData", JSON.stringify(transformedProfile));
-          } catch (storageError) {
-            console.error("Failed to cache profile data:", storageError);
-          }
-        }
 
         // Also sync the profile form data for editing
         setProfileFormData({
@@ -2602,42 +2123,6 @@ export default function ProfileTab() {
     );
   };
 
-  const handleSelectScheduleDay = useCallback((day: number) => {
-    setSelectedScheduleDay(day);
-  }, []);
-
-  const selectedDayLogs = useMemo<DailyRecord[]>(() => {
-    if (!attendanceState) return [];
-    const record = attendanceState.records.find(
-      (entry) => entry.day === selectedScheduleDay
-    );
-    return record?.logs ?? [];
-  }, [attendanceState, selectedScheduleDay]);
-
-  const calendarMarkers = useMemo(
-    () => ({
-      presentDays: attendanceState?.presentDays ?? [],
-      absentDays: attendanceState?.absentDays ?? [],
-      holidayDays: attendanceState?.holidayDays ?? [],
-      daysWithLogs: attendanceState?.daysWithLogs ?? [],
-      summary: attendanceState?.summary ?? {
-        totalPresent: 0,
-        totalAbsent: 0,
-        totalHolidays: 0,
-        totalLoggedDays: 0,
-      },
-    }),
-    [attendanceState]
-  );
-
-  const safeSelectedDay =
-    selectedScheduleDay && selectedScheduleDay > 0 ? selectedScheduleDay : 1;
-
-  const hasProfileId = Boolean(profile?._id || profileData.profileId);
-  const attendanceDisabledReason = hasProfileId
-    ? null
-    : "Create your profile to start tracking attendance.";
-
   const renderTabContent = () => {
     switch (activeTab) {
       case "profile":
@@ -3170,25 +2655,7 @@ export default function ProfileTab() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="w-full"
           >
-            <CalendarSection
-              month={scheduleMonth.month}
-              year={scheduleMonth.year}
-              selectedDay={safeSelectedDay}
-              onSelectDay={handleSelectScheduleDay}
-              onShiftMonth={handleShiftScheduleMonth}
-              onSetMonth={handleSetScheduleMonth}
-              markers={calendarMarkers}
-              dayLogs={selectedDayLogs}
-              onSaveLogs={handleSaveDailyLogs}
-              onMarkStatus={handleAttendanceStatus}
-              isLoading={attendanceLoading}
-              isSavingLogs={savingDailyLogs}
-              isUpdatingStatus={updatingAttendanceStatus}
-              isEnsuringProfile={isEnsuringProfile}
-              canUpdateAttendance={hasProfileId}
-              attendanceDisabledReason={attendanceDisabledReason}
-              error={attendanceError}
-            />
+            <CalendarSection />
           </motion.div>
         );
 
