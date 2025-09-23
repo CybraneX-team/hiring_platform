@@ -1382,7 +1382,7 @@ export default function ProfileTab() {
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
         <h1 className="text-base sm:text-lg font-semibold text-gray-900">
-          Logo
+          Project by Compscope
         </h1>
       </motion.div>
 

@@ -7,20 +7,24 @@ import { toast } from "react-toastify";
 import React from "react";
 import Link from "next/link";
 import Header from "./header";
+import Image from "next/image";
 
 export default function HeroSection() {
   return (
     <>
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
+      <Image
+        // autoPlay
+        // loop
+        // muted
+        // playsInline
+        src="/images/3.png"
+        fill
+        alt="a;t"
+        className="absolute inset-0  object-cover"
       >
-        <source src="/hero.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
+        {/* <source src="/hero.mp4" type="video/mp4" />
+        Your browser does not support the video tag. */}
+      </Image>
       <div className="absolute inset-0 bg-[#01010162]">
         {" "}
         <Header />
