@@ -275,7 +275,7 @@ const OlaMapComponent = ({
             typeof lat === "number" &&
             typeof lng === "number" &&
             !isNaN(lat) &&
-            isNaN(lng) &&
+            !isNaN(lng) &&
             isFinite(lat) &&
             isFinite(lng)
           ) {
@@ -612,12 +612,104 @@ const LocationInputWithSearch = ({
 }) => {
   const [searchTrigger, setSearchTrigger] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightIndex, setHighlightIndex] = useState<number>(-1);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Debounced autocomplete suggestions
+  useEffect(() => {
+    if (!isInputFocused) {
+      // If input is not focused, keep suggestions hidden
+      setShowSuggestions(false);
+      return;
+    }
+    const controller = new AbortController();
+    const fetchSuggestions = async () => {
+      try {
+        const query = value.trim();
+        if (!query) {
+          setSuggestions([]);
+          setShowSuggestions(false);
+          setHighlightIndex(-1);
+          return;
+        }
+
+        // small delay for debounce
+        await new Promise((r) => setTimeout(r, 300));
+        if (controller.signal.aborted) return;
+
+        const resp = await fetch(
+          `https://api.olamaps.io/places/v1/autocomplete?input=${encodeURIComponent(
+            query
+          )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`,
+          { signal: controller.signal }
+        );
+        if (!resp.ok) throw new Error("Failed to fetch suggestions");
+        const data = await resp.json();
+        // Normalize results; Ola Maps returns predictions similar to Google
+        const preds = data.predictions || data.suggestions || [];
+        setSuggestions(preds.slice(0, 8));
+        setShowSuggestions(true);
+        setHighlightIndex(-1);
+      } catch (err) {
+        if ((err as any).name !== "AbortError") {
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+      }
+    };
+
+    fetchSuggestions();
+    return () => controller.abort();
+  }, [value, isInputFocused]);
+
+  const geocodeAndSelect = async (address: string) => {
+    try {
+      setIsSearching(true);
+      const response = await fetch(
+        `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(
+          address
+        )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        const result = data.geocodingResults?.[0];
+        const lat = result?.geometry?.location?.lat;
+        const lng = result?.geometry?.location?.lng;
+        const formattedAddress = result?.formatted_address || address;
+        if (
+          typeof lat === "number" &&
+          typeof lng === "number" &&
+          !isNaN(lat) &&
+          !isNaN(lng) &&
+          isFinite(lat) &&
+          isFinite(lng)
+        ) {
+          onChange(formattedAddress);
+          setShowSuggestions(false);
+          setSuggestions([]);
+          setHighlightIndex(-1);
+          setIsInputFocused(false);
+          inputRef.current?.blur();
+          setSearchTrigger(formattedAddress);
+          onLocationSelect({ lat, lng, address: formattedAddress });
+        }
+      }
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const handleSearch = async () => {
     if (!value.trim()) return;
 
     setIsSearching(true);
     setSearchTrigger(value); // This will trigger the map to search
+    // Close any open suggestions when an explicit search is triggered
+    setShowSuggestions(false);
+    setSuggestions([]);
 
     // Reset after a short delay
     setTimeout(() => {
@@ -626,22 +718,80 @@ const LocationInputWithSearch = ({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (showSuggestions && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      e.preventDefault();
+      setHighlightIndex((prev) => {
+        const count = suggestions.length;
+        if (count === 0) return -1;
+        if (e.key === "ArrowDown") return (prev + 1 + count) % count;
+        return (prev - 1 + count) % count;
+      });
+      return;
+    }
+
     if (e.key === "Enter") {
       e.preventDefault();
-      handleSearch();
+      if (showSuggestions && highlightIndex >= 0 && suggestions[highlightIndex]) {
+        const s = suggestions[highlightIndex];
+        const address = s.description || s.formatted_address || s.name || value;
+        geocodeAndSelect(address);
+      } else {
+        handleSearch();
+      }
     }
   };
 
   return (
     <div className="space-y-3 sm:space-y-4">
       <div className="flex gap-2">
-        <input
+        <div className="relative flex-1">
+          <input
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setShowSuggestions(true);
+          }}
           placeholder="Enter address or click on map to select location..."
-          className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onKeyDown={handleKeyPress}
+          onFocus={() => {
+            setIsInputFocused(true);
+            if (value) setShowSuggestions(true);
+          }}
+          onBlur={() => {
+            setIsInputFocused(false);
+            setTimeout(() => setShowSuggestions(false), 100);
+          }}
+          ref={inputRef}
         />
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-56 overflow-auto">
+            {suggestions.map((s, idx) => {
+              const address = s.description || s.formatted_address || s.name || "";
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`w-full text-left px-3 py-2 text-xs sm:text-sm hover:bg-blue-50 ${
+                    idx === highlightIndex ? "bg-blue-50" : ""
+                  }`}
+                  onMouseEnter={() => setHighlightIndex(idx)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    setShowSuggestions(false);
+                    setIsInputFocused(false);
+                    inputRef.current?.blur();
+                    geocodeAndSelect(address);
+                  }}
+                >
+                  {address}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        </div>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
