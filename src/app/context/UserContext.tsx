@@ -57,44 +57,43 @@ export const UserProvider = ({ children }: UserProviderProps): JSX.Element => {
     password: "",
   });
 
-  // Initialize user synchronously with localStorage data
-  const [user, setuser] = useState<UserInterface | null>(() => {
-    if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
-        try {
-          return JSON.parse(storedUser);
-        } catch (e) {
-          console.error("Failed to parse user from localStorage", e);
-        }
-      }
-    }
-    return null;
-  });
+  const [user, setuser] = useState<UserInterface | null>(null);
 
-  // Initialize profile synchronously with localStorage data
-  const [profile, setprofile] = useState<any>(() => {
-    if (typeof window !== 'undefined') {
-      const profileFromLocal = localStorage.getItem("profile");
-      if (profileFromLocal) {
-        try {
-          return JSON.parse(profileFromLocal);
-        } catch (e) {
-          console.error("Failed to parse profile from localStorage", e);
-        }
-      }
-    }
-    return null;
-  });
+  const [profile, setprofile] = useState<any>(null);
 
   const [mode, setmode] = useState("");
 
   // Add updateProfile method
   const updateProfile = (newProfile: any) => {
     setprofile(newProfile);
-    // Also update localStorage immediately
-    localStorage.setItem("profile", JSON.stringify(newProfile));
+    if (typeof window !== "undefined") {
+      localStorage.setItem("profile", JSON.stringify(newProfile));
+    }
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        setuser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error("Failed to parse user from localStorage", error);
+    }
+
+    try {
+      const storedProfile = localStorage.getItem("profile");
+      if (storedProfile) {
+        setprofile(JSON.parse(storedProfile));
+      }
+    } catch (error) {
+      console.error("Failed to parse profile from localStorage", error);
+    }
+  }, []);
 
   // Sync user state with localStorage
   useEffect(() => {

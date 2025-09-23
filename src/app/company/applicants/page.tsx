@@ -487,11 +487,11 @@ function ApplicationDetailContent() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Experience
             </h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="space-y-8">
               {applicant.experience_details &&
               applicant.experience_details.length > 0 ? (
                 applicant.experience_details.map((exp: any, index: number) => (
-                  <div key={index} className="bg-[#F5F5F5] rounded-lg p-4">
+                  <div key={index} className="bg-[#F5F5F5] rounded-lg p-6">
                     <h4 className="font-semibold text-gray-900 mb-1">
                       {exp.title}
                     </h4>

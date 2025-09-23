@@ -71,7 +71,8 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
     const seconds = Math.floor(diffMs / 1000);
     if (seconds < 60) return "Just now";
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return minutes === 1 ? "1 minute ago" : `${minutes} minutes ago`;
+    if (minutes < 60)
+      return minutes === 1 ? "1 minute ago" : `${minutes} minutes ago`;
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return hours === 1 ? "1 hour ago" : `${hours} hours ago`;
     const days = Math.floor(hours / 24);
@@ -79,7 +80,8 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
     const weeks = Math.floor(days / 7);
     if (weeks < 4) return weeks === 1 ? "1 week ago" : `${weeks} weeks ago`;
     const months = Math.floor(days / 30);
-    if (months < 12) return months === 1 ? "1 month ago" : `${months} months ago`;
+    if (months < 12)
+      return months === 1 ? "1 month ago" : `${months} months ago`;
     const years = Math.floor(days / 365);
     return years === 1 ? "1 year ago" : `${years} years ago`;
   }, []);
@@ -149,7 +151,9 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
     } catch (err) {
       console.error("Failed to fetch profiles", err);
       setError(
-        err instanceof Error ? err.message : "Failed to fetch inspector profiles"
+        err instanceof Error
+          ? err.message
+          : "Failed to fetch inspector profiles"
       );
       setItems([]);
       setFilteredItems([]);
@@ -169,13 +173,10 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
 
   const filters = useMemo(() => {
     const total = items.length;
-    const statusCounts = items.reduce(
-      (acc, item) => {
-        acc[item.status] = (acc[item.status] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
+    const statusCounts = items.reduce((acc, item) => {
+      acc[item.status] = (acc[item.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
     const assignedCount = items.filter(
       (item) => item.company && item.company !== "Not Assigned"
@@ -212,14 +213,10 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
         filtered = items.filter((item) => item.status === "completed");
         break;
       case "assigned":
-        filtered = items.filter(
-          (item) => item.company !== "Not Assigned"
-        );
+        filtered = items.filter((item) => item.company !== "Not Assigned");
         break;
       case "unassigned":
-        filtered = items.filter(
-          (item) => item.company === "Not Assigned"
-        );
+        filtered = items.filter((item) => item.company === "Not Assigned");
         break;
       default:
         filtered = items;
@@ -307,7 +304,7 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ delay: index * 0.05 }}
-                className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                className="bg-white rounded-xl p-7 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => onItemSelect(item.profile ?? item)}
               >
                 <div className="flex items-start justify-between">
@@ -318,45 +315,54 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
                       <span className="text-white font-semibold text-sm">
                         {item.name
                           .split(" ")
-                          .map((n : any) => n[0])
+                          .map((n: any) => n[0])
                           .join("")}
                       </span>
                     </div>
 
                     {/* Profile Details */}
-                    <div className="flex-1 min-w-full w-full">
-                      {/* Name and Title */}
-                      <div className="mb-5 w-full flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    <div className="flex-1 min-w-0">
+                      {/* Name and Title in one line with proper spacing */}
+                      <div className="flex items-center gap-4 mb-5">
+                        <h3 className="text-lg font-semibold text-gray-900 flex-shrink-0">
                           {item.name}
                         </h3>
-                        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 sm:flex-1 sm:justify-end sm:text-right min-w-0">
-                          <span className="font-medium text-gray-700 min-w-0 max-w-full whitespace-normal break-words">
+
+                        {/* Spacer to push content to the right */}
+                        <div className="flex-1"></div>
+
+                        {/* Role and Company positioned at the end */}
+                        <div className="flex items-center gap-3 text-sm text-gray-500 max-w-[60%] min-w-0">
+                          <span className="font-medium text-gray-700 truncate">
                             {item.role || "Role not specified"}
                           </span>
-                          <span className="hidden sm:inline text-gray-300 flex-shrink-0">•</span>
-                          <span className="min-w-0 max-w-full whitespace-normal break-all">
+                          <span className="text-gray-300 flex-shrink-0">•</span>
+                          <span className="truncate">
                             {item.company || "Not Assigned"}
                           </span>
                         </div>
+
+                        {/* Match Score */}
                         {typeof item.matchScore === "number" && (
-                          <div className="flex items-center gap-2 self-start sm:self-auto sm:ml-auto text-xs text-gray-500">
+                          <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                             <CircularProgress percentage={item.matchScore} />
-                            <span>Match Score</span>
+                            <span className="text-xs text-gray-500">
+                              Match Score
+                            </span>
                           </div>
                         )}
                       </div>
 
-                      {/* Divider line after name section */}
-                      <div className="border-t border-gray-100 mb-4 w-[115%] -mx-14"></div>
+                      {/* Divider line */}
+                      <div className="border-t border-gray-100 mb-4"></div>
 
-                      {/* Status Indicators - only showing available, location, experience */}
-                      <div className="flex flex-wrap gap-4 mb-4 text-sm -mx-14 text-gray-600">
+                      {/* Status Indicators */}
+                      <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                         <div className="flex items-center gap-1">
                           <div
                             className={`w-2 h-2 rounded-full ${
                               item.status === "active"
-                                ? "bg-blue-500"
+                                ? "bg-green-500"
                                 : item.status === "completed"
                                 ? "bg-green-500"
                                 : "bg-yellow-500"
@@ -369,16 +375,17 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
 
                         <div className="flex items-center gap-1">
                           <MapPin className="w-4 h-4" />
-                          <span>{item.location || "Location unavailable"}</span>
+                          <span>{item.location || "India"}</span>
                         </div>
 
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          <span>{item.yearsOfExp || "Experience not specified"}</span>
+                          <span>{item.yearsOfExp || "9+ years"}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-xs text-gray-400">
+
+                        <div className="flex items-center gap-1 text-xs text-gray-400 ml-auto">
                           <Clock className="w-3 h-3" />
-                          <span>{item.lastActivity || "No recent activity"}</span>
+                          <span>{item.lastActivity || "18 hours ago"}</span>
                         </div>
                       </div>
                     </div>
@@ -391,7 +398,6 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
       )}
 
       {/* Empty State */}
-      
 
       <FileUploadModal
         isOpen={isUploadModalOpen}

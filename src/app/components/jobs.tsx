@@ -359,7 +359,7 @@ export default function JobComponent() {
         </AnimatePresence>
       </motion.header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-8 md:px-20 py-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-8 md:px-20 py-8">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -471,14 +471,14 @@ export default function JobComponent() {
                           ))}
                         </div>
 
-                        <div className="mb-4">
+                        {/* <div className="mb-4">
                           <h4 className="text-sm font-medium text-black mb-2">
                             About Job
                           </h4>
                           <p className="text-sm text-gray-600 leading-relaxed">
                             {job.description}
                           </p>
-                        </div>
+                        </div> */}
 
                         <div className="flex items-center space-x-4 text-xs text-gray-400">
                           <div className="flex items-center space-x-1">

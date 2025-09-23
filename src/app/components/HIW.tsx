@@ -24,7 +24,7 @@ export default function WorksSection() {
 
       <div className="relative z-10 max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-medium mb-6 leading-tight max-w-4xl mx-auto">
+          <h2 className="text-2xl md:text-4xl font-medium mb-6 leading-tight max-w-4xl mx-auto">
          How it Works?
           </h2>
         </div>
@@ -32,8 +32,8 @@ export default function WorksSection() {
         <div className="flex flex-col items-center justify-center gap-12 ">
           {stats.map((stat, index) => (
             <div key={index} className="text-center ">
-              <h3 className="text-xl font-bold mb-4">{stat.title}</h3>
-              <p className="text-black text-2xl font-light">
+              <h3 className="md:text-xl text-lg font-bold mb-1">{stat.title}</h3>
+              <p className="text-black md:text-xl text-base font-light">
                 {stat.description}
               </p>
             </div>

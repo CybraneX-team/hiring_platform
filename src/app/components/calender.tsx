@@ -1,7 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { Pencil, ChevronLeft, ChevronRight, Calendar, Plus, Trash2 } from "lucide-react"
+import { Pencil, ChevronLeft, ChevronRight, Calendar, Plus, Trash2, Download } from "lucide-react"
+import jsPDF from "jspdf"
+import autoTable from "jspdf-autotable"
+
+declare module "jspdf" {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF
+  }
+}
 
 const CalendarSection = () => {
   const [currentDate, setCurrentDate] = useState(new Date(2025, 2, 1)) // March 2025
@@ -180,6 +188,75 @@ const CalendarSection = () => {
     setShowUpdateModal(false)
   }
 
+  const downloadAttendanceData = () => {
+    const dateKey = getCurrentDateKey()
+    const currentLogs = dailyRecordsPerDate[dateKey] || []
+    const isPresent = attendanceData.presentDays.includes(selectedDate)
+    const isAbsent = attendanceData.absentDays.includes(selectedDate)
+
+    // Determine attendance status
+    let attendanceStatus = "Not Marked"
+    if (isPresent) attendanceStatus = "Present"
+    if (isAbsent) attendanceStatus = "Absent"
+
+    // Format date for display
+    const formattedDate = `${selectedDate.toString().padStart(2, "0")}-${(currentDate.getMonth() + 1).toString().padStart(2, "0")}-${currentDate.getFullYear()}`
+
+    // Create new PDF document
+    const doc = new jsPDF()
+
+    // Add title
+    doc.setFontSize(16)
+    doc.text("Attendance Report", 20, 20)
+
+    // Add date and attendance status
+    doc.setFontSize(12)
+    doc.text(`Date: ${formattedDate}`, 20, 35)
+    doc.text(`Attendance Status: ${attendanceStatus}`, 20, 45)
+
+    // Prepare table data
+    const tableData = []
+
+    if (currentLogs.length > 0) {
+      currentLogs.forEach((log) => {
+        tableData.push([formattedDate, attendanceStatus, log.time, log.activity])
+      })
+    } else {
+      tableData.push([formattedDate, attendanceStatus, "No logs", "No activities recorded for this date"])
+    }
+
+    autoTable(doc, {
+      head: [["Date", "Attendance Status", "Time", "Activity"]],
+      body: tableData,
+      startY: 55,
+      theme: "grid",
+      styles: {
+        fontSize: 10,
+        cellPadding: 5,
+      },
+      headStyles: {
+        fillColor: [66, 139, 202],
+        textColor: 255,
+        fontStyle: "bold",
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+      columnStyles: {
+        0: { cellWidth: 30 },
+        1: { cellWidth: 40 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 80 },
+      },
+    })
+
+    // Generate filename with date
+    const filename = `Attendance_${formattedDate.replace(/-/g, "_")}.pdf`
+
+    // Download the PDF file
+    doc.save(filename)
+  }
+
   return (
     <>
       <div className="bg-white w-full shadow-sm rounded-lg overflow-hidden">
@@ -207,12 +284,21 @@ const CalendarSection = () => {
             </button>
           </div>
 
-          <button
-            onClick={markAsPresent}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors"
-          >
-            Mark as Present
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={downloadAttendanceData}
+              className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Download
+            </button>
+            <button
+              onClick={markAsPresent}
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Mark as Present
+            </button>
+          </div>
         </div>
 
         {/* Days of week header */}
