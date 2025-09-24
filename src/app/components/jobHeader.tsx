@@ -77,12 +77,14 @@ function JobHeader() {
 
             {/* User icons - positioned to the far right */}
             <div className="flex items-center space-x-3 ml-auto bg-white rounded-full">
+              <Link href="/notifications">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 className="px-3 rounded-full"
               >
                 <Mail className="w-4 h-4 text-gray-600" />
               </motion.button>
+              </Link>
               <Link href="/profile">
                 <motion.div
                   whileHover={{ scale: 1.05 }}
