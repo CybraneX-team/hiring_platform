@@ -1095,89 +1095,7 @@ export default function ProfileTab() {
   const [newCertificatesFiles, setNewCertificatesFiles] = useState<File[]>([]);
   const [newCertificatesMeta, setNewCertificatesMeta] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (profile && profile._id && profile.name) {
-      try {
-        const transformedProfile = {
-          profile: {
-            bio: profile.bio || "",
-            skills: profile.skills || [],
-            languages: profile.languages || ["English (Native)"],
-            phoneNumber: profile.phoneNumber || "",
-            unavailability:
-              profile.unavailability?.map((slot: any) => ({
-                startDate: slot.startDate,
-                endDate: slot.endDate,
-                description:
-                  slot.description ||
-                  `${new Date(
-                    slot.startDate
-                  ).toLocaleDateString()} - ${new Date(
-                    slot.endDate
-                  ).toLocaleDateString()}`,
-              })) || [],
-            location: profile.locationData || null,
-          },
-          education:
-            profile.education?.map((edu: any, index: any) => ({
-              id: index + 1,
-              type: edu.Degree || "Degree",
-              period: edu.Graduation
-                ? new Date(edu.Graduation).getFullYear().toString()
-                : "",
-              institution: edu.institure || edu.institute || "", // Handle both field names
-              description: edu.GPA ? `GPA: ${edu.GPA}` : "",
-            })) || [],
-          experiences:
-            profile.WorkExperience?.map((exp: any, index: any) => ({
-              id: index + 1,
-              title: exp.title || "",
-              company: exp.company || "",
-              period: "", // You might want to add period field to your backend
-              description: exp.description || "",
-            })) || [],
-          schedule: {
-            availability: "Monday - Friday, 9:00 AM - 6:00 PM EST",
-            timezone: "Eastern Standard Time",
-            preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
-          },
-          certifications:
-            profile.certificates?.map((cert: any, index: any) => ({
-              id: index + 1,
-              name: cert.name || "",
-              issuer: cert.issuer || "",
-              date: cert.date || "",
-              description: cert.description || "",
-              certificateUrl: cert.fileUrl || "",
-              certificateFileName: cert.fileName || "",
-              certificateMime: cert.mimeType || "",
-            })) || [],
-        };
 
-        setProfileData(transformedProfile);
-
-        // Also sync the profile form data for editing
-        setProfileFormData({
-          name: profile.name || "",
-          location: profile.locationData?.address || profile.location || "",
-          phone: profile.phone || "",
-          bio: profile.bio || "",
-          skills: profile.skills?.join(", ") || "",
-          languages: profile.languages?.join(", ") || "English (Native)",
-          unavailability: profile.unavailability || [],
-          locationData: profile.locationData || null,
-        });
-
-        // Update availability slots
-        if (profile.availability) {
-          setAvailabilitySlots(profile.availability);
-        }
-      } catch (error) {
-        console.error("Error transforming profile data:", error);
-        // Don't update state if transformation fails
-      }
-    }
-  }, [profile]); // Only depend on profile changes
 
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -1266,6 +1184,69 @@ export default function ProfileTab() {
     }
   }, [profileData.profile.unavailability]);
 
+   useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        if (profile && profile._id && profile.name) {
+          console.log("profile", profile, profile.unavailability);
+          const transformedProfile = {
+            profile: {
+              bio: profile.bio || "",
+              skills: profile.skills || [],
+              languages: profile.languages || ["English (Native)"],
+              phoneNumber: profile.phoneNumber || "",
+              unavailability: profile.unavailability?.map((slot: any) => ({
+                startDate: slot.startDate,
+                endDate: slot.endDate,
+                description: `${slot.description} (${new Date(slot.startDate).toLocaleDateString()} - ${new Date(slot.endDate).toLocaleDateString()})`
+              })) || [],
+              location: profile.locationData || null,
+            },
+            education: profile.education?.map((edu: any, index: any) => ({
+              id: index + 1,
+              type: edu.Degree || "Degree",
+              period: edu.Graduation ? new Date(edu.Graduation).getFullYear().toString() : "",
+              institution: edu.institure || edu.institute, // Handle both field names
+              description: edu.GPA ? `GPA: ${edu.GPA}` : "",
+            })) || [],
+            experiences: profile.WorkExperience?.map((exp: any, index: any) => ({
+              id: index + 1,
+              title: exp.title || "",
+              company: exp.company || "",
+              period: "", // You might want to add period field to your backend
+              description: exp.description || "",
+            })) || [],
+            schedule: {
+              availability: "Monday - Friday, 9:00 AM - 6:00 PM EST",
+              timezone: "Eastern Standard Time",
+              preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
+            },
+            certifications: profile.certificates?.map((cert: any, index: any) => ({
+              id: index + 1,
+              name: cert.name || "",
+              issuer: cert.issuer || "",
+              date: cert.date || "",
+              description: cert.description || "",
+              certificateUrl: cert.fileUrl || "",
+              certificateFileName: cert.fileName || "",
+              certificateMime: cert.mimeType || "",
+            })) || [],
+          };
+          setProfileData(transformedProfile);
+        } else {
+          // Try to load from localStorage only on the client
+          const savedProfile = localStorage.getItem("profileData");
+          if (savedProfile) {
+            const parsedProfile = JSON.parse(savedProfile);
+            setProfileData(parsedProfile);
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing profile data:", error);
+        // Keep the initial profile data if there's an error
+      }
+    }
+  }, [profile]);
   // useEffect(() => {
   //   if (
   //     profileData.profile &&
