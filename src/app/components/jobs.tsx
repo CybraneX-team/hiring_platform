@@ -41,7 +41,7 @@ interface ApiResponse {
   };
 }
 
-const filterTabs = ["All", "Part-Time", "Full-Time", "Remote", "On-site"];
+const filterTabs = ["All", "Full-Time", "Remote"];
 
 export default function JobComponent() {
   const [activeFilter, setActiveFilter] = useState("All");
