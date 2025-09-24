@@ -65,12 +65,12 @@ export default function Header() {
         <span className={`md:text-2xl text-xl font-semibold transition-colors duration-300 ${
           isScrolled ? "text-black " : "text-white"
         }`}>
-          ProjectMatch
+          Project Match
         </span>
         <span className={`text-sm font-medium transition-colors duration-300 ${
           isScrolled ? "text-black" : "text-white"
         }`}>
-          By Comscope
+          by Comscope
         </span>
       </Link>
 

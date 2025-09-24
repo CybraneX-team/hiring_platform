@@ -35,7 +35,7 @@ export default function HeroSection() {
 
         {/* Mobile Image */}
         <Image
-          src="/images/4.png"
+          src="/images/mobile_hero.jpg"
           fill
           alt="Energy and Infrastructure Background"
           className="block md:hidden object-cover object-center"
