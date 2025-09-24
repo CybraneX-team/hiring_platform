@@ -12,19 +12,38 @@ import Image from "next/image";
 export default function HeroSection() {
   return (
     <>
-      <Image
-        // autoPlay
-        // loop
-        // muted
-        // playsInline
-        src="/images/3.png"
-        fill
-        alt="a;t"
-        className="absolute inset-0  object-cover"
-      >
-        {/* <source src="/hero.mp4" type="video/mp4" />
-        Your browser does not support the video tag. */}
-      </Image>
+      <div className="absolute inset-0">
+        {/* Desktop Image */}
+        <Image
+          src="/images/3.png"
+          fill
+          alt="Energy and Infrastructure Background"
+          className="hidden lg:block object-cover object-center"
+          priority
+          sizes="100vw"
+        />
+
+        {/* iPad/Tablet Image - positioned to show more of the engineer */}
+        <Image
+          src="/images/3.png"
+          fill
+          alt="Energy and Infrastructure Background"
+          className="hidden md:block lg:hidden object-cover object-right"
+          priority
+          sizes="100vw"
+        />
+
+        {/* Mobile Image */}
+        <Image
+          src="/images/4.png"
+          fill
+          alt="Energy and Infrastructure Background"
+          className="block md:hidden object-cover object-center"
+          priority
+          sizes="100vw"
+        />
+      </div>
+
       <div className="absolute inset-0 bg-[#01010162]">
         {" "}
         <Header />
@@ -34,9 +53,9 @@ export default function HeroSection() {
         <div className="relative z-10 text-white max-w-[90%] mx-auto md:px-6 w-full">
           <div className="max-w-4xl mt-30">
             <h1 className="text-3xl md:text-5xl font-semibold mb-6 leading-tight">
-             Exceptional Projects and Talent in 
+              Exceptional Projects and Talent in
               <br />
-            energy and Infra Sector at one place
+              energy and Infra Sector at one place
             </h1>
             <p className="md:text-lg text-base mb-8 text-white leading-relaxed">
               Talent and opportunity converge with precision and innovation.

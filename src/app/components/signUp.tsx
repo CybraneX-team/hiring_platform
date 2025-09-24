@@ -8,12 +8,7 @@ import { Input } from "@/app/components/ui/Input";
 import { Label } from "@/app/components/ui/label";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  motion,
-  AnimatePresence,
-  easeOut,
-  Variants 
-} from "framer-motion";
+import { motion, AnimatePresence, easeOut, Variants } from "framer-motion";
 import { toast } from "react-toastify";
 import { useUser } from "../context/UserContext";
 
@@ -84,7 +79,7 @@ export default function SignupPage() {
 
     if (token) {
       toast.info("Already logged in");
-      router.push("/"); 
+      router.push("/");
     }
   }, [router]);
 
@@ -130,7 +125,18 @@ export default function SignupPage() {
     >
       <div className="container mx-auto px-6 py-8">
         <motion.div className="mb-16" variants={itemVariants}>
-          <h1 className="text-lg font-medium text-gray-900">Logo</h1>
+          <Link href="/" className="flex flex-col">
+            <span
+              className={`md:text-2xl text-xl font-semibold transition-colors duration-300 text-black`}
+            >
+              ProjectMatch
+            </span>
+            <span
+              className={`text-sm font-medium transition-colors duration-300 text-black`}
+            >
+              By Comscope
+            </span>
+          </Link>
         </motion.div>
 
         <div className="max-w-md mx-auto space-y-6">

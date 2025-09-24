@@ -18,8 +18,16 @@ export default function LoginPage() {
   const [usePhone, setUsePhone] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const { loginCreds, setLoginCreds, mode, setmode, setuser, setUserCreds, setprofile } = useUser();
-  
+  const {
+    loginCreds,
+    setLoginCreds,
+    mode,
+    setmode,
+    setuser,
+    setUserCreds,
+    setprofile,
+  } = useUser();
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
@@ -53,7 +61,7 @@ export default function LoginPage() {
     if (makeReq.ok) {
       const response = await makeReq.json();
       setuser(response.user);
-      setprofile(response.profile)
+      setprofile(response.profile);
       setUserCreds({
         name: "",
         email: "",
@@ -112,7 +120,18 @@ export default function LoginPage() {
     >
       <div className="container mx-auto px-6 py-8">
         <motion.div className="mb-16" variants={itemVariants}>
-          <h1 className="text-lg font-medium text-gray-900">Logo</h1>
+          <Link href="/" className="flex flex-col">
+            <span
+              className={`md:text-2xl text-xl font-semibold transition-colors duration-300 text-black`}
+            >
+              ProjectMatch
+            </span>
+            <span
+              className={`text-sm font-medium transition-colors duration-300 text-black`}
+            >
+              By Comscope
+            </span>
+          </Link>
         </motion.div>
 
         <div className="max-w-md mx-auto space-y-6">
