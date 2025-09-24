@@ -205,7 +205,7 @@ export default function AdminPanel() {
     }
 
     try {
-      const response = await fetch(`${baseUrl}/company`);
+      const response = await fetch(`${baseUrl}/company/`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch companies (status ${response.status})`);
