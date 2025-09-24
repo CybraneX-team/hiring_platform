@@ -2,45 +2,90 @@
 import { Mail, Search } from "lucide-react"
 import JobHeader from "../components/jobHeader"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
-const notifications = [
-  {
-    id: 1,
-    company: "Riverleaf Corp",
-    label: "Hiring Manager - Josh",
-    title: "Lorem Ipsum dolor sit amet",
-    description:
-      "We are seeking a detail-oriented and proactive Payroll Specialist to support our Finance function, specifically managing payroll accounting, reconciliations, and payroll-related financial reporting across multiple international jurisdictions (excluding North America).",
-    timestamp: "5 Days ago",
-    isUnread: true,
-    avatar: "R",
-  },
-  {
-    id: 2,
-    company: "Riverleaf Corp",
-    label:  "Hiring Manager - Josh",
-    title: "Lorem Ipsum dolor sit amet",
-    description:
-      "We are seeking a detail-oriented and proactive Payroll Specialist to support our Finance function, specifically managing payroll accounting, reconciliations, and payroll-related financial reporting across multiple international jurisdictions (excluding North America).",
-    timestamp: "5 Days ago",
-    isUnread: false,
-    avatar: "R",
-  },
-  {
-    id: 3,
-    company: "Riverleaf Corp",
-    label:  "Hiring Manager - Josh",
-    title: "Lorem Ipsum dolor sit amet",
-    description:
-      "We are seeking a detail-oriented and proactive Payroll Specialist to support our Finance function, specifically managing payroll accounting, reconciliations, and payroll-related financial reporting across multiple international jurisdictions (excluding North America).",
-    timestamp: "5 Days ago",
-    isUnread: false,
-    avatar: "R",
-  },
-]
+
+
+// const notifications = [
+//   {
+//     id: 1,
+//     company: "Riverleaf Corp",
+//     label: "Hiring Manager - Josh",
+//     title: "Lorem Ipsum dolor sit amet",
+//     description:
+//       "We are seeking a detail-oriented and proactive Payroll Specialist to support our Finance function, specifically managing payroll accounting, reconciliations, and payroll-related financial reporting across multiple international jurisdictions (excluding North America).",
+//     timestamp: "5 Days ago",
+//     isUnread: true,
+//     avatar: "R",
+//   },
+//   {
+//     id: 2,
+//     company: "Riverleaf Corp",
+//     label:  "Hiring Manager - Josh",
+//     title: "Lorem Ipsum dolor sit amet",
+//     description:
+//       "We are seeking a detail-oriented and proactive Payroll Specialist to support our Finance function, specifically managing payroll accounting, reconciliations, and payroll-related financial reporting across multiple international jurisdictions (excluding North America).",
+//     timestamp: "5 Days ago",
+//     isUnread: false,
+//     avatar: "R",
+//   },
+//   {
+//     id: 3,
+//     company: "Riverleaf Corp",
+//     label:  "Hiring Manager - Josh",
+//     title: "Lorem Ipsum dolor sit amet",
+//     description:
+//       "We are seeking a detail-oriented and proactive Payroll Specialist to support our Finance function, specifically managing payroll accounting, reconciliations, and payroll-related financial reporting across multiple international jurisdictions (excluding North America).",
+//     timestamp: "5 Days ago",
+//     isUnread: false,
+//     avatar: "R",
+//   },
+// ]
+interface Notification {
+  id: number
+  company: string
+  label: string
+  title: string
+  description: string
+  timestamp: string
+  isUnread: boolean
+  avatar: string
+}
 
 export default function NotificationsPage() {
     const router = useRouter();
+    const [notifications, setNotifications] = useState<Notification[]>([])
+
+    useEffect(() => {
+      async function fetchNotifications() {
+        try {
+          const storedUser = localStorage.getItem("user")
+          const userId = storedUser ? JSON.parse(storedUser).id : null
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/notifications/${userId}`
+          )
+          const data = await res.json()
+
+          // if your API returns an array like [{ userId, messages: [...] }]
+          const formatted = data[0]?.messages?.map((msg: any, index: number) => ({
+            id: index + 1,
+            company: msg.company,
+            label: msg.label,
+            title: msg.title,
+            description: msg.description,
+            timestamp: msg.timestamp,
+            isUnread: msg.isUnread,
+            avatar: msg.avatar,
+          })) || []
+
+          setNotifications(formatted)
+        } catch (error) {
+          console.error("Error fetching notifications:", error)
+        }
+      }
+
+      fetchNotifications()
+    }, [])
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
       <JobHeader />

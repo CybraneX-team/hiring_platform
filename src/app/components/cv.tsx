@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, MapPin, Clock, CheckCircle, Download } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toJpeg } from "html-to-image";
 import jsPDF from "jspdf";
 
@@ -45,67 +45,156 @@ const CircularProgress = ({ percentage }: { percentage: number }) => {
   );
 };
 
-const mockApplicantDetail = {
-  id: "1",
-  name: "Miller Rich",
-  title: "Mechanical Engineer",
-  avatar: "MR",
-  available: true,
-  location: "USA, Michigan",
-  experience: "5 Years",
-  matchPercentage: 81,
-  skills: [
-    "UI Development",
-    "AI Prompting",
-    "ML Ops",
-    "Adobe Suite",
-    "Wireframing",
-  ],
-  certifications: ["Site Management"],
-  experience_details: [
-    {
-      title: "Managing Director",
-      company: "Business Inc",
-      description: [
-        "Providing strategic advice to the board and ensuring effective functioning.",
-        "Preparing comprehensive business plans and overseeing their implementation.",
-      ],
-    },
-    {
-      title: "Junior Developer",
-      company: "Company Name",
-      description: [
-        "Quality Assurance Tester to contribute to the testing efforts for our critical regulatory reporting applications.",
-        "Reporting to the Quality Assurance Team Lead, you will play a key role in ensuring the accuracy.",
-      ],
-    },
-  ],
-  academics: [
-    {
-      level: "Masters",
-      institution: "University of Michigan",
-      completed: true,
-    },
-    {
-      level: "Graduation",
-      institution: "University of Michigan",
-      completed: true,
-    },
-    {
-      level: "Highschool",
-      institution: "Great school of Michigan",
-      completed: true,
-    },
-  ],
-  languages: ["English (Native)", "German (Intermediate)", "Hindi (Fresh)"],
+// const mockApplicantDetail = {
+//   id: "1",
+//   name: "Miller Rich",
+//   title: "Mechanical Engineer",
+//   avatar: "MR",
+//   available: true,
+//   location: "USA, Michigan",
+//   experience: "5 Years",
+//   matchPercentage: 81,
+//   skills: [
+//     "UI Development",
+//     "AI Prompting",
+//     "ML Ops",
+//     "Adobe Suite",
+//     "Wireframing",
+//   ],
+//   certifications: ["Site Management"],
+//   experience_details: [
+//     {
+//       title: "Managing Director",
+//       company: "Business Inc",
+//       description: [
+//         "Providing strategic advice to the board and ensuring effective functioning.",
+//         "Preparing comprehensive business plans and overseeing their implementation.",
+//       ],
+//     },
+//     {
+//       title: "Junior Developer",
+//       company: "Company Name",
+//       description: [
+//         "Quality Assurance Tester to contribute to the testing efforts for our critical regulatory reporting applications.",
+//         "Reporting to the Quality Assurance Team Lead, you will play a key role in ensuring the accuracy.",
+//       ],
+//     },
+//   ],
+//   academics: [
+//     {
+//       level: "Masters",
+//       institution: "University of Michigan",
+//       completed: true,
+//     },
+//     {
+//       level: "Graduation",
+//       institution: "University of Michigan",
+//       completed: true,
+//     },
+//     {
+//       level: "Highschool",
+//       institution: "Great school of Michigan",
+//       completed: true,
+//     },
+//   ],
+//   languages: ["English (Native)", "German (Intermediate)", "Hindi (Fresh)"],
+//   contact: {
+//     phone: "+91 00000 00000",
+//     email: "soabcc@gmail.com",
+//   },
+// };
+interface ApplicantDetail {
+  id: string;
+  name: string;
+  title: string;
+  avatar: string;
+  available: boolean;
+  location: string;
+  experience: string;
+  matchPercentage: number;
+  skills: string[];
+  certifications: string[];
+  experience_details: Array<{
+    title: string;
+    company: string;
+    description: string[];
+  }>;
+  academics: Array<{
+    level: string;
+    institution: string;
+    completed: boolean;
+  }>;
+  languages: string[];
   contact: {
-    phone: "+91 00000 00000",
-    email: "soabcc@gmail.com",
-  },
-};
-
+    phone: string;
+    email: string;
+  };
+}
 export default function ApplicationDetailView() {
-  const applicant = mockApplicantDetail;
+  const [applicantDetail, setApplicantDetail] = useState<ApplicantDetail | null>(null);
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const userId = user?.id;
+  useEffect(() => {
+    async function fetchResume() {
+      try {
+        
+        if (!userStr) return;
+        const res = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/resume/user/${userId}`);
+        const resumes = await res.json();
+
+        if (!resumes || resumes.length === 0) return;
+
+        // Take the most recent resume
+        const resume = resumes[0];
+
+        const formatted: ApplicantDetail = {
+          id: resume._id,
+          name: resume.parsedContent.personalInfo.name || "",
+          title: resume.parsedContent.personalInfo.summary || "",
+          avatar: resume.parsedContent.personalInfo.name
+            ? resume.parsedContent.personalInfo.name
+                .split(" ")
+                .map((n: string) => n[0])
+                .join("")
+                .toUpperCase()
+            : "",
+          available: true,
+          location: resume.parsedContent.personalInfo.location || "",
+          experience: resume.parsedContent.experience
+            ? `${resume.parsedContent.experience.length} Roles`
+            : "",
+          matchPercentage: 0,
+          skills: resume.parsedContent.skills?.map((s: any) => s.name) || [],
+          certifications: resume.parsedContent.certifications?.map((c: any) => c.name) || [],
+          experience_details: resume.parsedContent.experience?.map((exp: any) => ({
+            title: exp.title,
+            company: exp.company,
+            description: exp.description.split("\n") || [exp.description],
+          })) || [],
+          academics: resume.parsedContent.education?.map((edu: any) => ({
+            level: edu.degree,
+            institution: edu.institution,
+            completed: true,
+          })) || [],
+          languages: resume.parsedContent.languages || [],
+          contact: {
+            phone: resume.parsedContent.personalInfo.phone || "",
+            email: resume.parsedContent.personalInfo.email || "",
+          },
+        };
+
+        setApplicantDetail(formatted);
+
+      } catch (error) {
+        console.error("Error fetching resume:", error);
+      }
+    }
+
+    fetchResume();
+  }, []);
+
+  const applicant = applicantDetail;
   const router = useRouter();
 
   const [isShortlisted, setIsShortlisted] = useState(false);
@@ -164,7 +253,7 @@ export default function ApplicationDetailView() {
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`${applicant.name.replace(/\s+/g, "-")}-CV.pdf`);
+      pdf.save(`${applicant?.name?.replace(/\s+/g, "-") || "CV"}-CV.pdf`);
     } finally {
       setPreparingPdf(false);
     }
@@ -211,15 +300,15 @@ export default function ApplicationDetailView() {
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
                 <span className="text-white font-semibold text-lg">
-                  {applicant.avatar}
+                  {applicant?.avatar}
                 </span>
               </div>
 
               <div>
                 <h2 className="text-2xl font-semibold text-gray-900 mb-1">
-                  {applicant.name}
+                  {applicant?.name}
                 </h2>
-                <p className="text-gray-600">{applicant.title}</p>
+                <p className="text-gray-600">{applicant?.title}</p>
               </div>
             </div>
 
@@ -242,12 +331,12 @@ export default function ApplicationDetailView() {
 
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4" />
-              <span>{applicant.location}</span>
+              <span>{applicant?.location}</span>
             </div>
 
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
-              <span>{applicant.experience}</span>
+              <span>{applicant?.experience}</span>
             </div>
           </div>
 
@@ -255,7 +344,7 @@ export default function ApplicationDetailView() {
           <div className="mb-8">
             <h3 className="text-sm font-medium text-gray-900 mb-3">Skills</h3>
             <div className="flex flex-wrap gap-2">
-              {applicant.skills.map((skill, index) => (
+              {applicant?.skills.map((skill, index) => (
                 <span
                   key={index}
                   className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
@@ -272,7 +361,7 @@ export default function ApplicationDetailView() {
               Certifications from Industry
             </h3>
             <div className="flex flex-wrap gap-2">
-              {applicant.certifications.map((cert, index) => (
+              {applicant?.certifications.map((cert, index) => (
                 <span
                   key={index}
                   className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
@@ -289,7 +378,7 @@ export default function ApplicationDetailView() {
               Experience
             </h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {applicant.experience_details.map((exp, index) => (
+              {applicant?.experience_details.map((exp, index) => (
                 <div key={index} className="bg-[#F5F5F5] rounded-lg p-4">
                   <h4 className="font-semibold text-gray-900 mb-1">
                     {exp.title}
@@ -317,7 +406,7 @@ export default function ApplicationDetailView() {
                 Academics
               </h3>
               <div className="space-y-4">
-                {applicant.academics.map((academic, index) => (
+                {applicant?.academics.map((academic, index) => (
                   <div key={index} className="flex items-center gap-3">
                     <div className="w-3 h-3 rounded-full bg-[#76FF82] flex-shrink-0"></div>
                     <div>
@@ -339,7 +428,7 @@ export default function ApplicationDetailView() {
                 Languages
               </h3>
               <div className="space-y-2">
-                {applicant.languages.map((language, index) => (
+                {applicant?.languages.map((language, index) => (
                   <p key={index} className="text-gray-700">
                     {language}
                   </p>
@@ -356,11 +445,11 @@ export default function ApplicationDetailView() {
             <div className="space-y-2">
               <p className="text-gray-700">
                 <span className="font-medium">Phone No :</span>{" "}
-                {applicant.contact.phone}
+                {applicant?.contact.phone}
               </p>
               <p className="text-gray-700">
                 <span className="font-medium">Mail :</span>{" "}
-                {applicant.contact.email}
+                {applicant?.contact.email}
               </p>
             </div>
           </div>
