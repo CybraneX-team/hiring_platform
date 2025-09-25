@@ -2596,11 +2596,12 @@ export default function ProfileTab() {
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                          Job Application {application.job.title || ""}
+                          Job Application {application.job?.title || "Unknown Job"}
                         </h4>
                         <h4 className="text-sm font-light text-gray-900 mb-2">
-                          {application.job.description.substring(0, 120) +
-                            "..." || ""}
+                          {application.job?.description 
+                            ? application.job.description.substring(0, 120) + "..."
+                            : "No description available"}
                         </h4>
                         <div className="flex items-center gap-4 text-sm text-gray-600">
                           <span>

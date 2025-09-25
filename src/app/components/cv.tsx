@@ -363,7 +363,7 @@ export default function ApplicationDetailView() {
                     {exp.title}
                   </h4>
                   <p className="text-sm text-gray-600 mb-3">{exp.company}</p>
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     {exp.description.map((desc, descIndex) => (
                       <p
                         key={descIndex}
@@ -372,7 +372,7 @@ export default function ApplicationDetailView() {
                         {desc}
                       </p>
                     ))}
-                  </div>
+                  </div> */}
                 </div>
               ))}
             </div>
