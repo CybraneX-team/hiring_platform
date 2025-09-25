@@ -29,6 +29,7 @@ import JobMatching from "./JobMatching";
 import { useUser } from "../context/UserContext";
 import { toast } from "react-toastify";
 import ApplicationDetailView from "./cv";
+import Link from "next/link";
 
 // OlaMaps integration
 let OlaMaps: any = null;
@@ -731,7 +732,11 @@ const LocationInputWithSearch = ({
 
     if (e.key === "Enter") {
       e.preventDefault();
-      if (showSuggestions && highlightIndex >= 0 && suggestions[highlightIndex]) {
+      if (
+        showSuggestions &&
+        highlightIndex >= 0 &&
+        suggestions[highlightIndex]
+      ) {
         const s = suggestions[highlightIndex];
         const address = s.description || s.formatted_address || s.name || value;
         geocodeAndSelect(address);
@@ -746,51 +751,52 @@ const LocationInputWithSearch = ({
       <div className="flex gap-2">
         <div className="relative flex-1">
           <input
-          type="text"
-          value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-            setShowSuggestions(true);
-          }}
-          placeholder="Enter address or click on map to select location..."
-          className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          onKeyDown={handleKeyPress}
-          onFocus={() => {
-            setIsInputFocused(true);
-            if (value) setShowSuggestions(true);
-          }}
-          onBlur={() => {
-            setIsInputFocused(false);
-            setTimeout(() => setShowSuggestions(false), 100);
-          }}
-          ref={inputRef}
-        />
-        {showSuggestions && suggestions.length > 0 && (
-          <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-56 overflow-auto">
-            {suggestions.map((s, idx) => {
-              const address = s.description || s.formatted_address || s.name || "";
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  className={`w-full text-left px-3 py-2 text-xs sm:text-sm hover:bg-blue-50 ${
-                    idx === highlightIndex ? "bg-blue-50" : ""
-                  }`}
-                  onMouseEnter={() => setHighlightIndex(idx)}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    setShowSuggestions(false);
-                    setIsInputFocused(false);
-                    inputRef.current?.blur();
-                    geocodeAndSelect(address);
-                  }}
-                >
-                  {address}
-                </button>
-              );
-            })}
-          </div>
-        )}
+            type="text"
+            value={value}
+            onChange={(e) => {
+              onChange(e.target.value);
+              setShowSuggestions(true);
+            }}
+            placeholder="Enter address or click on map to select location..."
+            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onKeyDown={handleKeyPress}
+            onFocus={() => {
+              setIsInputFocused(true);
+              if (value) setShowSuggestions(true);
+            }}
+            onBlur={() => {
+              setIsInputFocused(false);
+              setTimeout(() => setShowSuggestions(false), 100);
+            }}
+            ref={inputRef}
+          />
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-56 overflow-auto">
+              {suggestions.map((s, idx) => {
+                const address =
+                  s.description || s.formatted_address || s.name || "";
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    className={`w-full text-left px-3 py-2 text-xs sm:text-sm hover:bg-blue-50 ${
+                      idx === highlightIndex ? "bg-blue-50" : ""
+                    }`}
+                    onMouseEnter={() => setHighlightIndex(idx)}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setShowSuggestions(false);
+                      setIsInputFocused(false);
+                      inputRef.current?.blur();
+                      geocodeAndSelect(address);
+                    }}
+                  >
+                    {address}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         <motion.button
           whileHover={{ scale: 1.05 }}
@@ -811,7 +817,6 @@ const LocationInputWithSearch = ({
     </div>
   );
 };
-
 
 const initialProfileData = {
   profile: {
@@ -880,6 +885,7 @@ export default function ProfileTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [httpMethod, sethttpMethod] = useState<string>("PUT");
   const [applications, setApplications] = useState<any[]>([]);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [modalType, setModalType] = useState<
     "education" | "experience" | "certificate" | null
   >(null);
@@ -1098,89 +1104,7 @@ export default function ProfileTab() {
   const [newCertificatesFiles, setNewCertificatesFiles] = useState<File[]>([]);
   const [newCertificatesMeta, setNewCertificatesMeta] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (profile && profile._id && profile.name) {
-      try {
-        const transformedProfile = {
-          profile: {
-            bio: profile.bio || "",
-            skills: profile.skills || [],
-            languages: profile.languages || ["English (Native)"],
-            phoneNumber: profile.phoneNumber || "",
-            unavailability:
-              profile.unavailability?.map((slot: any) => ({
-                startDate: slot.startDate,
-                endDate: slot.endDate,
-                description:
-                  slot.description ||
-                  `${new Date(
-                    slot.startDate
-                  ).toLocaleDateString()} - ${new Date(
-                    slot.endDate
-                  ).toLocaleDateString()}`,
-              })) || [],
-            location: profile.locationData || null,
-          },
-          education:
-            profile.education?.map((edu: any, index: any) => ({
-              id: index + 1,
-              type: edu.Degree || "Degree",
-              period: edu.Graduation
-                ? new Date(edu.Graduation).getFullYear().toString()
-                : "",
-              institution: edu.institure || edu.institute || "", // Handle both field names
-              description: edu.GPA ? `GPA: ${edu.GPA}` : "",
-            })) || [],
-          experiences:
-            profile.WorkExperience?.map((exp: any, index: any) => ({
-              id: index + 1,
-              title: exp.title || "",
-              company: exp.company || "",
-              period: "", // You might want to add period field to your backend
-              description: exp.description || "",
-            })) || [],
-          schedule: {
-            availability: "Monday - Friday, 9:00 AM - 6:00 PM EST",
-            timezone: "Eastern Standard Time",
-            preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
-          },
-          certifications:
-            profile.certificates?.map((cert: any, index: any) => ({
-              id: index + 1,
-              name: cert.name || "",
-              issuer: cert.issuer || "",
-              date: cert.date || "",
-              description: cert.description || "",
-              certificateUrl: cert.fileUrl || "",
-              certificateFileName: cert.fileName || "",
-              certificateMime: cert.mimeType || "",
-            })) || [],
-        };
 
-        setProfileData(transformedProfile);
-
-        // Also sync the profile form data for editing
-        setProfileFormData({
-          name: profile.name || "",
-          location: profile.locationData?.address || profile.location || "",
-          phone: profile.phone || "",
-          bio: profile.bio || "",
-          skills: profile.skills?.join(", ") || "",
-          languages: profile.languages?.join(", ") || "English (Native)",
-          unavailability: profile.unavailability || [],
-          locationData: profile.locationData || null,
-        });
-
-        // Update availability slots
-        if (profile.availability) {
-          setAvailabilitySlots(profile.availability);
-        }
-      } catch (error) {
-        console.error("Error transforming profile data:", error);
-        // Don't update state if transformation fails
-      }
-    }
-  }, [profile]); // Only depend on profile changes
 
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -1269,6 +1193,69 @@ export default function ProfileTab() {
     }
   }, [profileData.profile.unavailability]);
 
+   useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        if (profile && profile._id && profile.name) {
+          console.log("profile", profile, profile.unavailability);
+          const transformedProfile = {
+            profile: {
+              bio: profile.bio || "",
+              skills: profile.skills || [],
+              languages: profile.languages || ["English (Native)"],
+              phoneNumber: profile.phoneNumber || "",
+              unavailability: profile.unavailability?.map((slot: any) => ({
+                startDate: slot.startDate,
+                endDate: slot.endDate,
+                description: `${slot.description} (${new Date(slot.startDate).toLocaleDateString()} - ${new Date(slot.endDate).toLocaleDateString()})`
+              })) || [],
+              location: profile.locationData || null,
+            },
+            education: profile.education?.map((edu: any, index: any) => ({
+              id: index + 1,
+              type: edu.Degree || "Degree",
+              period: edu.Graduation ? new Date(edu.Graduation).getFullYear().toString() : "",
+              institution: edu.institure || edu.institute, // Handle both field names
+              description: edu.GPA ? `GPA: ${edu.GPA}` : "",
+            })) || [],
+            experiences: profile.WorkExperience?.map((exp: any, index: any) => ({
+              id: index + 1,
+              title: exp.title || "",
+              company: exp.company || "",
+              period: "", // You might want to add period field to your backend
+              description: exp.description || "",
+            })) || [],
+            schedule: {
+              availability: "Monday - Friday, 9:00 AM - 6:00 PM EST",
+              timezone: "Eastern Standard Time",
+              preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
+            },
+            certifications: profile.certificates?.map((cert: any, index: any) => ({
+              id: index + 1,
+              name: cert.name || "",
+              issuer: cert.issuer || "",
+              date: cert.date || "",
+              description: cert.description || "",
+              certificateUrl: cert.fileUrl || "",
+              certificateFileName: cert.fileName || "",
+              certificateMime: cert.mimeType || "",
+            })) || [],
+          };
+          setProfileData(transformedProfile);
+        } else {
+          // Try to load from localStorage only on the client
+          const savedProfile = localStorage.getItem("profileData");
+          if (savedProfile) {
+            const parsedProfile = JSON.parse(savedProfile);
+            setProfileData(parsedProfile);
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing profile data:", error);
+        // Keep the initial profile data if there's an error
+      }
+    }
+  }, [profile]);
   // useEffect(() => {
   //   if (
   //     profileData.profile &&
@@ -2612,7 +2599,8 @@ export default function ProfileTab() {
                           Job Application {application.job.title || ""}
                         </h4>
                         <h4 className="text-sm font-light text-gray-900 mb-2">
-                           {application.job.description.substring(0, 120) + "..." || ""}
+                          {application.job.description.substring(0, 120) +
+                            "..." || ""}
                         </h4>
                         <div className="flex items-center gap-4 text-sm text-gray-600">
                           <span>
@@ -2661,7 +2649,6 @@ export default function ProfileTab() {
                           </motion.button>
                         )}
                     </div>
-
                   </motion.div>
                 ))}
               </div>
@@ -2913,9 +2900,22 @@ export default function ProfileTab() {
         transition={{ duration: 0.5 }}
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
-        <h1 className="text-base sm:text-lg font-semibold text-gray-900">
-          Project by Compscope
-        </h1>
+        <Link href="/" className="flex flex-col">
+          <span
+            className={`md:text-2xl text-xl font-semibold transition-colors duration-300 ${
+              isScrolled ? "text-black " : "text-black"
+            }`}
+          >
+            ProjectMatch
+          </span>
+          <span
+            className={`text-sm font-medium transition-colors duration-300 ${
+              isScrolled ? "text-black" : "text-black"
+            }`}
+          >
+            By Comscope
+          </span>
+        </Link>
       </motion.div>
       {/* Document Upload Modal */}
       <AnimatePresence>

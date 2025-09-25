@@ -17,7 +17,7 @@ import ResumeManager from "../../components/Company/ResumeManager";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/app/context/UserContext";
 // import { toast } from "react-toastify";
-import JobStatusDropdown from '@/app/components/JobStatusDropdown';
+import JobStatusDropdown from "@/app/components/JobStatusDropdown";
 
 // OlaMaps integration
 let OlaMaps: any = null;
@@ -658,6 +658,7 @@ export default function ProfileTab() {
   // Add this new state variable
   const [isLogoUploading, setIsLogoUploading] = useState(false);
   const [isLogoGettingRemoved, setisLogoGettingRemoved] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const [formState, setFormState] = useState({
     companyName: profile?.companyName ? profile?.companyName : "",
@@ -1202,25 +1203,23 @@ export default function ProfileTab() {
                 </div>
               </motion.div>
               <motion.div
-              variants={itemVariants}
-              className="space-y-3 sm:space-y-4"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-                <h3 className="text-sm sm:text-base font-medium text-gray-700">
-                  Location
-                </h3>
-              </div>
+                variants={itemVariants}
+                className="space-y-3 sm:space-y-4"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                  <h3 className="text-sm sm:text-base font-medium text-gray-700">
+                    Location
+                  </h3>
+                </div>
 
-              <LocationInputWithSearch
-                value={formState.locationText}
-                onChange={handleLocationTextChange}
-                onLocationSelect={handleLocationSelect}
-                selectedLocation={selectedLocation ?? undefined}
-              />
-            </motion.div>
+                <LocationInputWithSearch
+                  value={formState.locationText}
+                  onChange={handleLocationTextChange}
+                  onLocationSelect={handleLocationSelect}
+                  selectedLocation={selectedLocation ?? undefined}
+                />
+              </motion.div>
             </div>
-
-            
           </motion.div>
         );
 
@@ -1302,68 +1301,69 @@ export default function ProfileTab() {
               {!applicationsLoading &&
                 !applicationsError &&
                 applications.length > 0 &&
-                applications.map((job: any, index: number) =>{
+                applications.map((job: any, index: number) => {
                   return (
-                  <motion.div
-                    key={job._id || index}
-                    variants={cardVariants}
-                    whileHover={{ y: -4, scale: 1.02 }}
-                    className="bg-white rounded-lg p-4 sm:p-6 min-h-[200px] sm:min-h-[250px] flex flex-col justify-between"
-                  >
-                    <div>
-                      {/* Job Title and Status Row */}
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 line-clamp-2 flex-1 mr-2">
-                          {job.title || "Untitled Job"}
-                        </h3>
-                        <JobStatusDropdown
-                          value={job.jobStatus || "Open"}
-                          onChange={handleJobStatusUpdate}
-                          jobId={job._id}
-                          isUpdating={updatingJobStatus === job._id}
-                        />
+                    <motion.div
+                      key={job._id || index}
+                      variants={cardVariants}
+                      whileHover={{ y: -4, scale: 1.02 }}
+                      className="bg-white rounded-lg p-4 sm:p-6 min-h-[200px] sm:min-h-[250px] flex flex-col justify-between"
+                    >
+                      <div>
+                        {/* Job Title and Status Row */}
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 line-clamp-2 flex-1 mr-2">
+                            {job.title || "Untitled Job"}
+                          </h3>
+                          <JobStatusDropdown
+                            value={job.jobStatus || "Open"}
+                            onChange={handleJobStatusUpdate}
+                            jobId={job._id}
+                            isUpdating={updatingJobStatus === job._id}
+                          />
+                        </div>
+
+                        <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
+                          {job.totalApplications || 0} Applicants
+                        </p>
+
+                        {job.description && (
+                          <p className="text-xs text-gray-600 line-clamp-2 mb-2">
+                            {job.description
+                              .replace(/\n/g, " ")
+                              .substring(0, 100)}
+                            {job.description.length > 100 ? "..." : ""}
+                          </p>
+                        )}
                       </div>
 
-                      <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
-                        {job.totalApplications || 0} Applicants
-                      </p>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mt-auto">
+                        <span className="text-xs text-gray-400 order-2 sm:order-1">
+                          {job.postedDate
+                            ? new Date(job.postedDate).toLocaleDateString(
+                                "en-US",
+                                {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                }
+                              )
+                            : "No date"}
+                        </span>
 
-                      {job.description && (
-                        <p className="text-xs text-gray-600 line-clamp-2 mb-2">
-                          {job.description
-                            .replace(/\n/g, " ")
-                            .substring(0, 100)}
-                          {job.description.length > 100 ? "..." : ""}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mt-auto">
-                      <span className="text-xs text-gray-400 order-2 sm:order-1">
-                        {job.postedDate
-                          ? new Date(job.postedDate).toLocaleDateString(
-                              "en-US",
-                              {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              }
-                            )
-                          : "No date"}
-                      </span>
-
-                      <Link href={`/company/applications?jobId=${job._id}`}>
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-[#76FF82] hover:bg-green-400 text-black text-xs sm:text-sm rounded-full transition-colors order-1 sm:order-2 self-start sm:self-auto"
-                        >
-                          View Applications
-                        </motion.button>
-                      </Link>
-                    </div>
-                  </motion.div>
-                )})}
+                        <Link href={`/company/applications?jobId=${job._id}`}>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="px-3 sm:px-4 py-1.5 sm:py-2 bg-[#76FF82] hover:bg-green-400 text-black text-xs sm:text-sm rounded-full transition-colors order-1 sm:order-2 self-start sm:self-auto"
+                          >
+                            View Applications
+                          </motion.button>
+                        </Link>
+                      </div>
+                    </motion.div>
+                  );
+                })}
             </motion.div>
           </motion.div>
         );
@@ -1381,9 +1381,22 @@ export default function ProfileTab() {
         transition={{ duration: 0.5 }}
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
-        <h1 className="text-base sm:text-lg font-semibold text-gray-900">
-          Project by Compscope
-        </h1>
+        <Link href="/" className="flex flex-col">
+          <span
+            className={`md:text-2xl text-xl font-semibold transition-colors duration-300 ${
+              isScrolled ? "text-black " : "text-black"
+            }`}
+          >
+            ProjectMatch
+          </span>
+          <span
+            className={`text-sm font-medium transition-colors duration-300 ${
+              isScrolled ? "text-black" : "text-black"
+            }`}
+          >
+            By Comscope
+          </span>
+        </Link>
       </motion.div>
 
       <div className="pt-16 sm:pt-24 pb-8 sm:pb-16">
