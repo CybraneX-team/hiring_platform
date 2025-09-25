@@ -250,34 +250,17 @@ export default function LoginPage() {
           </motion.div>
 
           {/* Social Buttons */}
-          <motion.div
-            className="grid grid-cols-2 gap-3"
+        <motion.div
+            className="grid  gap-3 cursor-pointer"
             variants={itemVariants}
           >
             <motion.button
-              className="h-12 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors"
-              variants={buttonVariants}
+              className="h-12 bg-white border cursor-pointer border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors"
               initial="initial"
               whileHover="hover"
               whileTap="tap"
             >
               <span className="text-lg font-bold text-black">G</span>
-            </motion.button>
-            <motion.button
-              className="h-12 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors"
-              variants={buttonVariants}
-              initial="initial"
-              whileHover="hover"
-              whileTap="tap"
-            >
-              <span className="text-lg">
-                <Image
-                  src="/images/apple.png"
-                  height={14}
-                  width={11}
-                  alt="apple"
-                />
-              </span>
             </motion.button>
           </motion.div>
         </div>

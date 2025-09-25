@@ -511,6 +511,7 @@ export default function PostRole() {
   const [jobTittle, setjobTittle] = useState("");
 
   const [workStartDate, setWorkStartDate] = useState("");
+  const [noOfOpenings, setnoOfOpenings] = useState(0);
   const [workEndDate, setWorkEndDate] = useState("");
 
   const [workLocation, setWorkLocation] = useState("");
@@ -566,6 +567,12 @@ export default function PostRole() {
 
   const [fatAdded, setFatAdded] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  useEffect(() => {
+    if( noOfOpenings < 0 ){
+      setnoOfOpenings(0)
+    }
+  }, [noOfOpenings])
+  
 
   const addPerk = () => {
     if (
@@ -788,6 +795,7 @@ export default function PostRole() {
         companyPerks,
         requiredSkillset,
         mandatoryCertificates,
+        noOfOpenings,
         educationQualifications,
         responsibilities,
         payRange,
@@ -1058,6 +1066,7 @@ export default function PostRole() {
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
+
               {companyPerks.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {companyPerks.map((perk, index) => (
@@ -1079,7 +1088,23 @@ export default function PostRole() {
                 </div>
               )}
             </div>
-
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-gray-700">
+                Add No Of Openings
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={noOfOpenings}
+                  required
+                  onChange={(e) => {
+                    setnoOfOpenings( +e.target.value )
+                  }}
+                  placeholder="50"
+                  className="w-48 px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
             {/* About Job */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">

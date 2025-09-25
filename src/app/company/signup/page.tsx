@@ -297,7 +297,7 @@ export default function SignupPage() {
 
           {/* Social Buttons */}
           <motion.div
-            className="grid grid-cols-2 gap-3"
+            className="grid  gap-3 cursor-pointer"
             variants={itemVariants}
           >
             <motion.button
@@ -308,22 +308,6 @@ export default function SignupPage() {
               whileTap="tap"
             >
               <span className="text-lg font-bold text-black">G</span>
-            </motion.button>
-            <motion.button
-              className="h-12 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors"
-              variants={socialButtonVariants}
-              initial="initial"
-              whileHover="hover"
-              whileTap="tap"
-            >
-              <span className="text-lg">
-                <Image
-                  src="/images/apple.png"
-                  height={14}
-                  width={11}
-                  alt="Apple"
-                />
-              </span>
             </motion.button>
           </motion.div>
         </div>

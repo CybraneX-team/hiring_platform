@@ -52,10 +52,10 @@ const initializeOlaMaps = async () => {
         olaMaps.Popup = (module as any).Popup || (OlaMaps as any).Popup;
       }
 
-      console.log("OlaMaps initialized successfully with constructors:", {
-        hasMarker: !!olaMaps.Marker,
-        hasPopup: !!olaMaps.Popup,
-      });
+      // console.log("OlaMaps initialized successfully with constructors:", {
+      //   hasMarker: !!olaMaps.Marker,
+      //   hasPopup: !!olaMaps.Popup,
+      // });
     } catch (error) {
       console.error("Failed to initialize OlaMaps:", error);
     }
@@ -876,6 +876,25 @@ const skillVariants = {
   },
 };
 
+const convertDescriptionToPoints = (description: string): string[] => {
+  if (!description) return [];
+
+  // Split by common bullet point indicators
+  const points = description
+    .split(/[\n•\-\*]/)
+    .map((point) => point.trim())
+    .filter((point) => point.length > 0 && point.length > 5) // Filter very short points
+    .map((point) => point.replace(/^[\-\*\•]\s*/, ""));
+
+  return points.length > 0 ? points : [description];
+};
+
+const parseEducationPeriod = (period: string): string | undefined => {
+  if (!period) return undefined;
+
+  return period;
+};
+
 export default function ProfileTab() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("resume");
@@ -973,15 +992,12 @@ export default function ProfileTab() {
     }
   }, [activeTab, user?.id]);
 
-  // Check for tab parameter in URL to set initial active tab
   useEffect(() => {
-    const tabParam = searchParams.get('tab');
-    if (tabParam === 'jobsApplied') {
-      setActiveTab('jobsApplied');
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "jobsApplied") {
+      setActiveTab("jobsApplied");
     }
   }, [searchParams]);
-
-  // Add this computed property inside your ProfileTab component
 
   const uploadDocument = async (
     applicationId: string,
@@ -1035,7 +1051,6 @@ export default function ProfileTab() {
   const [profileData, setProfileData] = useState(() => {
     try {
       if (profile && profile._id && profile.name) {
-        console.log("profile", profile, profile.unavailability);
         const transformedProfile = {
           profile: {
             bio: profile.bio || "",
@@ -1049,20 +1064,25 @@ export default function ProfileTab() {
             profile.education?.map((edu: any, index: any) => ({
               id: index + 1,
               type: edu.Degree || "Degree",
-              period: edu.Graduation
-                ? new Date(edu.Graduation).getFullYear().toString()
-                : "",
+              period: edu.period,
               institution: edu.institure || edu.institute || "",
               description: edu.GPA ? `GPA: ${edu.GPA}` : "",
             })) || [],
-          experiences:
-            profile.WorkExperience?.map((exp: any, index: any) => ({
-              id: index + 1,
-              title: exp.title || "",
-              company: exp.company || "",
-              period: "",
-              description: exp.description || "",
-            })) || [],
+          experiences: profile.WorkExperience?.map((exp: any, index: any) => ({
+            id: index + 1,
+            title: exp.title,
+            company: exp.company,
+            period: "",
+            description: exp.description,
+            points:
+              exp.points ||
+              (exp.description
+                ? convertDescriptionToPoints(exp.description).map(
+                    (point: string) => ({ point })
+                  )
+                : []),
+          })),
+
           schedule: {
             availability: "Monday - Friday, 9:00 AM - 6:00 PM EST",
             timezone: "Eastern Standard Time",
@@ -1104,11 +1124,11 @@ export default function ProfileTab() {
   const [newCertificatesFiles, setNewCertificatesFiles] = useState<File[]>([]);
   const [newCertificatesMeta, setNewCertificatesMeta] = useState<any[]>([]);
 
-
-
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<any>({
+    experiences: [{ company: "", title: "", points: [] }], // Updated structure
+  });
   const [currentResumeId, setCurrentResumeId] = useState<string | null>(null);
   const [showJobMatching, setShowJobMatching] = useState(false);
   const [previewCert, setPreviewCert] = useState<{
@@ -1165,6 +1185,7 @@ export default function ProfileTab() {
       profileData.profile.languages.length > 0
     );
   };
+  // Add this function near the top of your component, after the imports
 
   const handleCertificateFileChange = (file: File | null, meta: any = {}) => {
     if (!file) return;
@@ -1193,54 +1214,96 @@ export default function ProfileTab() {
     }
   }, [profileData.profile.unavailability]);
 
-   useEffect(() => {
+  useEffect(() => {
     if (typeof window !== "undefined") {
       try {
         if (profile && profile._id && profile.name) {
-          console.log("profile", profile, profile.unavailability);
+
+          // Helper function to safely convert description to points
+          const safeConvertDescriptionToPoints = (
+            description: string
+          ): string[] => {
+            if (!description) return [];
+
+            // Split by common bullet point indicators
+            const points = description
+              .split(/[\n•\-\*]/)
+              .map((point) => point.trim())
+              .filter((point) => point.length > 0 && point.length > 5)
+              .map((point) => point.replace(/^[\-\*\•]\s*/, ""));
+
+            return points.length > 0 ? points : [description];
+          };
+
           const transformedProfile = {
             profile: {
               bio: profile.bio || "",
               skills: profile.skills || [],
               languages: profile.languages || ["English (Native)"],
               phoneNumber: profile.phoneNumber || "",
-              unavailability: profile.unavailability?.map((slot: any) => ({
-                startDate: slot.startDate,
-                endDate: slot.endDate,
-                description: `${slot.description} (${new Date(slot.startDate).toLocaleDateString()} - ${new Date(slot.endDate).toLocaleDateString()})`
-              })) || [],
+              unavailability:
+                profile.unavailability?.map((slot: any) => ({
+                  startDate: slot.startDate,
+                  endDate: slot.endDate,
+                  description: `${
+                    slot.description || "Unavailable"
+                  } (${new Date(
+                    slot.startDate
+                  ).toLocaleDateString()} - ${new Date(
+                    slot.endDate
+                  ).toLocaleDateString()})`,
+                })) || [],
               location: profile.locationData || null,
             },
-            education: profile.education?.map((edu: any, index: any) => ({
-              id: index + 1,
-              type: edu.Degree || "Degree",
-              period: edu.Graduation ? new Date(edu.Graduation).getFullYear().toString() : "",
-              institution: edu.institure || edu.institute, // Handle both field names
-              description: edu.GPA ? `GPA: ${edu.GPA}` : "",
-            })) || [],
-            experiences: profile.WorkExperience?.map((exp: any, index: any) => ({
-              id: index + 1,
-              title: exp.title || "",
-              company: exp.company || "",
-              period: "", // You might want to add period field to your backend
-              description: exp.description || "",
-            })) || [],
+            education:
+              profile.education?.map((edu: any, index: any) => ({
+                id: index + 1,
+                type: edu.Degree || "Degree",
+                period: edu.period, // Use period directly as string
+                institution: edu.institure || edu.institute || "",
+                description: edu.GPA ? `GPA: ${edu.GPA}` : "",
+              })) || [],
+            experiences:
+              profile.WorkExperience?.map((exp: any, index: any) => ({
+                id: index + 1,
+                title: exp.title || "",
+                company: exp.company || "",
+                period:
+                  exp.period ||
+                  `${exp.startDate || ""} - ${exp.endDate || ""}`
+                    .trim()
+                    .replace(/^-|-$/g, "") ||
+                  "", // Use period directly as string
+                description: exp.description || "",
+                points:
+                  exp.points ||
+                  (exp.description
+                    ? safeConvertDescriptionToPoints(exp.description).map(
+                        (point: string) => ({ point })
+                      )
+                    : []), // Preserve points structure
+              })) || [],
             schedule: {
               availability: "Monday - Friday, 9:00 AM - 6:00 PM EST",
               timezone: "Eastern Standard Time",
-              preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
+              preferredMeetingTimes: [
+                "10:00 AM - 12:00 PM",
+                "2:00 PM - 4:00 PM",
+              ],
             },
-            certifications: profile.certificates?.map((cert: any, index: any) => ({
-              id: index + 1,
-              name: cert.name || "",
-              issuer: cert.issuer || "",
-              date: cert.date || "",
-              description: cert.description || "",
-              certificateUrl: cert.fileUrl || "",
-              certificateFileName: cert.fileName || "",
-              certificateMime: cert.mimeType || "",
-            })) || [],
+            certifications:
+              profile.certificates?.map((cert: any, index: any) => ({
+                id: index + 1,
+                name: cert.name || "",
+                issuer: cert.issuer || "",
+                date: cert.date || "",
+                description: cert.description || "",
+                certificateUrl: cert.fileUrl || "",
+                certificateFileName: cert.fileName || "",
+                certificateMime: cert.mimeType || "",
+              })) || [],
           };
+
           setProfileData(transformedProfile);
         } else {
           // Try to load from localStorage only on the client
@@ -1252,21 +1315,28 @@ export default function ProfileTab() {
         }
       } catch (error) {
         console.error("Error parsing profile data:", error);
-        // Keep the initial profile data if there's an error
+        // Set fallback data instead of keeping undefined state
+        setProfileData({
+          profile: {
+            bio: "",
+            skills: [],
+            languages: ["English"],
+            phoneNumber: "",
+            unavailability: [],
+            location: null,
+          },
+          education: [],
+          experiences: [],
+          schedule: {
+            availability: "Monday - Friday, 9:00 AM - 6:00 PM EST",
+            timezone: "Eastern Standard Time",
+            preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
+          },
+          certifications: [],
+        });
       }
     }
   }, [profile]);
-  // useEffect(() => {
-  //   if (
-  //     profileData.profile &&
-  //     !profileData.profile.phone &&
-  //     !profileData.profile.name
-  //   ) {
-  //     toast(
-  //       "Complete Your Profile: Please enter your phone number to complete your profile"
-  //     );
-  //   }
-  // }, [profileData.profile, toast]);
 
   const handleProfilePictureUpload = (
     event: React.ChangeEvent<HTMLInputElement>
@@ -1337,8 +1407,6 @@ export default function ProfileTab() {
       </>
     );
   };
-  // console.log("profile?._id", profile?._id, profile);
-  // console.log("user?._id", user?.id, user);
 
   const handleProfileSave = async () => {
     try {
@@ -1395,7 +1463,7 @@ export default function ProfileTab() {
         .filter((edu: any) => edu.institution && edu.institution.trim())
         .map((edu: any) => ({
           institure: edu.institution || edu.institure,
-          Graduation: edu.period ? new Date(`${edu.period}-12-31`) : undefined,
+          Graduation: parseEducationPeriod(edu.period),
           Degree: edu.type || edu.Degree,
           GPA: edu.description?.includes("GPA")
             ? edu.description.replace("GPA: ", "")
@@ -1409,7 +1477,11 @@ export default function ProfileTab() {
         .map((exp: any) => ({
           company: exp.company,
           title: exp.title,
-          description: exp.description,
+          points: exp.points || [], // Include points array
+          description:
+            exp.points && exp.points.length > 0
+              ? exp.points.map((p: any) => p.point).join("\n") // Create description from points for compatibility
+              : exp.description || "", // Fallback to existing description
         }));
 
       formData.append("WorkExperience", JSON.stringify(validWorkExperience));
@@ -1423,10 +1495,8 @@ export default function ProfileTab() {
           description: cert.description || "",
         }));
 
-      formData.append("certificates", JSON.stringify(validCertificates));
+      // formData.append("certificates", JSON.stringify(validCertificates));
 
-      // Call API
-      // console.log("profile?._id", profile?._id, profile);
       const apiUrl = profile?._id // Use ._id instead of .id
         ? `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/edit-profile/${profile._id}`
         : `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/create-profile`;
@@ -1518,6 +1588,19 @@ export default function ProfileTab() {
     );
     toast.success("Availability slot removed");
   };
+  // Add this function after the imports and before the component
+  const convertDescriptionToPoints = (description: string): string[] => {
+    if (!description) return [""];
+
+    // Split by common bullet point indicators
+    const points = description
+      .split(/[\n•\-\*]/)
+      .map((point) => point.trim())
+      .filter((point) => point.length > 0 && point.length > 5) // Filter very short points
+      .map((point) => point.replace(/^[\-\*\•]\s*/, ""));
+
+    return points.length > 0 ? points : [description];
+  };
 
   // Handle map location selection
   const handleMapLocationSelect = (location: {
@@ -1531,51 +1614,6 @@ export default function ProfileTab() {
       locationData: location,
     }));
   };
-
-  // const handleProfileSave = async () => {
-  //   try {
-  //     setIsLoading(true)
-
-  //     const skillsArray: string[] = profileFormData.skills
-  //       ? profileFormData.skills
-  //           .split(",")
-  //           .map((skill) => skill.trim())
-  //           .filter((skill) => skill)
-  //       : []
-  //     const languagesArray: string[] = profileFormData.languages
-  //       ? profileFormData.languages
-  //           .split(",")
-  //           .map((lang) => lang.trim())
-  //           .filter((lang) => lang)
-  //       : []
-
-  //     const updatedProfileData = {
-  //       ...profileData,
-  //       profile: {
-  //         ...profileData.profile,
-  //         bio: profileFormData.bio,
-  //         skills: skillsArray,
-  //         languages: languagesArray,
-  //         availability: availabilitySlots,
-  //         location: profileFormData.locationData,
-  //       },
-  //     }
-
-  //     await updateProfileAPI(updatedProfileData)
-  //     localStorage.setItem("profileData", JSON.stringify(updatedProfileData))
-
-  //     setProfileData(updatedProfileData)
-
-  //     toast.success("Profile updated successfully!")
-  //     setIsProfileEditOpen(false)
-  //   } catch (error) {
-  //     console.error("Failed to update profile:", error)
-  //     setProfileData(profileData)
-  //     toast.error("Failed to update profile. Please try again.")
-  //   } finally {
-  //     setIsLoading(false)
-  //   }
-  // }
 
   const openProfileEditModal = () => {
     // Correctly sync internal state with current profile data
@@ -1664,9 +1702,7 @@ export default function ProfileTab() {
             updatedData.education
               .map((edu: any) => ({
                 institure: edu.institution || edu.institure || "",
-                Graduation: edu.period
-                  ? new Date(`${edu.period}-12-31`).toISOString()
-                  : undefined,
+                Graduation: parseEducationPeriod(edu.period),
                 Degree: edu.type || edu.Degree || "",
                 GPA: edu.description?.includes("GPA:")
                   ? edu.description.replace("GPA: ", "")
@@ -1685,7 +1721,11 @@ export default function ProfileTab() {
               .map((exp: any) => ({
                 company: exp.company || "",
                 title: exp.title || "",
-                description: exp.description || "",
+                points: exp.points || [], // Include points array
+                description:
+                  exp.points && exp.points.length > 0
+                    ? exp.points.map((p: any) => p.point).join("\n") // Create description from points for compatibility
+                    : exp.description || "", // Fallback to existing description
               }))
               .filter((exp: any) => exp.company)
           )
@@ -1698,16 +1738,17 @@ export default function ProfileTab() {
           issuer: cert.issuer || "Unknown Issuer",
           date: cert.date || "Unknown Date",
           description: cert.description || "",
+          certificateFiles: cert.certificateFile || "",
         }));
 
         formData.append("certificates", JSON.stringify(certData));
       }
 
-      updatedData.certifications?.forEach((cert: any) => {
-        if (cert.certificateFile instanceof File) {
-          formData.append("certificateFiles", cert.certificateFile);
-        }
-      });
+      // updatedData.certifications?.forEach((cert: any) => {
+      //   if (cert.certificateFile instanceof File) {
+      //     formData.append("certificateFiles", cert.certificateFile);
+      //   }
+      // });
 
       const response = await fetch(apiUrl, {
         method: method,
@@ -1834,6 +1875,21 @@ export default function ProfileTab() {
     setEditingItem(item);
     setIsEditMode(true);
     setFormData(item);
+    if (type === "experience") {
+      const formDataWithPoints = {
+        ...item,
+        points:
+          item.points ||
+          (item.description
+            ? convertDescriptionToPoints(item.description).map(
+                (point: string) => ({ point })
+              )
+            : []),
+      };
+      setFormData(formDataWithPoints);
+    } else {
+      setFormData(item);
+    }
     setIsModalOpen(true);
   };
 
@@ -1871,40 +1927,67 @@ export default function ProfileTab() {
       const formData = new FormData();
       formData.append("userId", user?.id!);
 
+      /********* 1) WORK EXPERIENCE *********/
+      if (sectionType === "experience" || sectionType === "workExp") {
+        /*  – keep only rows that have a company name
+          – preserve points[] exactly as stored
+          – keep period as a raw string                                       */
+        const validExperiences = sectionData
+          .filter((exp: any) => (exp.company || "").trim().length > 0)
+          .map((exp: any) => ({
+            company: exp.company,
+            title: exp.title,
+            period: exp.period || "", // e.g. "Mar 2023 – Present"
+            points: exp.points || [], // already an array of { point }
+            // only send description when no points exist
+            description:
+              exp.points && exp.points.length > 0 ? "" : exp.description || "",
+          }));
+
+        formData.append("WorkExperience", JSON.stringify(validExperiences));
+      }
+
+      /********* 2) EDUCATION *********/
       if (sectionType === "education") {
         const validEducation = sectionData
-          .filter((edu: any) => edu.institution && edu.institution.trim())
+          .filter((edu: any) => (edu.institution || "").trim().length > 0)
           .map((edu: any) => ({
-            institure: edu.institution, // Map to backend field name
-            Graduation: edu.period
-              ? new Date(`${edu.period}-12-31`).toISOString()
-              : undefined,
+            institure: edu.institution, // backend field name
+            period: edu.period || "", // e.g. "2021 – 2024"
             Degree: edu.type || edu.Degree,
-            GPA: edu.description?.includes("GPA")
-              ? edu.description.replace("GPA: ", "")
+            description: edu.description || "",
+            GPA: edu.description?.startsWith("GPA")
+              ? edu.description.replace(/GPA:\s*/i, "")
               : edu.GPA,
           }));
 
         formData.append("education", JSON.stringify(validEducation));
       }
 
-      if (sectionType === "experience") {
-        const validExperiences = sectionData
-          .filter((exp: any) => exp.company && exp.company.trim())
-          .map((exp: any) => ({
-            company: exp.company,
-            title: exp.title,
-            description: exp.description || "",
-          }));
+      if (sectionType === "certificate") {
+        // Handle certificates with files properly
+        const allCertificateDetails = sectionData.map(
+          (c: any, index: number) => ({
+            name: c.name || "Certificate",
+            issuer: c.issuer || "Not Specified",
+            date: c.date || new Date().toISOString().split("T")[0],
+            description: c.description || "",
+            // Don't include file data in JSON - will be appended separately
+          })
+        );
 
-        formData.append("WorkExperience", JSON.stringify(validExperiences));
+        formData.append("certificates", JSON.stringify(allCertificateDetails));
+
+        // Append certificate files separately
+        sectionData.forEach((cert: any, index: number) => {
+          if (cert.file) {
+            formData.append("certificateFiles", cert.file);
+          }
+        });
       }
 
       const apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/edit-profile/${profile?._id}`;
-      const response = await fetch(apiUrl, {
-        method: "PUT",
-        body: formData,
-      });
+      const response = await fetch(apiUrl, { method: "PUT", body: formData });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -1912,9 +1995,7 @@ export default function ProfileTab() {
       }
 
       const result = await response.json();
-      if (result.profile) {
-        updateProfile!(result.profile);
-      }
+      if (result.profile) updateProfile!(result.profile);
       return result;
     } catch (error: any) {
       console.error(`Error updating ${sectionType}:`, error);
@@ -1926,34 +2007,62 @@ export default function ProfileTab() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       let updatedSection;
 
-      if (isEditMode && editingItem && modalType) {
-        // Update existing item
-        updatedSection = profileData[
-          modalType === "certificate"
-            ? "certifications"
-            : modalType === "education"
-            ? "education"
-            : "experiences"
-        ].map((item: any) =>
-          item.id === editingItem.id ? { ...item, ...formData } : item
-        );
-      } else if (modalType) {
-        // Add new item
-        const newItem = { ...formData, id: Date.now() };
-        updatedSection = [
-          ...profileData[
-            modalType === "certificate"
-              ? "certifications"
-              : modalType === "education"
-              ? "education"
-              : "experiences"
-          ],
-          newItem,
-        ];
+      if (modalType === "experience") {
+        const experienceData = {
+          ...formData,
+          // Ensure points are preserved as array
+          points: formData.points || [],
+          period: formData.period || "",
+          // Don't create description from points here - let backend handle it
+          description: formData.description || "",
+        };
+
+        if (isEditMode && editingItem) {
+          updatedSection = profileData.experiences.map((item: any) =>
+            item.id === editingItem.id ? { ...item, ...experienceData } : item
+          );
+        } else {
+          // Add new item
+          const newItem = { ...experienceData, id: Date.now() };
+          updatedSection = [...profileData.experiences, newItem];
+        }
+      } else if (modalType === "education") {
+        const educationData = {
+          ...formData,
+          period: formData.period || "", // Handle period as string
+        };
+
+        if (isEditMode && editingItem) {
+          // Update existing education item
+          updatedSection = profileData.education.map((item: any) =>
+            item.id === editingItem.id ? { ...item, ...educationData } : item
+          );
+        } else {
+          // Add new education item
+          const newItem = { ...educationData, id: Date.now() };
+          updatedSection = [...profileData.education, newItem];
+        }
+      } else if (modalType === "certificate") {
+        // Handle certificate with file
+        let certificateData = { ...formData };
+
+        // If there's a new file from the file input, add it
+        if (newCertificatesFiles.length > 0) {
+          certificateData.file =
+            newCertificatesFiles[newCertificatesFiles.length - 1];
+        }
+
+        if (isEditMode && editingItem) {
+          updatedSection = profileData.certifications.map((item: any) =>
+            item.id === editingItem.id ? { ...item, ...certificateData } : item
+          );
+        } else {
+          const newItem = { ...certificateData, id: Date.now() };
+          updatedSection = [...profileData.certifications, newItem];
+        }
       }
 
       if (updatedSection) {
@@ -2016,7 +2125,11 @@ export default function ProfileTab() {
             label: "Institution",
             placeholder: "University name",
           },
-          { name: "period", label: "Period", placeholder: "e.g., 2020-2024" },
+          {
+            name: "period", // Changed from individual start/end dates
+            label: "Period",
+            placeholder: "e.g., 2020 - 2024, 2022 - Present",
+          },
           {
             name: "description",
             label: "Description (Optional)",
@@ -2033,17 +2146,15 @@ export default function ProfileTab() {
             label: "Job Title",
             placeholder: "e.g., Senior Software Engineer",
           },
-          { name: "company", label: "Company", placeholder: "Company name" },
           {
-            name: "period",
-            label: "Period",
-            placeholder: "e.g., 2023-Present",
+            name: "company",
+            label: "Company",
+            placeholder: "Company name",
           },
           {
-            name: "description",
-            label: "Description",
-            placeholder: "Describe your role and achievements",
-            type: "textarea",
+            name: "period", // Changed from individual start/end dates
+            label: "Period",
+            placeholder: "e.g., March 2023 - Present, Jan 2022 - Aug 2024",
           },
         ],
       },
@@ -2080,35 +2191,28 @@ export default function ProfileTab() {
     const handleCertificateFileChange = (file: File | null, meta: any = {}) => {
       if (!file) return;
 
-      // FIXED: Ensure we're only adding new certificates, not duplicating
+      // Store the file directly in formData for immediate use
+      setFormData((prev: any) => ({
+        ...prev,
+        file: file,
+        certificateFileName: file.name,
+        certificateMime: file.type,
+      }));
+
+      // Also add to the certificates files array for later processing
       setNewCertificatesFiles((prev) => {
-        // Check if file already exists to prevent duplicates
         const fileExists = prev.some(
           (existingFile) =>
             existingFile.name === file.name && existingFile.size === file.size
         );
-
         if (fileExists) {
           console.warn("File already selected:", file.name);
           return prev;
         }
-
         return [...prev, file];
       });
-
-      setNewCertificatesMeta((prev) => {
-        // Check if meta already exists
-        const metaExists = prev.some(
-          (existingMeta) => existingMeta.name === meta.name
-        );
-
-        if (metaExists) {
-          return prev;
-        }
-
-        return [...prev, meta];
-      });
     };
+
     const isPdf = (mime?: string, url?: string) =>
       (mime && mime.includes("pdf")) ||
       (url && url.toLowerCase().endsWith(".pdf"));
@@ -2147,7 +2251,7 @@ export default function ProfileTab() {
             </div>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
-              {config.fields.map((field, index) => (
+              {config.fields.map((field: any, index) => (
                 <motion.div
                   key={field.name}
                   initial={{ opacity: 0, y: 20 }}
@@ -2196,20 +2300,29 @@ export default function ProfileTab() {
                   <input
                     type="file"
                     accept="application/pdf,image/*"
-                    onChange={(e) =>
-                      handleCertificateFileChange(e.target.files?.[0] || null)
-                    }
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleCertificateFileChange(file);
+                      }
+                    }}
                     className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
-                  {formData.certificateUrl && (
+                  {(formData.certificateUrl || formData.file) && (
                     <div className="mt-3 border border-gray-200 rounded-lg p-2">
                       <p className="text-xs text-gray-500 mb-2">
-                        {formData.certificateFileName || "Selected file"}
+                        {formData.certificateFileName ||
+                          formData.file?.name ||
+                          "Selected file"}
                       </p>
-                      {isPdf(
-                        formData.certificateMime,
-                        formData.certificateUrl
-                      ) ? (
+                      {formData.file ? (
+                        <div className="text-sm text-green-600">
+                          New file selected: {formData.file.name}
+                        </div>
+                      ) : isPdf(
+                          formData.certificateMime,
+                          formData.certificateUrl
+                        ) ? (
                         <iframe
                           src={formData.certificateUrl}
                           title="Certificate preview"
@@ -2224,6 +2337,119 @@ export default function ProfileTab() {
                       )}
                     </div>
                   )}
+                </motion.div>
+              )}
+
+              {/* Special handling for experience points */}
+              {modalType === "experience" && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    delay: config.fields.length * 0.1,
+                    duration: 0.3,
+                  }}
+                  className="space-y-3"
+                >
+                  <div className="flex justify-between items-center">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Key Responsibilities & Achievements
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentPoints = formData.points || [];
+                        setFormData({
+                          ...formData,
+                          points: [...currentPoints, { point: "" }],
+                        });
+                      }}
+                      className="flex items-center text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Point
+                    </button>
+                  </div>
+
+                  {/* Convert existing description to points if needed */}
+                  {formData.description &&
+                    (!formData.points || formData.points.length === 0) && (
+                      <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-sm text-yellow-800 mb-2">
+                          Convert existing description to bullet points?
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const points = convertDescriptionToPoints(
+                              formData.description
+                            );
+                            setFormData({
+                              ...formData,
+                              points: points.map((point) => ({ point })),
+                            });
+                          }}
+                          className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm"
+                        >
+                          Convert to Points
+                        </button>
+                      </div>
+                    )}
+
+                  {/* Points Input */}
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {(formData.points || []).map(
+                      (pointObj: any, pointIndex: number) => (
+                        <div
+                          key={pointIndex}
+                          className="flex items-start space-x-2"
+                        >
+                          <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-3"></div>
+                          <div className="flex-grow">
+                            <textarea
+                              value={pointObj.point}
+                              onChange={(e) => {
+                                const newPoints = [...(formData.points || [])];
+                                newPoints[pointIndex].point = e.target.value;
+                                setFormData({ ...formData, points: newPoints });
+                              }}
+                              placeholder="Describe a specific responsibility or achievement..."
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                              rows={2}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newPoints = formData.points.filter(
+                                (_: any, i: number) => i !== pointIndex
+                              );
+                              setFormData({ ...formData, points: newPoints });
+                            }}
+                            className="flex-shrink-0 text-red-500 hover:text-red-700 mt-2"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )
+                    )}
+
+                    {(!formData.points || formData.points.length === 0) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            points: [{ point: "" }],
+                          });
+                        }}
+                        className="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                      >
+                        <Plus className="w-5 h-5 mx-auto mb-2" />
+                        Add your first responsibility or achievement
+                      </button>
+                    )}
+                  </div>
                 </motion.div>
               )}
 
@@ -2454,7 +2680,7 @@ export default function ProfileTab() {
                   onClick={() => openEditModal("education", edu)}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors "
+                  className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
                   aria-label="Edit education"
                 >
                   <Edit2 className="w-4 h-4 text-gray-600" />
@@ -2463,12 +2689,24 @@ export default function ProfileTab() {
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 pr-10">
                   {edu.type}
                 </h3>
-                <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">
-                  {edu.period}
-                </p>
-                <p className="text-gray-600 text-sm sm:text-base">
+
+                <p className="text-gray-600 text-sm sm:text-base font-medium mb-2">
                   {edu.institution}
                 </p>
+
+                {/* Display period properly */}
+                {edu.period && (
+                  <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4 font-medium">
+                    {edu.period}
+                  </p>
+                )}
+
+                {/* Display description if exists */}
+                {edu.description && (
+                  <p className="text-gray-500 text-xs sm:text-sm">
+                    {edu.description}
+                  </p>
+                )}
               </motion.div>
             ))}
 
@@ -2482,6 +2720,7 @@ export default function ProfileTab() {
           </motion.div>
         );
 
+      // In your ProfileTab component, update the experiences case:
       case "experiences":
         return (
           <motion.div
@@ -2493,7 +2732,7 @@ export default function ProfileTab() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="space-y-4 sm:space-y-5"
           >
-            {profileData.experiences.map((exp: any, index: number) => (
+            {profileData.experiences.map((exp: any, index: any) => (
               <motion.div
                 key={exp.id}
                 variants={cardVariants}
@@ -2502,42 +2741,78 @@ export default function ProfileTab() {
                   boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
                 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                className="bg-white rounded-xl p-4 sm:p-5 shadow-sm relative group"
+                className="bg-white rounded-xl p-4 sm:p-6 shadow-sm relative group"
               >
                 <motion.button
                   onClick={() => openEditModal("experience", exp)}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors "
+                  className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
                   aria-label="Edit experience"
                 >
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
 
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 pr-10">
-                  {exp.title}
-                </h3>
-                <p className="text-blue-600 font-medium text-sm sm:text-base mb-2">
-                  {exp.company}
-                </p>
-                <p className="text-gray-500 text-sm sm:text-base mb-3 sm:mb-4">
-                  {exp.period}
-                </p>
-                <p className="text-gray-600 text-sm:text-base">
-                  {exp.description}
-                </p>
+                <div className="border-l-2 border-blue-200 pl-4 pr-10">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+                    <h4 className="font-semibold text-gray-900 text-lg">
+                      {exp.title}
+                    </h4>
+                    {/* Display period in brackets */}
+                    {exp.period && (
+                      <span className="text-sm text-gray-500 mt-1 sm:mt-0 font-medium">
+                        ({exp.period})
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-blue-600 font-medium mb-3">
+                    {exp.company}
+                  </p>
+
+                  {/* Render bullet points if they exist, otherwise fallback to description */}
+                  {exp.points && exp.points.length > 0 ? (
+                    <ul className="mt-2 space-y-1">
+                      {exp.points.map((pointObj: any, pointIndex: number) => (
+                        <li
+                          key={pointIndex}
+                          className="text-gray-600 text-sm flex items-start"
+                        >
+                          <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                          {pointObj.point || pointObj}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : exp.description ? (
+                    <div className="mt-2">
+                      <ul className="space-y-1">
+                        {convertDescriptionToPoints(exp.description).map(
+                          (point: string, pointIndex: number) => (
+                            <li
+                              key={pointIndex}
+                              className="text-gray-600 text-sm flex items-start"
+                            >
+                              <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                              {point}
+                            </li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
               </motion.div>
             ))}
 
             {renderAddCard(
-              "Add Experience",
-              "Add your work experience to highlight your professional journey",
+              "Add Work Experience",
+              "Add your professional experience to showcase your career journey",
               "Add Experience",
               <Briefcase className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto" />,
               "experience"
             )}
           </motion.div>
         );
+
       case "jobsApplied":
         return (
           <motion.div
@@ -2596,11 +2871,13 @@ export default function ProfileTab() {
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                          Job Application {application.job?.title || "Unknown Job"}
+                          Job Application{" "}
+                          {application.job?.title || "Unknown Job"}
                         </h4>
                         <h4 className="text-sm font-light text-gray-900 mb-2">
-                          {application.job?.description 
-                            ? application.job.description.substring(0, 120) + "..."
+                          {application.job?.description
+                            ? application.job.description.substring(0, 120) +
+                              "..."
                             : "No description available"}
                         </h4>
                         <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -2666,9 +2943,9 @@ export default function ProfileTab() {
             animate="visible"
             exit="exit"
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="space-y-6 sm:space-y-8"
+            className="space-y-4 sm:space-y-5"
           >
-            {profileData.certifications.map((cert: any) => (
+            {profileData.certifications.map((cert: any, index: any) => (
               <motion.div
                 key={cert.id}
                 variants={cardVariants}
@@ -2677,117 +2954,60 @@ export default function ProfileTab() {
                   boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
                 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                className="space-y-3 sm:space-y-4 bg-white rounded-xl p-4 sm:p-5 shadow-sm relative group"
+                className="bg-white rounded-xl p-4 sm:p-6 shadow-sm relative group"
               >
                 <motion.button
                   onClick={() => openEditModal("certificate", cert)}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors "
+                  className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
                   aria-label="Edit certificate"
                 >
                   <Edit2 className="w-4 h-4 text-gray-600" />
                 </motion.button>
 
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 pr-10">
-                  {cert.name}
-                </h3>
-                <p className="text-gray-600 text-sm sm:text-base">
-                  Issued by: {cert.issuer}
-                </p>
-                <p className="text-gray-500 text-sm sm:text-base">
-                  Date: {cert.date}
-                </p>
-                {cert.description && (
-                  <p className="text-gray-600 text-sm sm:text-base">
-                    {cert.description}
+                <div className="pr-10">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                    {cert.name}
+                  </h3>
+                  <p className="text-blue-600 font-medium mb-2">
+                    {cert.issuer}
                   </p>
-                )}
+                  <p className="text-gray-500 text-sm mb-3">{cert.date}</p>
 
-                {cert.certificateUrl && (
-                  <div className="pt-2 flex gap-2">
-                    <button
-                      onClick={() =>
-                        setPreviewCert({
-                          url: cert.certificateUrl,
-                          name: cert.name,
-                          type: cert.certificateMime,
-                        })
-                      }
-                      className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
-                    >
-                      <Eye className="w-4 h-4" />
-                      View Certificate
-                    </button>
-                    <a
-                      href={cert.certificateUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100"
-                    >
-                      <FileText className="w-4 h-4" />
-                      Download
-                    </a>
-                  </div>
-                )}
+                  {cert.description && (
+                    <p className="text-gray-600 text-sm mb-3">
+                      {cert.description}
+                    </p>
+                  )}
+
+                  {/* Show file info if exists */}
+                  {cert.certificateUrl && (
+                    <div className="flex items-center gap-2">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() =>
+                          window.open(cert.certificateUrl, "_blank")
+                        }
+                        className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        <Eye className="w-4 h-4" />
+                        View Certificate
+                      </motion.button>
+                    </div>
+                  )}
+                </div>
               </motion.div>
             ))}
 
             {renderAddCard(
               "Add Certificate",
-              "Upload your certificates to showcase your qualifications",
+              "Add your certificates and achievements to showcase your qualifications",
               "Add Certificate",
-              <Upload className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto" />,
+              <FileText className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto" />,
               "certificate"
             )}
-
-            <AnimatePresence>
-              {previewCert && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-                  onClick={() => setPreviewCert(null)}
-                >
-                  <motion.div
-                    initial={{ scale: 0.95, y: 20 }}
-                    animate={{ scale: 1, y: 0 }}
-                    exit={{ scale: 0.95, y: 20 }}
-                    onClick={(e) => e.stopPropagation()}
-                    className="bg-white rounded-xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl"
-                  >
-                    <div className="flex items-center justify-between px-4 py-3 border-b">
-                      <p className="text-sm font-medium text-gray-800 truncate">
-                        {previewCert.name || "Certificate Preview"}
-                      </p>
-                      <button
-                        onClick={() => setPreviewCert(null)}
-                        className="p-2 rounded-md hover:bg-gray-100"
-                        aria-label="Close preview"
-                      >
-                        <X className="w-5 h-5 text-gray-600" />
-                      </button>
-                    </div>
-                    <div className="p-4 bg-gray-50">
-                      {previewCert.type?.includes("pdf") ? (
-                        <iframe
-                          src={previewCert.url}
-                          title="Certificate PDF"
-                          className="w-full h-[70vh] rounded-md bg-white"
-                        />
-                      ) : (
-                        <img
-                          src={previewCert.url || "/placeholder.svg"}
-                          alt="Certificate image"
-                          className="w-full max-h-[70vh] object-contain rounded-md bg-white"
-                        />
-                      )}
-                    </div>
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </motion.div>
         );
 
@@ -3125,7 +3345,7 @@ export default function ProfileTab() {
                   onClick={() => setActiveTab(tab.id)}
                   whileHover={{ y: -2 }}
                   whileTap={{ y: 0 }}
-                  className={`px-3 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
+                  className={`px-3 sm:px-6 hover:cursor-pointer py-3 sm:py-4 text-sm sm:text-base font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
                     activeTab === tab.id
                       ? "text-blue-600"
                       : "text-gray-500 hover:text-gray-700"
@@ -3522,17 +3742,6 @@ export default function ProfileTab() {
               </div>
 
               <div className="space-y-4">
-                {/* <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">Date</label>
-                  <input
-                    type="date"
-                    value={newAvailabilityDate}
-                    onChange={(e) => setNewAvailabilityDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    min={new Date().toISOString().split("T")[0]}
-                  />
-                </div> */}
-
                 <div className="flex gap-3">
                   <div className="flex-1 flex flex-col gap-2">
                     <label className="text-sm font-medium text-gray-700">
