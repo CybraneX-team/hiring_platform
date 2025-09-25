@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toJpeg } from "html-to-image";
 import jsPDF from "jspdf";
+import { useUser } from "../context/UserContext";
 
 const CircularProgress = ({ percentage }: { percentage: number }) => {
   const radius = 20;
@@ -132,67 +133,45 @@ interface ApplicantDetail {
 }
 export default function ApplicationDetailView() {
   const [applicantDetail, setApplicantDetail] = useState<ApplicantDetail | null>(null);
-  const userStr = localStorage.getItem("user");
-  const user = userStr ? JSON.parse(userStr) : null;
-  const userId = user?.id;
+  const { user, profile } = useUser();
   useEffect(() => {
-    async function fetchResume() {
-      try {
-        
-        if (!userStr) return;
-        const res = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/resume/user/${userId}`);
-        const resumes = await res.json();
+    if (!profile || !user) return;
 
-        if (!resumes || resumes.length === 0) return;
+    // Use profile data from localStorage/context instead of fetching
+    const formatted: ApplicantDetail = {
+      id: profile._id,
+      name: profile.name || user.name || "",
+      title: profile.openToRoles?.[0] || profile.WorkExperience?.[0]?.title || "Professional",
+      avatar: (profile.name || user.name || "")
+        .split(" ")
+        .map((n: string) => n[0])
+        .join("")
+        .toUpperCase() || "NA",
+      available: true,
+      location: profile.location || "",
+      experience: profile.yearsOfExp ? `${profile.yearsOfExp} Years` : `${profile.WorkExperience?.length || 0} Roles`,
+      matchPercentage: 0,
+      skills: profile.skills || [],
+      certifications: profile.certificates?.map((c: any) => c.name || c) || [],
+      experience_details: profile.WorkExperience?.map((exp: any) => ({
+        title: exp.title || "Position",
+        company: exp.company || "Company",
+        description: exp.description ? [exp.description] : ["No description available"],
+      })) || [],
+      academics: profile.education?.map((edu: any) => ({
+        level: edu.Degree || "Degree",
+        institution: edu.institure || "Institution",
+        completed: true,
+      })) || [],
+      languages: profile.languages || ["English"],
+      contact: {
+        phone: profile.phoneNumber || "+91 00000 00000",
+        email: user.email || "Not provided",
+      },
+    };
 
-        // Take the most recent resume
-        const resume = resumes[0];
-
-        const formatted: ApplicantDetail = {
-          id: resume._id,
-          name: resume.parsedContent.personalInfo.name || "",
-          title: resume.parsedContent.personalInfo.summary || "",
-          avatar: resume.parsedContent.personalInfo.name
-            ? resume.parsedContent.personalInfo.name
-                .split(" ")
-                .map((n: string) => n[0])
-                .join("")
-                .toUpperCase()
-            : "",
-          available: true,
-          location: resume.parsedContent.personalInfo.location || "",
-          experience: resume.parsedContent.experience
-            ? `${resume.parsedContent.experience.length} Roles`
-            : "",
-          matchPercentage: 0,
-          skills: resume.parsedContent.skills?.map((s: any) => s.name) || [],
-          certifications: resume.parsedContent.certifications?.map((c: any) => c.name) || [],
-          experience_details: resume.parsedContent.experience?.map((exp: any) => ({
-            title: exp.title,
-            company: exp.company,
-            description: exp.description.split("\n") || [exp.description],
-          })) || [],
-          academics: resume.parsedContent.education?.map((edu: any) => ({
-            level: edu.degree,
-            institution: edu.institution,
-            completed: true,
-          })) || [],
-          languages: resume.parsedContent.languages || [],
-          contact: {
-            phone: resume.parsedContent.personalInfo.phone || "",
-            email: resume.parsedContent.personalInfo.email || "",
-          },
-        };
-
-        setApplicantDetail(formatted);
-
-      } catch (error) {
-        console.error("Error fetching resume:", error);
-      }
-    }
-
-    fetchResume();
-  }, []);
+    setApplicantDetail(formatted);
+  }, [profile, user]);
 
   const applicant = applicantDetail;
   const router = useRouter();

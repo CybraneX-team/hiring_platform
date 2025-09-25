@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 
 
-
 // const notifications = [
 //   {
 //     id: 1,
@@ -111,6 +110,20 @@ export default function NotificationsPage() {
             <div
               key={notification.id}
               className="bg-white rounded-xl p-6 hover:shadow-md duration-300 transition-shadow cursor-pointer"
+              onClick={() => {
+                if (notification.label === "Document Request") {
+                  router.push('/profile?tab=jobsApplied');
+                } else if (notification.label === "New Job Match") {
+                  // Extract job ID from description
+                  const jobIdMatch = notification.description.match(/jobId: ([a-f0-9]+)/);
+                  if (jobIdMatch && jobIdMatch[1]) {
+                    const jobId = jobIdMatch[1];
+                    router.push(`/jobs/details?id=${jobId}`);
+                  } else {
+                    router.push('/jobs');
+                  }
+                }
+              }}
             >
               <div className="flex items-start gap-4">
                 {/* Avatar */}

@@ -101,7 +101,7 @@ export default function ResumeUpload({ userId, onUploadComplete, onClose }: Resu
       // Upload and parse the resume
       const formData = new FormData();
       formData.append('resume', file);
-      formData.append('userId', user ? user.id : "");
+      formData.append('userId', userId || (user ? user.id : ""));
         try {
           const res = await fetch(
             `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/profile/resume`,
@@ -111,7 +111,10 @@ export default function ResumeUpload({ userId, onUploadComplete, onClose }: Resu
             }
           );
       
-          if (!res.ok) toast.error("Upload failed");
+          if (!res.ok) {
+            toast.error("Upload failed");
+            return; // Stop execution on error
+          }
   
           // ✅ resume uploaded + profile created
           const data = await res.json();

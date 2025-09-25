@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CalendarSection from "./calender";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import ResumeUpload from "./ResumeUpload";
 import JobMatching from "./JobMatching";
 import { useUser } from "../context/UserContext";
@@ -872,6 +872,7 @@ const skillVariants = {
 };
 
 export default function ProfileTab() {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("resume");
   const { user, profile, updateProfile } = useUser();
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
@@ -965,6 +966,14 @@ export default function ProfileTab() {
       fetchUserApplications();
     }
   }, [activeTab, user?.id]);
+
+  // Check for tab parameter in URL to set initial active tab
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'jobsApplied') {
+      setActiveTab('jobsApplied');
+    }
+  }, [searchParams]);
 
   // Add this computed property inside your ProfileTab component
 
@@ -1252,7 +1261,7 @@ export default function ProfileTab() {
         width: activeTabElement.offsetWidth,
       });
     }
-  }, [activeTab]);
+  }, [activeTab, tabs]);
 
   useEffect(() => {
     if (profileData.profile.unavailability) {
