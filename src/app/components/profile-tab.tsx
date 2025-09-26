@@ -3127,7 +3127,7 @@ export default function ProfileTab() {
               isScrolled ? "text-black " : "text-black"
             }`}
           >
-            ProjectMatch
+            ProjectMATCH
           </span>
           <span
             className={`text-sm font-medium transition-colors duration-300 ${

@@ -19,8 +19,10 @@ export default function Home() {
       <HeroSection />
       {/* <AboutSection /> */}
       {/* <StatsSection /> */}
+      <div className=" mt-10">
+        <BenefitsSection />
+      </div>
       <SolutionsSection />
-      <BenefitsSection />
       <ImpactSection />
       <DarkImpactSection />
       <WorksSection />

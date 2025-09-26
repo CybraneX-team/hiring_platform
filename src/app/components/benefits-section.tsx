@@ -1,217 +1,143 @@
 "use client";
 
-import { useState } from "react";
+import { motion } from "motion/react";
+import dynamic from "next/dynamic";
+const WorldMap: any = dynamic(() => import("@/components/ui/world-map").then((m:any)=> m.default ?? m), { ssr: false, loading: () => <div /> });
 
 const ACCENT = "#76FF83";
 
+const blurb =
+  "Match specialist talent to scopes in minutes. Verified, compliance-ready professionals and secure end‑to‑end project management.";
+
+const benefits = [
+  {
+    title: "AI-driven talent and project matching",
+    content:
+      "Match specialist talent to technical scopes in minutes. Our engine ranks candidates by skills, certifications, availability, and project fit.",
+  },
+  {
+    title: "Verified professionals and compliance-ready profiles",
+    content:
+      "Profiles include credential checks, safety cards, and region-specific compliance flags ready for audit.",
+  },
+  {
+    title: "Industry-focused: Energy",
+    content:
+      "Purpose-built for oil & gas, infrastructure, hydrogen, solar, and wind with workflows that reflect real field operations.",
+  },
+  {
+    title: "Secure end-to-end project management",
+    content:
+      "From requisition to closeout: scoped work orders, secure document exchange, milestone tracking, and clean handover packages.",
+  },
+];
+
 export default function BenefitsSection() {
-  const [open, setOpen] = useState<number | null>(null);
-   const [selectedSector, setSelectedSector] = useState(0)
-
-  const sectors = [
-  
-    {
-      title: "Oil and gas",
-      image: "/images/Oil-gas.png",
-    },
-    {
-      title: "Infrastructure projects",
-      image: "/images/Infrastructure.png",
-    },
-    {
-      title: "hydrogen",
-      image: "/images/hydrogen.png",
-    },
-    {
-      title: "solar and wind",
-      image:
-        "/images/solar-wind.png",
-    },
-  ]
-
-  const benefits = [
-    {
-      num: "01",
-      title: "AI-driven talent and project matching",
-      content:
-        "Reduce your energy expenses by up to 70% with our efficient renewable energy solutions and smart grid integration.",
-    },
-    {
-      num: "02",
-      title: "Verified professionals and compliance-ready profiles",
-      content:
-        "Contribute to a cleaner planet with zero‑emission technology that significantly reduces carbon footprint.",
-    },
-    {
-      num: "03",
-      title: "Industry-focused: Energy",
-      content:
-        "Increase your property value with sustainable energy infrastructure that appeals to environmentally conscious buyers.",
-    },
-    {
-      num: "04",
-      title: "Secure end-to-end project management",
-      content:
-        "Increase your property value with sustainable energy infrastructure that appeals to environmentally conscious buyers.",
-    },
-  ];
-
   return (
-    <section className="bg-white py-5 md:py-18">
-      <div className="mx-auto max-w-7xl px-6 md:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] md:gap-x-12">
-          {/* Left rail */}
-          <aside className="order-2 md:order-1 mt-5">
-            {/* small label */}
-            <div className="hidden md:block">
-            <p className="text-sm text-gray-500 mb-6 md:mb-0">
-              <span className="align-middle">•</span>
-              <span className="mx-2 align-middle">Our benefits</span>
-              <span className="align-middle">•</span>
+    <section className="relative h-[100vh] bg-white py-12 md:py-20 overflow-hidden">
+      {/* World map background */}
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <WorldMap
+          className="opacity-60"
+          dots={[
+            // { start: { lat: 80.2008, lng: -149.4937 }, end: { lat: 34.0522, lng: -118.2437 } },
+            // { start: { lat: 64.2008, lng: -149.4937 }, end: { lat: -15.7975, lng: -47.8919 } },
+            // { start: { lat: -15.7975, lng: -47.8919 }, end: { lat: 38.7223, lng: -9.1393 } },
+            // { start: { lat: 51.5074, lng: -0.1278 }, end: { lat: 28.6139, lng: 77.209 } },
+            // { start: { lat: 28.6139, lng: 77.209 }, end: { lat: 43.1332, lng: 131.9113 } },
+            // { start: { lat: 28.6139, lng: 77.209 }, end: { lat: -1.2921, lng: 36.8219 } },
+          ]}
+        />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-7xl px-6 md:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+          {/* Left: headline and CTA */}
+          <div>
+            <p className="text-sm text-gray-500 mb-2">COMPSCOPE</p>
+            <motion.h2
+              className="text-3xl md:text-5xl font-semibold leading-tight tracking-tight text-[#163A33]"
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+            >
+              ProjectMATCH
+              <br /> Connecting Talent to the Projects!
+            </motion.h2>
+            <p className="mt-3 text-sm md:text-base text-gray-600 md:max-w-xl leading-relaxed">
+              Access verified experts or high‑value projects in oil, gas, green energy, and heavy infrastructure — instantly, securely, and intelligently powered by AI.
             </p>
+            <a
+              href="#"
+              className="inline-flex mt-6 h-10 items-center justify-center rounded px-5 text-sm font-medium text-[#163A33] bg-[white] ring-1 ring-[#163A33] hover:bg-[#163A33] hover:text-white transition-colors"
+            >
+              Smart Hiring
+            </a>
+            <a
+              href="#"
+              className="inline-flex mt-3 md:mt-6 h-10 items-center justify-center rounded px-5 text-sm font-medium text-white bg-[#163A33] md:ml-3"
+            >
+              Smart Working
+            </a>
 
-            {/* Push the blurb down on desktop to mirror visual rhythm */}
-            <div className="mt-10 md:mt-60 ">
-              <p className="text-[#8D8D8D] leading-relaxed md:pr-6">
-                Highest level or transparency maintenance while simultaneously maintaining privacy for sophisticated documentation
-              </p>
-
-              <a
-                href="#"
-                className="mt-6 inline-flex h-10 items-center justify-center rounded px-5 text-sm font-medium text-white bg-[#17181D]"
-                
-              >
-                Our approach
-              </a>
-            </div>
-            </div>
-
-             <div className="mt-10 md:mt-24">
-              <div className="">
-                 <span className="text-lg md:text-xl font-medium text-gray-900 ">
-                      Compscope environment
-                      </span>
-                {sectors.map((sector, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedSector(index)}
-                    className={`block w-full text-left py-3 px-4 rounded-lg mt-5 text-sm md:text-base transition-all duration-200 ${
-                      selectedSector === index
-                        ? "bg-gray-100 text-gray-900 font-medium"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                    }`}
-                  >
-                    {sector.title}
-                  </button>
-                ))}
+            {/* How it works (moved below CTAs) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-68 text-[#163A33]">
+              <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4">
+                <p className="text-sm font-semibold mb-1">1) Define your project</p>
+                <p className="text-sm text-gray-600">Share scope, timeline, and budget.</p>
+              </div>
+              <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4">
+                <p className="text-sm font-semibold mb-1">2) AI Talent Match</p>
+                <p className="text-sm text-gray-600">Instantly connects you with verified experts.</p>
+              </div>
+              <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4">
+                <p className="text-sm font-semibold mb-1">3) Collaborate & Deliver</p>
+                <p className="text-sm text-gray-600">Track milestones, communicate, and complete payments securely.</p>
               </div>
             </div>
-          </aside>
+          </div>
 
-          {/* Right content */}
-          <div className="order-1 md:order-2">
-            {/* Heading exactly like reference: "Benefits of [glyph] Sunergy" */}
-            <div className="mb-10 md:mb-12">
-              <h2 className="flex items-baseline gap-3 text-[#163A33]">
-                <span className="text-2xl md:text-4xl font-semibold leading-tight">
-                  Benefits of   Compscope
-                </span>
-            
-              
-              </h2>
-            </div>
-
-         
-            <div className="border-y border-gray-200">
-              {benefits.map((b, i) => {
-                const isOpen = open === i;
-                return (
-                  <div key={b.num} className="border-b border-gray-200">
-                    <button
-                      type="button"
-                      // onClick={() => setOpen(isOpen ? null : i)}
-                      className="w-full grid grid-cols-[56px_1fr_24px] items-center gap-4 py-7 text-left hover:bg-gray-50 transition-colors"
-                      aria-expanded={isOpen}
-                      aria-controls={`benefit-panel-${i}`}
-                    >
-                      <span className="text-base font-medium tracking-[0.08em] text-gray-400">
-                        {b.num}
-                      </span>
-                      <span className="text-base md:text-xl font-medium text-gray-900 -ml-8">
-                        {b.title}
-                      </span>
-                      {/* <ChevronDown
-                        className={`h-5 w-5 justify-self-end text-gray-600 transition-transform ${
-                          isOpen ? "rotate-180" : ""
-                        }`}
-                      /> */}
-                    </button>
-
-                    {isOpen && (
-                      <div id={`benefit-panel-${i}`} className="px-8 pb-7">
-                        <p className="text-gray-600 leading-relaxed">
-                          {b.content}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-             <aside className="order-2 md:order-1 mt-5 md:hidden">
-            {/* small label */}
-            <p className="text-sm text-gray-500 mb-6 md:mb-0">
-              <span className="align-middle">•</span>
-              <span className="mx-2 align-middle">Our benefits</span>
-              <span className="align-middle">•</span>
-            </p>
-
-            {/* Push the blurb down on desktop to mirror visual rhythm */}
-            <div className="mt-10 md:mt-48 ">
-              <p className="text-[#8D8D8D] leading-relaxed md:pr-6">
-                Highest level or transparency maintenance while simultaneously maintaining privacy for sophisticated documentation
-              </p>
-
-              <a
-                href="#"
-                className="mt-6 inline-flex h-10 items-center justify-center rounded px-5 text-sm font-medium text-white bg-[#17181D]"
-                
-              >
-                Our approach
-              </a>
-            </div>
-
-            
-          </aside>
- <div className="mt-8 md:mt-10">
+          {/* Right: media + lime info card */}
+          <div>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="rounded-xl overflow-hidden ring-1 ring-gray-200 bg-white"
+            >
               <img
-                src={sectors[selectedSector].image || "/placeholder.svg"}
-                alt={`${sectors[selectedSector].title} sector visualization`}
-                className="h-80 w-full object-cover md:h-[420px] rounded-xl transition-opacity duration-300 mt-16 md:mt-0"
+                src="/images/about.png"
+                alt="Clean energy"
+                className="w-full h-56 md:h-72 object-cover"
               />
-            </div>
+              <div className="bg-[#A6F56B] text-[#163A33] p-6 md:p-8">
+                <div className="flex items-start gap-3">
+                  <span className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-md bg-[#e7ffd6] text-[#163A33] font-bold">✳</span>
+                  <div className="w-full">
+                    <p className="text-base md:text-lg leading-relaxed font-medium">
+                      {blurb}
+                    </p>
+                  </div>
+                </div>
+                {/* Professional 2-column list of benefits */}
+                <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                  {benefits.map((b, i) => (
+                    <div key={i} className="relative pl-5">
+                      <span className="absolute left-0 top-2 h-2 w-2 rounded-full bg-[#163A33]" />
+                      <p className="font-semibold text-sm md:text-base leading-snug">{b.title}</p>
+                      <p className="text-sm text-[#163A33]/80 leading-relaxed mt-1">{b.content}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+
+            
           </div>
         </div>
       </div>
     </section>
   );
 }
-
-
-function ChevronDown({ className = "" }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  );
-}
-

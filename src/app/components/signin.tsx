@@ -124,7 +124,7 @@ export default function LoginPage() {
             <span
               className={`md:text-2xl text-xl font-semibold transition-colors duration-300 text-black`}
             >
-              ProjectMatch
+              ProjectMATCH
             </span>
             <span
               className={`text-sm font-medium transition-colors duration-300 text-black`}

@@ -8,6 +8,7 @@ import React from "react";
 import Link from "next/link";
 import Header from "./header";
 import Image from "next/image";
+import { motion } from "motion/react";
 
 export default function HeroSection() {
   return (
@@ -51,27 +52,49 @@ export default function HeroSection() {
 
       <section className="relative h-screen flex items-center justify-start">
         <div className="relative z-10 text-white max-w-[90%] mx-auto md:px-6 w-full">
-          <div className="max-w-4xl mt-30">
-            <h1 className="text-3xl md:text-5xl font-semibold mb-6 leading-tight">
-              Exceptional Projects and Talent in
-              <br />
-              energy and Infra Sector at one place
-            </h1>
-            <p className="md:text-lg text-base mb-8 text-white leading-relaxed">
-              Talent and opportunity converge with precision and innovation.
-            </p>
-            <div className="flex gap-4">
-              <Link href="/signup">
-                <button className="bg-[#3EA442] hover:bg-[#6ef07a] text-white rounded-md font-medium px-10 py-2.5 w-40 text-xs md:text-sm transition-colors">
-                  Find a job
-                </button>
-              </Link>
+          <div className="max-w-5xl mt-24 md:mt-28">
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="text-xs md:text-sm tracking-[0.2em] uppercase text-white/80 mb-3"
+            >
+              ProjectMATCH by Compscope
+            </motion.p>
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.05 }}
+              className="text-3xl md:text-5xl font-semibold mb-5 leading-tight"
+            >
+              Exceptional Projects and Talent in<br/>energy and Infra Sector at one place
+
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.15 }}
+              className="md:text-lg text-base mb-7 text-white/90 leading-relaxed max-w-3xl"
+            >
+              Access verified experts or high‑value projects in oil, gas, green energy, and heavy infrastructure — instantly, securely, and intelligently powered by AI.
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.22 }}
+              className="flex gap-3 flex-wrap"
+            >
               <Link href="/company/signup">
-                <button className="bg-[#3EA442] text-white rounded-md px-10 py-2.5 w-44 md:w-48 transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
+                <button className="bg-[#3EA442] hover:bg-[#6ef07a] text-white rounded-md font-semibold px-6 md:px-8 py-2.5 text-xs md:text-sm transition-colors">
                   Hire an Engineer
                 </button>
               </Link>
-            </div>
+              <Link href="/signup">
+                <button className="bg-white/10 hover:bg-white/20 text-white rounded-md px-6 md:px-8 py-2.5 text-xs md:text-sm font-semibold backdrop-blur-sm ring-1 ring-white/20">
+                  Find a Job
+                </button>
+              </Link>
+            </motion.div>
           </div>
         </div>
       </section>

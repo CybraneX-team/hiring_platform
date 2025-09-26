@@ -65,19 +65,19 @@ export default function Header() {
         <span className={`md:text-2xl text-xl font-semibold transition-colors duration-300 ${
           isScrolled ? "text-black " : "text-white"
         }`}>
-          Project Match
+          ProjectMATCH
         </span>
         <span className={`text-sm font-medium transition-colors duration-300 ${
           isScrolled ? "text-black" : "text-white"
         }`}>
-          by Comscope
+          by <span className="text-[#69a34b] text-md font-bold">compscope</span>
         </span>
       </Link>
 
-      <div className="flex items-center gap-4">
+      <div className="cursor-pointer flex items-center gap-4">
         {!token && (
           <Link href="/signin">
-            <button className="bg-[#D2FFD6] text-black px-6 py-2.5 rounded-xl font-medium hover:bg-[#c5f2ca] transition-colors hidden md:block">
+            <button className="cursor-pointer bg-[#69a34b] text-white px-6 py-2.5 rounded-xl font-medium hover:bg-[#69a34b] transition-colors hidden md:block">
               Login
             </button>
           </Link>
