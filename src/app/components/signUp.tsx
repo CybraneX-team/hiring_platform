@@ -18,8 +18,8 @@ export default function SignupPage() {
   const [otp, setotp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const { userCreds, setUserCreds, setmode } = useUser();
-
+  const { userCreds, setUserCreds, setmode, mode } = useUser();
+  console.log("mode", mode);
   // Animation variants
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -116,6 +116,38 @@ export default function SignupPage() {
     }
   }
 
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
+    const userData = urlParams.get("user");
+    const profileData = urlParams.get("profile");
+    console.log("profileData is  : ", profileData);
+
+    if (token && userData) {
+      try {
+        const user = JSON.parse(decodeURIComponent(userData));
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("profile", JSON.stringify(profileData));
+        toast.success("Successfully signed in with Google!");
+        router.push("/profile");
+      } catch (error) {
+        toast.error("Error processing Google sign-in");
+      }
+    }
+
+    const error = urlParams.get("error");
+    if (error) {
+      toast.error("Google sign-in failed. Please try again.");
+    }
+  }, [router]);
+
+  const handleGoogleSignIn = () => {
+    const state = JSON.stringify({ mode: "Inspector" });
+    const encodedState = encodeURIComponent(state);
+
+    window.location.href = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/google?state=${encodedState}`;
+  };
   return (
     <motion.div
       className="min-h-screen bg-[#F5F5F5]"
@@ -127,14 +159,18 @@ export default function SignupPage() {
         <motion.div className="mb-16" variants={itemVariants}>
           <Link href="/" className="flex flex-col">
             <span
-              className={`md:text-2xl text-xl font-semibold transition-colors duration-300 text-black`}
+              className={`md:text-2xl text-xl font-semibold transition-colors duration-300 text-black
+        }`}
             >
               ProjectMATCH
             </span>
             <span
               className={`text-sm font-medium transition-colors duration-300 text-black`}
             >
-              By Comscope
+              by{" "}
+              <span className="text-[#69a34b] text-md font-bold">
+                compscope
+              </span>
             </span>
           </Link>
         </motion.div>
@@ -280,13 +316,14 @@ export default function SignupPage() {
           </motion.div>
 
           {/* Social buttons */}
-        <motion.div
+          <motion.div
             className="grid  gap-3 cursor-pointer"
             variants={itemVariants}
           >
             <motion.button
               className="h-12 bg-white border cursor-pointer border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors"
               variants={socialButtonVariants}
+              onClick={handleGoogleSignIn}
               initial="initial"
               whileHover="hover"
               whileTap="tap"

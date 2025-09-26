@@ -66,7 +66,7 @@ export default function BenefitsSection() {
               <br /> Connecting Talent to the Projects!
             </motion.h2>
             <p className="mt-3 text-sm md:text-base text-gray-600 md:max-w-xl leading-relaxed">
-              Access verified experts or high‑value projects in oil, gas, green energy, and heavy infrastructure — instantly, securely, and intelligently powered by AI.
+              Access verified experts or high-value projects in oil, gas, green energy, and heavy infrastructure — instantly, securely, and intelligently powered by AI.
             </p>
             <a
               href="#"
