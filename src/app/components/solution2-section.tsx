@@ -12,45 +12,41 @@ export default function SolutionsSection() {
 
   const solutions = [
     {
-      title: "Oil & Gas",
-      description:
-        "Full lifecycle support: upstream, midstream, downstream projects, shutdowns, inspections, maintenance, and execution.",
-      bgColor: "bg-[#163A37]",
-      iconSrc: "/flaticon_assets/oil-barrel.png",
-      heroSrc: "/coreSectors/oil-and-gas.png",
-      roles: [
-        "Pipeline QC Inspector (cross country + station works)",
-        "Pressure Vessel QC Inspector",
-        "Storage Tank QC Inspector",
-        "Piping & Welding QC Inspector",
-        "Rotating Equipment QC Inspector",
-        "Electrical System QC Inspector (EX equipment, MCC, etc.)",
-        "Instrumentation & Loop Check QC Inspector",
-        "Pre-Commissioning / Commissioning QC Inspector",
-        "Cathodic Protection QC Inspector",
-        "Coating & Wrapping QC Inspector (for U/G pipeline)",
-      ],
-    },
-    {
-      title: "Solar Energy",
-      description:
-        "Full lifecycle support: upstream, midstream, downstream projects, shutdowns, inspections, maintenance, and execution.",
-      bgColor: "bg-[#163A37]",
-      iconSrc: "/flaticon_assets/solar-energy.png",
-      heroSrc: "/coreSectors/solar-energy.png",
-      roles: [
-        "Module Installation QC Inspector",
-        "PV Structure / MMS QC Inspector",
-        "DC Cable Laying QC Inspector",
-        "Inverter QC Inspector",
-        "String Combiner Box QC Inspector",
-        "Earthing & Lightning Protection QC Inspector",
-        "Grid Connectivity QC Inspector",
-        "Civil Works QC Inspector (for foundations, roads, fencing)",
-        "Transformer & Switchyard QC Inspector",
-        "BESS (Battery Energy Storage) QC Inspector (optional but emerging)",
-      ],
-    },
+        title: "Offshore Projects",
+        description: "Commissioning, shutdowns, and infrastructure development.",
+        bgColor: "bg-[#163A37]",
+        iconSrc: "/flaticon_assets/offshore.png",
+        heroSrc: "/coreSectors/offshore-projects.png",
+        roles: [
+          "Drone Inspection Coordinator (for solar & wind asset QA)",
+          "AI-Based Image QA Analyst (used in solar farm defects)",
+          "Welding Procedure Qualification (WPQR) Specialist",
+          "Third-Party / Client-Side QC Coordinator",
+          "GIS-Based QC Inspector (solar/wind site layouts)",
+        ],
+        hasViewRoles: true,
+      },
+      {
+        title: "Green Hydrogen",
+        description:
+          "Full lifecycle support: upstream, midstream, downstream projects, shutdowns, inspections, maintenance, and execution.",
+        bgColor: "bg-[#163A37]",
+        iconSrc: "/flaticon_assets/hydrogen.png",
+        heroSrc: "/coreSectors/green-hydrogen.png",
+        roles: [
+          "Electrolyzer Package QC Inspector",
+          "Process Piping QC Inspector",
+          "Skid / Module Assembly QC Inspector",
+          "Mechanical Rotating Equipment QC Inspector",
+          "Control System / PLC-DCS QC Inspector",
+          "Gas Storage QC Inspector",
+          "Compressor / Booster QC Inspector",
+          "Utility Systems QC Inspector (Water, Air, Nitrogen)",
+          "Fire & Gas Detection QC Inspector",
+          "Hydrogen Safety QC Inspector",
+        ],
+        hasViewRoles: true,
+      }
   ]
 
   const handleCardClick = (index: number) => {
@@ -63,7 +59,7 @@ export default function SolutionsSection() {
   }
 
   return (
-    <section className="py-14 bg-white" id="sectors">
+    <section className="py-14 bg-white -mt-40" id="sectors">
       <div className="max-w-[100rem] mx-auto px-6">
         <motion.div
           className="flex justify-between items-center mb-16"
@@ -72,9 +68,6 @@ export default function SolutionsSection() {
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
-          <div>
-            <h2 className="text-2xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight ml-5">Core Sectors</h2>
-          </div>
           <button
             className="relative flex mt-10 items-center text-black/80 hover:text-black text-xs md:text-sm rounded-lg transition-colors underline-offset-4 font-medium group focus:outline-none"
             style={{ paddingBottom: 7, paddingRight: 15, letterSpacing: 4 }}

@@ -3,6 +3,7 @@ import HeroSection from "./components/hero";
 import AboutSection from "./components/about-section";
 import StatsSection from "./components/sats-section";
 import SolutionsSection from "./components/solution-section";
+import SolutionsSection2 from "./components/solution2-section";
 import BenefitsSection from "./components/benefits-section";
 import ImpactSection from "./components/impact-section";
 import DarkImpactSection from "./components/dark-impact";
@@ -23,6 +24,7 @@ export default function Home() {
         <BenefitsSection />
       </div>
       <SolutionsSection />
+      <SolutionsSection2 />
       <ImpactSection />
       <DarkImpactSection />
       <WorksSection />
