@@ -38,6 +38,13 @@ export default function LoginPage() {
     }
   }, [router]);
 
+  
+  const handleGoogleSignIn = () => {
+
+
+    window.location.href = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/google`;
+  };
+
   const login = async () => {
     const makeReq = await fetch(
       `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/login`,
@@ -120,18 +127,16 @@ export default function LoginPage() {
     >
       <div className="container mx-auto px-6 py-8">
         <motion.div className="mb-16" variants={itemVariants}>
-          <Link href="/" className="flex flex-col">
-            <span
-              className={`md:text-2xl text-xl font-semibold transition-colors duration-300 text-black`}
-            >
-              ProjectMatch
-            </span>
-            <span
-              className={`text-sm font-medium transition-colors duration-300 text-black`}
-            >
-              By Comscope
-            </span>
-          </Link>
+                <Link href="/" className="flex flex-col">
+        <span className={`md:text-2xl text-xl font-semibold transition-colors duration-300 
+           text-black
+        `}>
+          ProjectMATCH
+        </span>
+        <span className={`text-sm font-medium transition-colors duration-300 text-black`}>
+          by <span className="text-[#69a34b] text-md font-bold">compscope</span>
+        </span>
+      </Link>
         </motion.div>
 
         <div className="max-w-md mx-auto space-y-6">
@@ -153,28 +158,21 @@ export default function LoginPage() {
               <Label className="text-sm font-medium text-gray-700">
                 {usePhone ? "Phone" : "Email"}
               </Label>
-              <motion.button
-                onClick={() => setUsePhone(!usePhone)}
-                className="text-xs text-gray-500 hover:text-gray-700"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <Link
+                href="/forgot-password"
               >
-                {usePhone ? "Use email instead" : "Use phone number instead"}
-              </motion.button>
+                <motion.button
+                  // onClick={() => setUsePhone(!usePhone)}
+                  className="text-xs text-gray-500 hover:text-gray-700"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Forgot Password
+                </motion.button>
+              </Link>
             </div>
 
-            {usePhone ? (
-              <div className="flex gap-2">
-                <select className="h-12 px-3 bg-white border border-gray-200 rounded-lg text-sm w-20 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option>+91</option>
-                </select>
-                <Input
-                  placeholder="1234 567 890"
-                  className="h-12 bg-white border-gray-200 rounded-lg flex-1"
-                  type="tel"
-                />
-              </div>
-            ) : (
+         
               <Input
                 placeholder="xyz@email.com"
                 className="h-12 bg-white border-gray-200 rounded-lg"
@@ -186,7 +184,7 @@ export default function LoginPage() {
                   });
                 }}
               />
-            )}
+          
           </motion.div>
 
           {/* Password with Eye Toggle */}
@@ -258,6 +256,7 @@ export default function LoginPage() {
               className="h-12 bg-white border cursor-pointer border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors"
               initial="initial"
               whileHover="hover"
+              onClick={handleGoogleSignIn}
               whileTap="tap"
             >
               <span className="text-lg font-bold text-black">G</span>

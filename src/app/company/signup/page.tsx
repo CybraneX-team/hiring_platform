@@ -45,11 +45,11 @@ export default function SignupPage() {
   };
 
   useEffect(() => {
-  if (shouldNavigate) {
-    router.push("/otp");
-    setShouldNavigate(false);
-  }
-}, [shouldNavigate, router]);
+    if (shouldNavigate) {
+      router.push("/otp");
+      setShouldNavigate(false);
+    }
+  }, [shouldNavigate, router]);
 
   const handleSignup = async () => {
     try {
@@ -74,7 +74,7 @@ export default function SignupPage() {
       // Store signup data in session/localStorage to use later in OTP verification
       localStorage.setItem("signupData", JSON.stringify(formData));
       setUserCreds({
-        id : data.id,
+        id: data.id,
         name: formData.fullName,
         email: formData.organizationEmail,
         password: formData.password,
@@ -83,7 +83,7 @@ export default function SignupPage() {
       });
       setmode("company");
       router.push("/otp"); // go to OTP page
-      setShouldNavigate(true); 
+      setShouldNavigate(true);
     } catch (err: any) {
       toast.info(err.message);
     } finally {
@@ -144,6 +144,13 @@ export default function SignupPage() {
       scale: 1.02,
       transition: { duration: 0.2 },
     },
+  };
+
+  const handleGoogleSignIn = () => {
+    const state = JSON.stringify({ mode: "Company" });
+    const encodedState = encodeURIComponent(state);
+
+    window.location.href = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/google?state=${encodedState}`;
   };
 
   return (
@@ -299,6 +306,7 @@ export default function SignupPage() {
           <motion.div
             className="grid  gap-3 cursor-pointer"
             variants={itemVariants}
+            onClick={handleGoogleSignIn}
           >
             <motion.button
               className="h-12 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors"

@@ -3121,22 +3121,16 @@ export default function ProfileTab() {
         transition={{ duration: 0.5 }}
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
-        <Link href="/" className="flex flex-col">
-          <span
-            className={`md:text-2xl text-xl font-semibold transition-colors duration-300 ${
-              isScrolled ? "text-black " : "text-black"
-            }`}
-          >
-            ProjectMatch
-          </span>
-          <span
-            className={`text-sm font-medium transition-colors duration-300 ${
-              isScrolled ? "text-black" : "text-black"
-            }`}
-          >
-            By Comscope
-          </span>
-        </Link>
+            <Link href="/" className="flex flex-col">
+        <span className={`md:text-2xl text-xl font-semibold transition-colors duration-300 
+           text-black
+        `}>
+          ProjectMATCH
+        </span>
+        <span className={`text-sm font-medium transition-colors duration-300 text-black`}>
+          by <span className="text-[#69a34b] text-md font-bold">compscope</span>
+        </span>
+      </Link>
       </motion.div>
       {/* Document Upload Modal */}
       <AnimatePresence>

@@ -54,24 +54,29 @@ export default function DarkImpactSection() {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-xl md:text-4xl font-medium mb-6 leading-tight max-w-4xl mx-auto">
-         Core Disciplines & On-Site Capabilities
+        <div className="text-center mb-12 md:mb-16">
+          <p className="text-[11px] md:text-xs uppercase tracking-[0.18em] text-white/70 mb-3">Core field disciplines</p>
+          <h2 className="text-2xl md:text-5xl font-semibold leading-tight max-w-4xl mx-auto">
+            Core Disciplines & On-Site Capabilities
           </h2>
+          <div className="mt-4 h-px w-24 mx-auto bg-white/15"></div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-12 mb-20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 mb-14">
           {stats.map((stat, index) => (
-            <div key={index} className="text-center md:text-left">
-              <h3 className="md:text-xl text-base font-medium mb-4">{stat.title}</h3>
-              <p className="text-gray-200 md:text-base text-sm leading-relaxed font-light">
+            <div
+              key={index}
+              className="rounded-xl ring-1 ring-white/10 bg-white/5 hover:bg-white/7 transition-colors duration-200 p-5 md:p-6 h-full"
+            >
+              <h3 className="md:text-lg text-base font-medium mb-2.5 text-white">
+                {stat.title}
+              </h3>
+              <p className="text-gray-300 md:text-sm text-[13px] leading-relaxed">
                 {stat.description}
               </p>
             </div>
           ))}
         </div>
-
-      
       </div>
     </section>
   );
