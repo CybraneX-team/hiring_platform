@@ -44,6 +44,11 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
   const [showUpdateModal, setShowUpdateModal] = useState(false)
   const [editingRecords, setEditingRecords] = useState<AttendanceLog[]>([])
 
+  // Download modal states
+  const [showDownloadModal, setShowDownloadModal] = useState(false)
+  const [downloadStartDate, setDownloadStartDate] = useState("")
+  const [downloadEndDate, setDownloadEndDate] = useState("")
+
   // API-related functions
   const fetchAttendanceData = useCallback(async () => {
     if (!profileId) {
@@ -386,74 +391,107 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
     }
   }
 
-  const downloadAttendanceData = () => {
-    const currentLogs = getCurrentDayLogs()
-    const isPresent = attendanceData.presentDays.includes(selectedDate)
-    const isAbsent = attendanceData.absentDays.includes(selectedDate)
-    const isHoliday = attendanceData.holidayDays.includes(selectedDate)
+  const openDownloadModal = () => {
+    // Set default date range to current monthly view
+    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
+    
+    setDownloadStartDate(startOfMonth.toISOString().split('T')[0])
+    setDownloadEndDate(endOfMonth.toISOString().split('T')[0])
+    setShowDownloadModal(true)
+  }
 
-    // Determine attendance status
-    let attendanceStatus = "Not Marked"
-    if (isPresent) attendanceStatus = "Present"
-    if (isAbsent) attendanceStatus = "Absent"
-    if (isHoliday) attendanceStatus = "Holiday"
-
-    // Format date for display
-    const formattedDate = `${selectedDate.toString().padStart(2, "0")}-${(currentDate.getMonth() + 1).toString().padStart(2, "0")}-${currentDate.getFullYear()}`
-
-    // Create new PDF document
-    const doc = new jsPDF()
-
-    // Add title
-    doc.setFontSize(16)
-    doc.text("Attendance Report", 20, 20)
-
-    // Add date and attendance status
-    doc.setFontSize(12)
-    doc.text(`Date: ${formattedDate}`, 20, 35)
-    doc.text(`Attendance Status: ${attendanceStatus}`, 20, 45)
-
-    // Prepare table data
-    const tableData = []
-
-    if (currentLogs.length > 0) {
-      currentLogs.forEach((log: AttendanceLog) => {
-        tableData.push([formattedDate, attendanceStatus, log.time, log.activity])
-      })
-    } else {
-      tableData.push([formattedDate, attendanceStatus, "No logs", "No activities recorded for this date"])
+  const downloadAttendanceData = async () => {
+    if (!downloadStartDate || !downloadEndDate) {
+      setError("Please select both start and end dates")
+      return
     }
 
-    autoTable(doc, {
-      head: [["Date", "Attendance Status", "Time", "Activity"]],
-      body: tableData,
-      startY: 55,
-      theme: "grid",
-      styles: {
-        fontSize: 10,
-        cellPadding: 5,
-      },
-      headStyles: {
-        fillColor: [66, 139, 202],
-        textColor: 255,
-        fontStyle: "bold",
-      },
-      alternateRowStyles: {
-        fillColor: [245, 245, 245],
-      },
-      columnStyles: {
-        0: { cellWidth: 30 },
-        1: { cellWidth: 40 },
-        2: { cellWidth: 30 },
-        3: { cellWidth: 80 },
-      },
-    })
+    try {
+      setIsSaving(true)
+      
+      // Filter attendance records for the selected date range
+      const startDate = new Date(downloadStartDate)
+      const endDate = new Date(downloadEndDate)
+      
+      const filteredRecords = attendanceRecords.filter(record => {
+        const recordDate = new Date(record.date)
+        return recordDate >= startDate && recordDate <= endDate
+      })
 
-    // Generate filename with date
-    const filename = `Attendance_${formattedDate.replace(/-/g, "_")}.pdf`
+      // Create new PDF document
+      const doc = new jsPDF()
 
-    // Download the PDF file
-    doc.save(filename)
+      // Add title
+      doc.setFontSize(16)
+      doc.text("Attendance Report", 20, 20)
+
+      // Add date range
+      doc.setFontSize(12)
+      doc.text(`Date Range: ${downloadStartDate} to ${downloadEndDate}`, 20, 35)
+
+      // Prepare table data
+      const tableData: any[] = []
+
+      if (filteredRecords.length > 0) {
+        filteredRecords.forEach(record => {
+          const recordDate = new Date(record.date)
+          const formattedDate = recordDate.toISOString().split('T')[0]
+          const attendanceStatus = record.status || "Not Marked"
+
+          if (record.logs && record.logs.length > 0) {
+            record.logs.forEach((log: AttendanceLog) => {
+              tableData.push([formattedDate, attendanceStatus, log.time, log.activity])
+            })
+          } else {
+            tableData.push([formattedDate, attendanceStatus, "No logs", "No activities recorded"])
+          }
+        })
+      } else {
+        tableData.push(["No records", "No data", "No logs", "No records found for selected date range"])
+      }
+
+      autoTable(doc, {
+        head: [["Date", "Attendance Status", "Time", "Activity"]],
+        body: tableData,
+        startY: 50,
+        theme: "grid",
+        styles: {
+          fontSize: 10,
+          cellPadding: 5,
+        },
+        headStyles: {
+          fillColor: [66, 139, 202],
+          textColor: 255,
+          fontStyle: "bold",
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245],
+        },
+        columnStyles: {
+          0: { cellWidth: 30 },
+          1: { cellWidth: 40 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 80 },
+        },
+      })
+
+      // Generate filename with date range
+      const filename = `Attendance_${downloadStartDate}_to_${downloadEndDate}.pdf`
+
+      // Download the PDF file
+      doc.save(filename)
+      
+      // Close modal
+      setShowDownloadModal(false)
+      console.log(`📄 Downloaded attendance report: ${filename}`)
+      
+    } catch (err: any) {
+      setError(err.message || "Failed to download attendance data")
+      console.error("Error downloading attendance:", err)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   // Show error state
@@ -513,7 +551,7 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
 
           <div className="flex items-center space-x-3">
             <button
-              onClick={downloadAttendanceData}
+              onClick={openDownloadModal}
               className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors"
             >
               <Download className="w-4 h-4" />
@@ -746,6 +784,71 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
               >
                 {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
                 <span>Save Changes</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Download Date Range Modal */}
+      {showDownloadModal && (
+        <div className="fixed inset-0 bg-[#00000057] flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Download Attendance Report</h3>
+              <p className="text-sm text-gray-600 mt-1">Select the date range for your report</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                <input
+                  type="date"
+                  value={downloadStartDate}
+                  onChange={(e) => setDownloadStartDate(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                <input
+                  type="date"
+                  value={downloadEndDate}
+                  onChange={(e) => setDownloadEndDate(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  min={downloadStartDate}
+                />
+              </div>
+
+              {error && downloadStartDate && downloadEndDate && (
+                <div className="bg-red-50 border-l-4 border-red-400 p-3">
+                  <div className="flex">
+                    <AlertCircle className="w-5 h-5 text-red-400 mr-2 flex-shrink-0" />
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDownloadModal(false)
+                  setError(null)
+                }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={downloadAttendanceData}
+                disabled={isSaving || !downloadStartDate || !downloadEndDate}
+                className="px-4 py-2 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-medium rounded-lg transition-colors flex items-center space-x-2"
+              >
+                {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                <Download className="w-4 h-4" />
+                <span>Download PDF</span>
               </button>
             </div>
           </div>

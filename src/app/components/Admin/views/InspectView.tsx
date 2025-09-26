@@ -8,6 +8,7 @@ import FileUploadModal from "../FileUploadModal";
 
 interface InspectViewProps {
   onItemSelect: (profile: unknown) => void;
+  searchQuery?: string;
 }
 
 const CircularProgress = ({ percentage }: { percentage: number }) => {
@@ -50,7 +51,7 @@ const CircularProgress = ({ percentage }: { percentage: number }) => {
   );
 };
 
-export default function InspectView({ onItemSelect }: InspectViewProps) {
+export default function InspectView({ onItemSelect, searchQuery }: InspectViewProps) {
   const [items, setItems] = useState<InspectItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<InspectItem[]>([]);
   const [activeFilter, setActiveFilter] = useState("all");
@@ -197,32 +198,62 @@ export default function InspectView({ onItemSelect }: InspectViewProps) {
     ];
   }, [items]);
 
+  // Combined filtering for both search and status filters
+  const combinedFilteredItems = useMemo(() => {
+    let filtered = items;
+
+    // Apply search filter first
+    if (searchQuery && searchQuery.trim()) {
+      const query = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter((item) => {
+        const searchableFields = [
+          item.name,
+          item.email,
+          item.company,
+          item.role,
+          item.location,
+        ].filter(Boolean);
+        
+        return searchableFields.some(field => 
+          field && field.toLowerCase().includes(query)
+        );
+      });
+    }
+
+    // Apply status filter
+    switch (activeFilter) {
+      case "active":
+        filtered = filtered.filter((item) => item.status === "active");
+        break;
+      case "pending":
+        filtered = filtered.filter((item) => item.status === "pending");
+        break;
+      case "completed":
+        filtered = filtered.filter((item) => item.status === "completed");
+        break;
+      case "assigned":
+        filtered = filtered.filter((item) => item.company !== "Not Assigned");
+        break;
+      case "unassigned":
+        filtered = filtered.filter((item) => item.company === "Not Assigned");
+        break;
+      default:
+        // "all" - no additional filtering
+        break;
+    }
+
+    return filtered;
+  }, [items, searchQuery, activeFilter]);
+
   const handleFilterChange = (filterId: string) => {
     setActiveFilter(filterId);
     setIsFilterOpen(false);
-
-    let filtered = items;
-    switch (filterId) {
-      case "active":
-        filtered = items.filter((item) => item.status === "active");
-        break;
-      case "pending":
-        filtered = items.filter((item) => item.status === "pending");
-        break;
-      case "completed":
-        filtered = items.filter((item) => item.status === "completed");
-        break;
-      case "assigned":
-        filtered = items.filter((item) => item.company !== "Not Assigned");
-        break;
-      case "unassigned":
-        filtered = items.filter((item) => item.company === "Not Assigned");
-        break;
-      default:
-        filtered = items;
-    }
-    setFilteredItems(filtered);
   };
+
+  // Update filteredItems when combinedFilteredItems changes
+  useEffect(() => {
+    setFilteredItems(combinedFilteredItems);
+  }, [combinedFilteredItems]);
 
   return (
     <div className="w-full max-w-6xl mx-auto">

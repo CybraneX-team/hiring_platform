@@ -27,6 +27,25 @@ export default function Header({
     setIsMenuOpen(!isMenuOpen);
   };
 
+  const getSearchPlaceholder = () => {
+    switch (currentView) {
+      case "analytics":
+        return "Search not available in analytics view";
+      case "companies":
+        return "Search companies by name, industry, location...";
+      case "roles":
+        return "Search roles by title, department, location...";
+      case "applications":
+      case "applications-list":
+        return "Search applications by name, email, role...";
+      case "inspect":
+      case "inspect-detail":
+        return "Search inspector profiles...";
+      default:
+        return "Search...";
+    }
+  };
+
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
@@ -53,22 +72,34 @@ export default function Header({
             Admin Panel
           </motion.div>
 
-          {/* Desktop Search */}
-          <div className="hidden md:flex flex-1 max-w-md w-full mx-4 lg:mx-10">
+          {/* Desktop Search - Always visible but disabled on analytics */}
+          <div className="hidden md:flex flex-1 max-w-sm mx-10">
             <div className="relative w-full">
               <input
                 type="text"
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 lg:px-6 py-2 lg:py-3 text-sm text-gray-400 bg-[#F5F5F5] border-0 rounded-full focus:outline-none focus:ring-0 placeholder-[#CFD7CF]"
+                placeholder={getSearchPlaceholder()}
+                value={currentView === "analytics" ? "" : searchQuery}
+                onChange={(e) => currentView !== "analytics" && setSearchQuery(e.target.value)}
+                disabled={currentView === "analytics"}
+                className={`w-full px-6 py-3 text-sm border-0 rounded-full focus:outline-none placeholder-[#CFD7CF] ${
+                  currentView === "analytics" 
+                    ? "bg-gray-100 text-gray-300 cursor-not-allowed focus:ring-0" 
+                    : "bg-white text-gray-700 focus:ring-2 focus:ring-[#76FF82]"
+                }`}
               />
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-[#76FF82] p-2 rounded-full"
+                whileHover={currentView !== "analytics" ? { scale: 1.05 } : {}}
+                whileTap={currentView !== "analytics" ? { scale: 0.95 } : {}}
+                disabled={currentView === "analytics"}
+                className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full ${
+                  currentView === "analytics"
+                    ? "bg-gray-300 cursor-not-allowed"
+                    : "bg-[#76FF82]"
+                }`}
               >
-                <Search className="w-3 h-3 lg:w-4 lg:h-4 text-black" />
+                <Search className={`w-4 h-4 ${
+                  currentView === "analytics" ? "text-gray-500" : "text-black"
+                }`} />
               </motion.button>
             </div>
           </div>
@@ -158,22 +189,34 @@ export default function Header({
             transition={{ duration: 0.3 }}
             className="sm:hidden bg-white mt-4 p-4 border-t border-gray-100"
           >
-            {/* Mobile Search */}
+            {/* Mobile Search - Always visible but disabled on analytics */}
             <div className="mb-4">
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-3 text-sm text-gray-400 bg-[#F5F5F5] border-0 rounded-full focus:outline-none focus:ring-0 placeholder-[#CFD7CF]"
+                  placeholder={getSearchPlaceholder()}
+                  value={currentView === "analytics" ? "" : searchQuery}
+                  onChange={(e) => currentView !== "analytics" && setSearchQuery(e.target.value)}
+                  disabled={currentView === "analytics"}
+                  className={`w-full px-4 py-3 text-sm bg-[#F5F5F5] border-0 rounded-full focus:outline-none focus:ring-0 placeholder-[#CFD7CF] ${
+                    currentView === "analytics" 
+                      ? "text-gray-300 cursor-not-allowed" 
+                      : "text-gray-400"
+                  }`}
                 />
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-[#76FF82] p-2 rounded-full"
+                  whileHover={currentView !== "analytics" ? { scale: 1.05 } : {}}
+                  whileTap={currentView !== "analytics" ? { scale: 0.95 } : {}}
+                  disabled={currentView === "analytics"}
+                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full ${
+                    currentView === "analytics"
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-[#76FF82]"
+                  }`}
                 >
-                  <Search className="w-4 h-4 text-black" />
+                  <Search className={`w-4 h-4 ${
+                    currentView === "analytics" ? "text-gray-500" : "text-black"
+                  }`} />
                 </motion.button>
               </div>
             </div>

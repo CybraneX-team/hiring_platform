@@ -166,7 +166,12 @@ export default function JobComponent() {
         }
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs?${params}`, {
+      const apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs?${params}`;
+      console.log("Fetching jobs from:", apiUrl);
+      console.log("Search query:", searchQuery);
+      console.log("Active filter:", activeFilter);
+
+      const response = await fetch(apiUrl, {
         headers: {
           "Content-Type": "application/json",
           ...(token && { Authorization: `Bearer ${token}` }),
@@ -174,10 +179,13 @@ export default function JobComponent() {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API Error:", response.status, errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data: ApiResponse = await response.json();
+      console.log("API Response:", data);
       
       const mappedJobs = mapJobData(data.jobs);
       setJobListings(mappedJobs);
@@ -237,11 +245,22 @@ export default function JobComponent() {
             <form onSubmit={handleSearchSubmit} className="relative w-full">
               <input
                 type="text"
-                placeholder="Search for a role"
+                placeholder="Search for jobs, skills, or companies..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-6 py-3 text-sm text-gray-400 bg-white border-0 rounded-full focus:outline-none focus:ring-0 placeholder-[#CFD7CF]"
+                className="w-full px-6 py-3 pr-20 text-sm text-gray-700 bg-white border-0 rounded-full focus:outline-none focus:ring-2 focus:ring-[#76FF82] placeholder-[#CFD7CF]"
               />
+              {searchQuery && (
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-4 h-4" />
+                </motion.button>
+              )}
               <motion.button
                 type="submit"
                 whileHover={{ scale: 1.05 }}
@@ -320,11 +339,22 @@ export default function JobComponent() {
                 <form onSubmit={handleSearchSubmit} className="relative">
                   <input
                     type="text"
-                    placeholder="Search for a role"
+                    placeholder="Search for jobs, skills, or companies..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-6 py-3 text-sm text-gray-400 bg-white border-0 rounded-full focus:outline-none focus:ring-0 placeholder-[#CFD7CF]"
+                    className="w-full px-6 py-3 pr-20 text-sm text-gray-700 bg-white border-0 rounded-full focus:outline-none focus:ring-2 focus:ring-[#76FF82] placeholder-[#CFD7CF]"
                   />
+                  {searchQuery && (
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </motion.button>
+                  )}
                   <motion.button
                     type="submit"
                     whileHover={{ scale: 1.05 }}
@@ -368,7 +398,16 @@ export default function JobComponent() {
           transition={{ duration: 0.6, delay: 0.2 }}
         >
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-medium text-black">Explore</h1>
+            <div>
+              <h1 className="text-2xl font-medium text-black">
+                {searchQuery ? `Search Results` : "Explore"}
+              </h1>
+              {searchQuery && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Results for "{searchQuery}"
+                </p>
+              )}
+            </div>
             {pagination.totalItems > 0 && (
               <p className="text-sm text-gray-600">
                 Showing {jobListings.length} of {pagination.totalItems} jobs
@@ -425,10 +464,25 @@ export default function JobComponent() {
           {/* No Jobs Found */}
           {!loading && !error && jobListings.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-600 text-lg mb-4">No jobs found</p>
-              <p className="text-gray-500 text-sm">
-                Try adjusting your search or filters
+              <p className="text-gray-600 text-lg mb-4">
+                {searchQuery ? `No jobs found for "${searchQuery}"` : "No jobs found"}
               </p>
+              <p className="text-gray-500 text-sm mb-4">
+                {searchQuery 
+                  ? "Try different keywords or check your spelling" 
+                  : "Try adjusting your filters"
+                }
+              </p>
+              {searchQuery && (
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setSearchQuery("")}
+                  className="bg-[#76FF82] text-black px-6 py-2 rounded-full text-sm font-medium"
+                >
+                  Clear Search
+                </motion.button>
+              )}
             </div>
           )}
 

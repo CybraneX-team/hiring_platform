@@ -762,7 +762,9 @@ export default function AdminPanel() {
   }, []);
 
   const handleNavigate = useCallback((view: ViewType) => {
+    // Clear search when switching to analytics (where search is disabled)
     if (view === "analytics") {
+      setSearchQuery("");
       setCurrentView("analytics");
       return;
     }
@@ -1125,7 +1127,7 @@ export default function AdminPanel() {
         return <AnalyticsView analyticsData={analyticsData} />;
 
       case "inspect":
-        return <InspectView onItemSelect={handleInspectItemSelect} />;
+        return <InspectView onItemSelect={handleInspectItemSelect} searchQuery={searchQuery} />;
 
       case "inspect-detail":
         if (!selectedInspectItem) {
