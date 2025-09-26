@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
-import { Pencil, ChevronLeft, ChevronRight, Calendar, Plus, Trash2, Download } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { Pencil, ChevronLeft, ChevronRight, Calendar, Plus, Trash2, Download, Loader2, AlertCircle } from "lucide-react"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
+import { attendanceAPI, AttendanceRecord, AttendanceLog, AttendanceStatus } from "../utils/attendance-api"
 
 declare module "jspdf" {
   interface jsPDF {
@@ -11,53 +12,177 @@ declare module "jspdf" {
   }
 }
 
-const CalendarSection = () => {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 2, 1)) // March 2025
-  const [selectedDate, setSelectedDate] = useState(12)
+interface CalendarSectionProps {
+  profileId?: string;
+}
+
+const CalendarSection = ({ profileId }: CalendarSectionProps) => {
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState(new Date().getDate())
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [tempDate, setTempDate] = useState({
-    month: 2, // March (0-indexed)
-    year: 2025,
+    month: new Date().getMonth(),
+    year: new Date().getFullYear(),
   })
 
+  // API-based state
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([])
   const [attendanceData, setAttendanceData] = useState({
-    presentDays: [13, 14, 18, 19], // Green border days
-    absentDays: [15], // Red border days
-    eventDays: [12, 21], // Days with blue dots
-    totalAttended: 20,
-    totalHolidays: 4,
+    presentDays: [] as number[],
+    absentDays: [] as number[],
+    holidayDays: [] as number[],
+    eventDays: [] as number[], // Days with activity logs
+    totalAttended: 0,
+    totalHolidays: 0,
   })
+
+  // Loading and error states
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
 
   const [showUpdateModal, setShowUpdateModal] = useState(false)
+  const [editingRecords, setEditingRecords] = useState<AttendanceLog[]>([])
 
-  const [dailyRecordsPerDate, setDailyRecordsPerDate] = useState<
-    Record<string, Array<{ id: number; time: string; activity: string }>>
-  >({
-    "2025-2-12": [
-      { id: 1, time: "4:30 pm", activity: "Work Log Out" },
-      { id: 2, time: "6:30 pm", activity: "Interview at Riverleaf" },
-    ],
-  })
+  // API-related functions
+  const fetchAttendanceData = useCallback(async () => {
+    if (!profileId) {
+      setError("Profile ID is required")
+      return
+    }
+
+    // Helper function to recalculate event days from current records
+    const recalculateEventDays = (records: AttendanceRecord[]): number[] => {
+      const eventDays: number[] = []
+      
+      records.forEach(record => {
+        if (record.logs && record.logs.length > 0) {
+          const recordDate = new Date(record.date)
+          const dayOfMonth = recordDate.getUTCDate()
+          
+          // Check if this record is for the current month/year being displayed
+          if (recordDate.getUTCFullYear() === currentDate.getFullYear() && 
+              recordDate.getUTCMonth() === currentDate.getMonth()) {
+            eventDays.push(dayOfMonth)
+          }
+        }
+      })
+      
+      console.log(`🎯 Recalculated event days from records:`, eventDays)
+      return eventDays
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await attendanceAPI.getAttendance(
+        profileId,
+        currentDate.getMonth() + 1, // API expects 1-based month
+        currentDate.getFullYear()
+      )
+
+      setAttendanceRecords(response.data.records)
+      
+      // Recalculate event days from the actual records for verification
+      const recalculatedEventDays = recalculateEventDays(response.data.records)
+      
+      console.log(`📊 Fetched attendance data:`, {
+        recordsCount: response.data.records.length,
+        presentDays: response.data.presentDays,
+        absentDays: response.data.absentDays,
+        holidayDays: response.data.holidayDays,
+        daysWithLogsFromServer: response.data.daysWithLogs,
+        recalculatedEventDays: recalculatedEventDays,
+        totalPresent: response.data.summary.totalPresent,
+        totalHolidays: response.data.summary.totalHolidays,
+      })
+      
+      // Use recalculated event days to ensure accuracy
+      setAttendanceData({
+        presentDays: response.data.presentDays,
+        absentDays: response.data.absentDays,
+        holidayDays: response.data.holidayDays,
+        eventDays: recalculatedEventDays, // Use our own calculation
+        totalAttended: response.data.summary.totalPresent,
+        totalHolidays: response.data.summary.totalHolidays,
+      })
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch attendance data")
+      console.error("Error fetching attendance:", err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [profileId, currentDate])
+
+  // Load attendance data when component mounts or date changes
+  useEffect(() => {
+    if (profileId) {
+      fetchAttendanceData()
+    }
+  }, [fetchAttendanceData, profileId])
 
   const getCurrentDateKey = () => {
-    return `${currentDate.getFullYear()}-${currentDate.getMonth()}-${selectedDate}`
+    return `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${String(selectedDate).padStart(2, '0')}`
   }
 
-  const getCurrentDayLogs = () => {
-    const dateKey = getCurrentDateKey()
-    return dailyRecordsPerDate[dateKey] || []
+  // Helper function to create UTC date for selected day to avoid timezone issues
+  const createSelectedDateUTC = (): Date => {
+    return new Date(Date.UTC(currentDate.getFullYear(), currentDate.getMonth(), selectedDate))
   }
 
-  const [editingRecords, setEditingRecords] = useState<Array<{ id: number; time: string; activity: string }>>([])
+  // Helper function to create ISO string for selected day in UTC
+  const getSelectedDateISOString = (): string => {
+    return createSelectedDateUTC().toISOString()
+  }
 
-  const markAsPresent = () => {
-    if (selectedDate && !attendanceData.presentDays.includes(selectedDate)) {
-      setAttendanceData((prev) => ({
-        ...prev,
-        presentDays: [...prev.presentDays, selectedDate],
-        absentDays: prev.absentDays.filter((day) => day !== selectedDate),
-        totalAttended: prev.totalAttended + 1,
-      }))
+  const getCurrentDayLogs = (): AttendanceLog[] => {
+    const targetDate = createSelectedDateUTC()
+    const targetDateString = targetDate.toISOString().split('T')[0] // YYYY-MM-DD format
+    
+    console.log(`🔍 Looking for logs on ${targetDateString} (selected day: ${selectedDate})`)
+    console.log(`📋 All attendance records:`, attendanceRecords.map(r => ({
+      date: r.date,
+      dateString: new Date(r.date).toISOString().split('T')[0],
+      logsCount: r.logs?.length || 0,
+      logs: r.logs
+    })))
+    
+    const currentRecord = attendanceRecords.find(record => {
+      const recordDate = new Date(record.date)
+      const recordDateString = recordDate.toISOString().split('T')[0] // YYYY-MM-DD format
+      const matches = recordDateString === targetDateString
+      
+      if (matches) {
+        console.log(`✅ Found matching record for ${targetDateString}:`, {
+          recordDate: record.date,
+          recordDateString,
+          logsCount: record.logs?.length || 0
+        })
+      }
+      
+      return matches
+    })
+    
+    const logs = currentRecord?.logs || []
+    console.log(`🔍 Returning ${logs.length} logs for ${targetDateString}:`, logs)
+    return logs
+  }
+
+  const markAsPresent = async () => {
+    if (!profileId || !selectedDate) return
+
+    const dateStr = getSelectedDateISOString()
+    console.log(`📅 Marking as present for day ${selectedDate} -> ${dateStr}`)
+
+    try {
+      setIsSaving(true)
+      await attendanceAPI.setAttendanceStatus(profileId, dateStr, 'present')
+      await fetchAttendanceData() // Refresh data
+    } catch (err: any) {
+      setError(err.message || "Failed to mark as present")
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -105,6 +230,11 @@ const CalendarSection = () => {
       const isAbsent = attendanceData.absentDays.includes(day)
       const hasEvent = attendanceData.eventDays.includes(day)
       const isSunday = (firstDay + day - 1) % 7 === 0
+      
+      // Debug logging for event indicators
+      if (hasEvent) {
+        console.log(`🎯 Day ${day} has event indicator (eventDays: ${attendanceData.eventDays.join(', ')})`)
+      }
 
       let cellClasses =
         "h-16 flex items-center justify-center text-sm font-medium cursor-pointer relative rounded-md transition-colors duration-150 "
@@ -157,47 +287,116 @@ const CalendarSection = () => {
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
   const openUpdateModal = () => {
-    const dateKey = getCurrentDateKey()
-    setEditingRecords(dailyRecordsPerDate[dateKey] || [])
+    // Clear any previous editing state
+    setEditingRecords([])
+    setError(null)
+    
+    // Get fresh logs for the currently selected date
+    const currentLogs = getCurrentDayLogs()
+    console.log(`📝 Opening modal for date ${selectedDate} with logs:`, currentLogs)
+    
+    // Deep copy to avoid reference issues
+    const logsToEdit = currentLogs.map(log => ({
+      ...log,
+      id: log.id || Date.now().toString() + Math.random().toString(36).substring(2)
+    }))
+    
+    setEditingRecords(logsToEdit)
     setShowUpdateModal(true)
   }
 
-  const deleteRecord = (id: number) => {
+  const deleteRecord = (id: string) => {
     setEditingRecords((prev) => prev.filter((record) => record.id !== id))
   }
 
-  const updateRecord = (id: number, field: string, value: string) => {
-    setEditingRecords((prev) => prev.map((record) => (record.id === id ? { ...record, [field]: value } : record)))
+  const updateRecord = (id: string, field: string, value: string) => {
+    setEditingRecords((prev) => prev.map((record) => 
+      record.id === id ? { ...record, [field]: value } : record
+    ))
   }
 
   const addNewRecord = () => {
-    const newRecord = { id: Date.now(), time: "", activity: "" }
-    setEditingRecords((prev) => [...prev, newRecord])
+    const newRecord: AttendanceLog = { 
+      id: Date.now().toString(), 
+      time: "", 
+      activity: "",
+      notes: ""
+    }
+    console.log(`➕ Adding new record for date ${selectedDate}:`, newRecord)
+    setEditingRecords((prev) => {
+      const updated = [...prev, newRecord]
+      console.log(`📝 Updated editing records (${updated.length} total):`, updated)
+      return updated
+    })
   }
 
   const cancelEdit = () => {
     setShowUpdateModal(false)
   }
 
-  const saveRecords = () => {
-    const dateKey = getCurrentDateKey()
-    setDailyRecordsPerDate((prev) => ({
-      ...prev,
-      [dateKey]: editingRecords,
-    }))
-    setShowUpdateModal(false)
+  const saveRecords = async () => {
+    if (!profileId) return
+
+    const dateStr = getSelectedDateISOString()
+    
+    console.log(`💾 Saving records for date ${selectedDate}:`, editingRecords)
+    console.log(`📅 Target date string: ${dateStr} (UTC-based to avoid timezone shifts)`)
+
+    try {
+      setIsSaving(true)
+      
+      // Filter out empty records
+      const validRecords = editingRecords.filter(record => 
+        record.time.trim() && record.activity.trim()
+      )
+      
+      await attendanceAPI.updateActivityLogs(profileId, dateStr, validRecords)
+      console.log(`✅ Successfully saved ${validRecords.length} records`)
+      
+      // Immediately update local state to show the dot indicator
+      if (validRecords.length > 0) {
+        setAttendanceData(prev => ({
+          ...prev,
+          eventDays: prev.eventDays.includes(selectedDate) 
+            ? prev.eventDays 
+            : [...prev.eventDays, selectedDate]
+        }))
+        console.log(`🎯 Added day ${selectedDate} to eventDays for immediate UI update`)
+      } else {
+        // Remove the day from eventDays if no valid records
+        setAttendanceData(prev => ({
+          ...prev,
+          eventDays: prev.eventDays.filter(day => day !== selectedDate)
+        }))
+        console.log(`🎯 Removed day ${selectedDate} from eventDays (no valid records)`)
+      }
+      
+      // Refresh data to get updated state from server
+      await fetchAttendanceData()
+      console.log(`🔄 Refreshed attendance data from server`)
+      
+      // Close modal and clear editing state
+      setShowUpdateModal(false)
+      setEditingRecords([])
+    } catch (err: any) {
+      console.error('❌ Failed to save records:', err)
+      setError(err.message || "Failed to save records")
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const downloadAttendanceData = () => {
-    const dateKey = getCurrentDateKey()
-    const currentLogs = dailyRecordsPerDate[dateKey] || []
+    const currentLogs = getCurrentDayLogs()
     const isPresent = attendanceData.presentDays.includes(selectedDate)
     const isAbsent = attendanceData.absentDays.includes(selectedDate)
+    const isHoliday = attendanceData.holidayDays.includes(selectedDate)
 
     // Determine attendance status
     let attendanceStatus = "Not Marked"
     if (isPresent) attendanceStatus = "Present"
     if (isAbsent) attendanceStatus = "Absent"
+    if (isHoliday) attendanceStatus = "Holiday"
 
     // Format date for display
     const formattedDate = `${selectedDate.toString().padStart(2, "0")}-${(currentDate.getMonth() + 1).toString().padStart(2, "0")}-${currentDate.getFullYear()}`
@@ -218,7 +417,7 @@ const CalendarSection = () => {
     const tableData = []
 
     if (currentLogs.length > 0) {
-      currentLogs.forEach((log) => {
+      currentLogs.forEach((log: AttendanceLog) => {
         tableData.push([formattedDate, attendanceStatus, log.time, log.activity])
       })
     } else {
@@ -257,9 +456,37 @@ const CalendarSection = () => {
     doc.save(filename)
   }
 
+  // Show error state
+  if (error && !profileId) {
+    return (
+      <div className="bg-white w-full shadow-sm rounded-lg overflow-hidden p-8">
+        <div className="flex items-center justify-center space-x-2 text-red-600">
+          <AlertCircle className="w-5 h-5" />
+          <span>Profile ID is required to load attendance data</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <>
       <div className="bg-white w-full shadow-sm rounded-lg overflow-hidden">
+        {/* Error banner */}
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-400 p-4">
+            <div className="flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
+              <span className="text-red-700">{error}</span>
+              <button 
+                onClick={() => setError(null)}
+                className="ml-auto text-red-400 hover:text-red-600"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header with navigation and Mark as Present button */}
         <div className="flex items-center justify-between p-8 bg-white border-b border-gray-200">
           <div className="flex items-center space-x-6">
@@ -294,9 +521,11 @@ const CalendarSection = () => {
             </button>
             <button
               onClick={markAsPresent}
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors"
+              disabled={isSaving}
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors flex items-center space-x-2"
             >
-              Mark as Present
+              {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+              <span>Mark as Present</span>
             </button>
           </div>
         </div>
@@ -315,7 +544,17 @@ const CalendarSection = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-3 p-8 border-b border-gray-200">{renderCalendarDays()}</div>
+        <div className="relative grid grid-cols-7 gap-3 p-8 border-b border-gray-200">
+          {isLoading && (
+            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+              <div className="flex items-center space-x-2">
+                <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                <span className="text-gray-600">Loading attendance data...</span>
+              </div>
+            </div>
+          )}
+          {renderCalendarDays()}
+        </div>
 
         {/* Attendance statistics section */}
         <div className="px-8 py-6 border-b border-gray-200">
@@ -452,7 +691,7 @@ const CalendarSection = () => {
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm font-medium text-gray-700">Record {index + 1}</span>
                       <button
-                        onClick={() => deleteRecord(record.id)}
+                        onClick={() => deleteRecord(record.id || "")}
                         className="p-1 text-red-500 hover:text-red-700 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -464,7 +703,7 @@ const CalendarSection = () => {
                         <input
                           type="text"
                           value={record.time}
-                          onChange={(e) => updateRecord(record.id, "time", e.target.value)}
+                          onChange={(e) => updateRecord(record.id || "", "time", e.target.value)}
                           placeholder="e.g., 4:30 pm"
                           className="w-full px-3 py-2 border border-gray-300 text-gray-400 font-semibold rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
@@ -474,7 +713,7 @@ const CalendarSection = () => {
                         <input
                           type="text"
                           value={record.activity}
-                          onChange={(e) => updateRecord(record.id, "activity", e.target.value)}
+                          onChange={(e) => updateRecord(record.id || "", "activity", e.target.value)}
                           placeholder="e.g., Work Log Out"
                           className="w-full px-3 py-2 border border-gray-300 text-gray-400 font-semibold rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
@@ -502,9 +741,11 @@ const CalendarSection = () => {
               </button>
               <button
                 onClick={saveRecords}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
+                disabled={isSaving}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-medium rounded-lg transition-colors flex items-center space-x-2"
               >
-                Save Changes
+                {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>Save Changes</span>
               </button>
             </div>
           </div>
