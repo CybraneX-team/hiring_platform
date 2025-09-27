@@ -1,9 +1,10 @@
 import Header from "./components/header";
 import HeroSection from "./components/hero";
+import OverviewSection from "./components/overview-section";
+import FeaturesMarquee from "./components/features-marquee";
 import AboutSection from "./components/about-section";
 import StatsSection from "./components/sats-section";
 import SolutionsSection from "./components/solution-section";
-import SolutionsSection2 from "./components/solution2-section";
 import BenefitsSection from "./components/benefits-section";
 import ImpactSection from "./components/impact-section";
 import DarkImpactSection from "./components/dark-impact";
@@ -18,18 +19,17 @@ export default function Home() {
     <div className="min-h-screen bg-white ">
       {/* <Header /> */}
       <HeroSection />
+      <OverviewSection />
+      <FeaturesMarquee />
       {/* <AboutSection /> */}
       {/* <StatsSection /> */}
-      <div className=" mt-10">
-        <BenefitsSection />
-      </div>
+      <BenefitsSection />
       <SolutionsSection />
-      <SolutionsSection2 />
       <ImpactSection />
       <DarkImpactSection />
       <WorksSection />
       <BackedSection />
-      {/* <TestimonialsSection /> */}
+      <TestimonialsSection />
       <CTASection />
       <Footer />
     </div>

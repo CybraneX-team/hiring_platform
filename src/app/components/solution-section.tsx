@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { motion, AnimatePresence } from "motion/react"
 import { X } from "lucide-react"
@@ -13,44 +13,44 @@ export default function SolutionsSection() {
   const solutions = [
     {
       title: "Oil & Gas",
-      description:
-        "Full lifecycle support: upstream, midstream, downstream projects, shutdowns, inspections, maintenance, and execution.",
-      bgColor: "bg-[#163A37]",
       iconSrc: "/flaticon_assets/oil-barrel.png",
       heroSrc: "/coreSectors/oil-and-gas.png",
-      roles: [
-        "Pipeline QC Inspector (cross country + station works)",
-        "Pressure Vessel QC Inspector",
-        "Storage Tank QC Inspector",
-        "Piping & Welding QC Inspector",
-        "Rotating Equipment QC Inspector",
-        "Electrical System QC Inspector (EX equipment, MCC, etc.)",
-        "Instrumentation & Loop Check QC Inspector",
-        "Pre-Commissioning / Commissioning QC Inspector",
-        "Cathodic Protection QC Inspector",
-        "Coating & Wrapping QC Inspector (for U/G pipeline)",
-      ],
+      marketSize: "USD 6.1T (2024) → USD 8.8T (2034), CAGR 3.7%",
+      challenge: "Shutdowns, audits, and pipelines often stall due to sudden skill shortages.",
+      impact: "AI-driven access to certified inspectors & QA/QC professionals, deployed on-demand to reduce downtime and ensure compliance.",
     },
     {
       title: "Solar Energy",
-      description:
-        "Full lifecycle support: upstream, midstream, downstream projects, shutdowns, inspections, maintenance, and execution.",
-      bgColor: "bg-[#163A37]",
       iconSrc: "/flaticon_assets/solar-energy.png",
       heroSrc: "/coreSectors/solar-energy.png",
-      roles: [
-        "Module Installation QC Inspector",
-        "PV Structure / MMS QC Inspector",
-        "DC Cable Laying QC Inspector",
-        "Inverter QC Inspector",
-        "String Combiner Box QC Inspector",
-        "Earthing & Lightning Protection QC Inspector",
-        "Grid Connectivity QC Inspector",
-        "Civil Works QC Inspector (for foundations, roads, fencing)",
-        "Transformer & Switchyard QC Inspector",
-        "BESS (Battery Energy Storage) QC Inspector (optional but emerging)",
-      ],
+      marketSize: "USD 122B (2024) → USD 390B (2034), CAGR 12.3%",
+      challenge: "Remote projects and seasonal peaks create manpower gaps, delaying commissioning.",
+      impact: "Verified solar engineers & quality specialists, ready to deploy for fast, efficient, and reliable execution.",
     },
+    {
+      title: "Wind Energy",
+      iconSrc: "/flaticon_assets/wind-energy.png",
+      heroSrc: "/coreSectors/windmill.png",
+      marketSize: "USD 99B (2024) → USD 143.5B (2032), CAGR 4.7%",
+      challenge: "Scarcity of specialists in turbine commissioning, blade inspection & remote sites.",
+      impact: "Regionally available wind energy experts, scaling workforce dynamically with project needs.",
+    },
+    {
+      title: "Green Hydrogen",
+      iconSrc: "/flaticon_assets/hydrogen.png",
+      heroSrc: "/coreSectors/green-hydrogen.png",
+      marketSize: "USD 12.3B (2025) → USD 199B (2034), CAGR 41.5%",
+      challenge: "Limited workforce experienced in electrolyzers, hydrogen pipelines & storage.",
+      impact: "Global network of hydrogen-ready professionals accelerating safe, compliant project deployment.",
+    },
+    {
+      title: "Industrial Infrastructure",
+      iconSrc: "/flaticon_assets/mega-industry.png",
+      heroSrc: "/coreSectors/mega-industry.png",
+      marketSize: "Multi-billion-dollar global EPC & industrial projects expanding rapidly",
+      challenge: "Managing fluctuating manpower needs across disciplines without overstaffing.",
+      impact: "Verified, contract-ready specialists across civil, mechanical, electrical, and instrumentation—scalable for every project phase.",
+    }
   ]
 
   const handleCardClick = (index: number) => {
@@ -62,9 +62,38 @@ export default function SolutionsSection() {
     setExpandedCard(null)
   }
 
+  // Listen for custom events from footer to expand specific sectors
+  useEffect(() => {
+    const handleExpandSector = (event: CustomEvent) => {
+      const { sectorName } = event.detail;
+      const sectorIndex = solutions.findIndex(solution => solution.title === sectorName);
+      if (sectorIndex !== -1) {
+        setExpandedCard(sectorIndex);
+        
+        // Scroll to the expanded card horizontally
+        setTimeout(() => {
+          const cardElement = document.querySelector(`[data-card-index="${sectorIndex}"]`);
+          if (cardElement) {
+            cardElement.scrollIntoView({
+              behavior: 'smooth',
+              block: 'nearest',
+              inline: 'center'
+            });
+          }
+        }, 100); // Small delay to ensure the card is expanded
+      }
+    };
+
+    window.addEventListener('expandSector', handleExpandSector as EventListener);
+    
+    return () => {
+      window.removeEventListener('expandSector', handleExpandSector as EventListener);
+    };
+  }, []);
+
   return (
     <section className="py-14 bg-white" id="sectors">
-      <div className="max-w-[100rem] mx-auto px-6">
+      <div className="max-w-[83rem] mx-auto px-6">
         <motion.div
           className="flex justify-between items-center mb-16"
           initial={{ opacity: 0, y: 12 }}
@@ -73,7 +102,7 @@ export default function SolutionsSection() {
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
           <div>
-            <h2 className="text-2xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight ml-5">Core Sectors</h2>
+            <h2 className="text-2xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight ml-5">Our Empowerment</h2>
           </div>
           <button
             className="relative flex mt-10 items-center text-black/80 hover:text-black text-xs md:text-sm rounded-lg transition-colors underline-offset-4 font-medium group focus:outline-none"
@@ -107,16 +136,17 @@ export default function SolutionsSection() {
           </button>
         </motion.div>
 
-        <div className="relative overflow-x-auto overflow-y-hidden scrollbar-hide flex justify-center">
+        <div className="relative overflow-x-auto overflow-y-hidden scrollbar-hide flex">
           <motion.div layout className="flex items-start gap-10 w-max p-4">
             {solutions.map((solution, index) => {
               const isExpanded = expandedCard === index
               return (
                 <motion.div
                   key={index}
+                  data-card-index={index}
                   layout="position"
                   className={`
-                    ${solution.bgColor} text-white rounded-xl relative overflow-visible cursor-pointer flex-none shrink-0
+                    bg-[#163A37] text-white rounded-xl relative overflow-visible cursor-pointer flex-none shrink-0
                     border border-white/10
                     transition-[width] duration-450
                     ${isExpanded
@@ -166,7 +196,7 @@ export default function SolutionsSection() {
                         <Image
                           src={(solution as any).heroSrc}
                           alt={`${solution.title}`}
-                          width={700}
+                          width={900}
                           height={300}
                           className="object-cover w-full h-32 md:h-auto rounded-2xl border border-white/10"
                         />
@@ -193,35 +223,33 @@ export default function SolutionsSection() {
                           transition={{ duration: 0.3, ease: easeEmphatic as any }}
                         >
                           {/* Expanded view: large media image at right within card bounds */}
-                          <motion.div
-                            className="border border-white/10 rounded-xl bg-white/5 p-4 mb-0"
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 8 }}
-                            transition={{ duration: 0.35, ease: easeEmphatic as any }}
-                          >
+                        <motion.div
+                          className="border border-white/10 rounded-xl bg-white/5 p-6 mb-0"
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 8 }}
+                          transition={{ duration: 0.35, ease: easeEmphatic as any }}
+                        >
+                          <div className="space-y-6">
+                            {/* Market Size */}
+                            <div>
+                              <h4 className="text-[#A6F56B] font-bold text-lg mb-2">Market Size</h4>
+                              <p className="text-white/90 text-base">{solution.marketSize}</p>
+                            </div>
                             
-                            <motion.div
-                              className="grid md:grid-cols-2 gap-x-6 gap-y-2 max-h-[30rem] overflow-y-auto pr-1"
-                              initial="hidden"
-                              animate="show"
-                              exit="hidden"
-                              variants={{ hidden: {}, show: { transition: { staggerChildren: 0.03, delayChildren: 0.02 } } }}
-                            >
-                              {solution.roles.map((role, roleIndex) => (
-                                <motion.div
-                                  key={roleIndex}
-                                  className="flex items-start gap-3 mb-2"
-                                  variants={{ hidden: { opacity: 0, y: 6 }, show: { opacity: 1, y: 0 } }}
-                                  transition={{ duration: 0.3, ease: easeEmphatic as any }}
-                                >
-                                  <span className="text-white/80 text-base font-semibold min-w-[24px]">{roleIndex + 1}.</span>
-                                  <span className="text-white text-base leading-relaxed">{role}</span>
-                                </motion.div>
-                              ))}
-                            </motion.div>
-
-                          </motion.div>
+                            {/* Challenge */}
+                            <div>
+                              <h4 className="text-[#A6F56B] font-bold text-lg mb-2">Challenge</h4>
+                              <p className="text-white/90 text-base">{solution.challenge}</p>
+                            </div>
+                            
+                            {/* ProjectMATCH Impact */}
+                            <div>
+                              <h4 className="text-[#A6F56B] font-bold text-lg mb-2">ProjectMATCH Impact</h4>
+                              <p className="text-white/90 text-base">{solution.impact}</p>
+                            </div>
+                          </div>
+                        </motion.div>
                           {/* Removed footer CTA to keep height stable */}
                         </motion.div>
                       )}
@@ -233,7 +261,7 @@ export default function SolutionsSection() {
           </motion.div>
         </div>
       </div>
-      {/* Scroll Indicator 
+      {/* Scroll Indicator  */}
       <div
         className="relative flex flex-col items-center"
         style={{
@@ -337,7 +365,6 @@ export default function SolutionsSection() {
           `}
         </style>
       </div>
-      */}
     </section>
   )
 }

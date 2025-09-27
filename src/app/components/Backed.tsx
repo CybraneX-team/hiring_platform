@@ -19,8 +19,8 @@ export default function BackedSection() {
 
               <div className="mt-40">
                 <Link href="https://www.linkedin.com/company/compscope-nonmetallics-technology-solutions/" className="inline-flex">
-                  <button className="bg-[#17181D] text-white font-medium md:px-8 py-3 px-5 text-sm md:text-base rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#17181D]/30">
-                    About Comscope
+                  <button className="cursor-pointer bg-[#17181D] text-white font-medium md:px-8 py-3 px-5 text-sm md:text-base rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#17181D]/30">
+                    About Compscope
                   </button>
                 </Link>
               </div>

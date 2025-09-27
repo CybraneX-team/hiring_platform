@@ -127,15 +127,15 @@ export default function LoginPage() {
     >
       <div className="container mx-auto px-6 py-8">
         <motion.div className="mb-16" variants={itemVariants}>
-                <Link href="/" className="flex flex-col">
-        <span className={`md:text-2xl text-xl font-semibold transition-colors duration-300 
-           text-black
-        `}>
-          ProjectMATCH
-        </span>
-        <span className={`text-sm font-medium transition-colors duration-300 text-black`}>
-          by <span className="text-[#69a34b] text-md font-bold">compscope</span>
-        </span>
+                <Link href="/" className="flex items-center">
+        <Image
+          src="/logo.png"
+          alt="ProjectMATCH by Compscope"
+          width={200}
+          height={80}
+          className="h-8 md:h-24 w-auto"
+          priority
+        />
       </Link>
         </motion.div>
 

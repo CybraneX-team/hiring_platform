@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-
+import Image from "next/image";
 import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Star,
@@ -3119,14 +3119,14 @@ export default function ProfileTab() {
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
             <Link href="/" className="flex flex-col">
-        <span className={`md:text-2xl text-xl font-semibold transition-colors duration-300 
-           text-black
-        `}>
-          ProjectMATCH
-        </span>
-        <span className={`text-sm font-medium transition-colors duration-300 text-black`}>
-          by <span className="text-[#69a34b] text-md font-bold">compscope</span>
-        </span>
+        <Image
+          src="/logo.png"
+          alt="ProjectMATCH by Compscope"
+          width={200}
+          height={80}
+          className="h-8 md:h-24 w-auto"
+          priority
+        />
       </Link>
       </motion.div>
       {/* Document Upload Modal */}

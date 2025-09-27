@@ -56,33 +56,20 @@ export default function BenefitsSection() {
           <div>
             <p className="text-sm text-gray-500 mb-2">COMPSCOPE</p>
             <motion.h2
-              className="text-3xl md:text-5xl font-semibold leading-tight tracking-tight text-[#163A33]"
+              className="text-3xl md:text-4xl font-semibold leading-tight tracking-tight text-[#163A33]"
               initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.3 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
             >
-              ProjectMATCH
-              <br /> Connecting Talent to the Projects!
+              Exceptional Projects and Talent in energy and Infra Sector at one place
             </motion.h2>
             <p className="mt-3 text-sm md:text-base text-gray-600 md:max-w-xl leading-relaxed">
               Access verified experts or high-value projects in oil, gas, green energy, and heavy infrastructure — instantly, securely, and intelligently powered by AI.
             </p>
-            <a
-              href="#"
-              className="inline-flex mt-6 h-10 items-center justify-center rounded px-5 text-sm font-medium text-[#163A33] bg-[white] ring-1 ring-[#163A33] hover:bg-[#163A33] hover:text-white transition-colors"
-            >
-              Smart Hiring
-            </a>
-            <a
-              href="#"
-              className="inline-flex mt-3 md:mt-6 h-10 items-center justify-center rounded px-5 text-sm font-medium text-white bg-[#163A33] md:ml-3"
-            >
-              Smart Working
-            </a>
 
             {/* How it works (moved below CTAs) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-68 text-[#163A33]">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-[27rem] text-[#163A33]">
               <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4">
                 <p className="text-sm font-semibold mb-1">1) Define your project</p>
                 <p className="text-sm text-gray-600">Share scope, timeline, and budget.</p>
@@ -108,7 +95,7 @@ export default function BenefitsSection() {
               className="rounded-xl overflow-hidden ring-1 ring-gray-200 bg-white"
             >
               <img
-                src="/images/about.png"
+                src="/images/solar-wind.png"
                 alt="Clean energy"
                 className="w-full h-56 md:h-72 object-cover"
               />

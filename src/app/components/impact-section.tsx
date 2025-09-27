@@ -30,7 +30,7 @@ export default function ImpactSection() {
                     <motion.button
                       whileHover={{ y: -1 }}
                       whileTap={{ scale: 0.98 }}
-                      className="w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-[#17181D] text-white md:font-medium md:px-7 md:py-3 px-5 py-2 text-xs md:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#163A33]/30"
+                      className="cursor-pointer w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-[#17181D] text-white md:font-medium md:px-7 md:py-3 px-5 py-2 text-xs md:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#163A33]/30"
                     >
                       Get Started
                     </motion.button>

@@ -59,7 +59,7 @@ export default function HeroSection() {
               transition={{ duration: 0.5, ease: "easeOut" }}
               className="text-xs md:text-sm tracking-[0.2em] uppercase text-white/80 mb-3"
             >
-              ProjectMATCH by Compscope
+              by Compscope
             </motion.p>
             <motion.h1
               initial={{ opacity: 0, y: 10 }}
@@ -67,17 +67,9 @@ export default function HeroSection() {
               transition={{ duration: 0.6, ease: "easeOut", delay: 0.05 }}
               className="text-3xl md:text-5xl font-semibold mb-5 leading-tight"
             >
-              Exceptional Projects and Talent in<br/>energy and Infra Sector at one place
-
+              ProjectMATCH 
+              <br/>Connecting Talent to the Projects!
             </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.15 }}
-              className="md:text-lg text-base mb-7 text-white/90 leading-relaxed max-w-3xl"
-            >
-              Access verified experts or high‑value projects in oil, gas, green energy, and heavy infrastructure — instantly, securely, and intelligently powered by AI.
-            </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}

@@ -13,6 +13,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import ResumeManager from "../../components/Company/ResumeManager";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/app/context/UserContext";
@@ -1385,23 +1386,18 @@ export default function ProfileTab() {
         transition={{ duration: 0.5 }}
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
-        <Link href="/" className="flex flex-col">
-          <span
-            className={`md:text-2xl text-xl font-semibold transition-colors duration-300 ${
-              isScrolled ? "text-black " : "text-black"
-            }`}
-          >
-            ProjectMATCH
-          </span>
-          <span
-            className={`text-sm font-medium transition-colors duration-300 ${
-              isScrolled ? "text-black" : "text-black"
-            }`}
-          >
-            by{" "}
-            <span className="text-[#69a34b] text-md font-bold">compscope</span>
-          </span>
-        </Link>
+      <Link href="/" className="flex flex-col">
+        <span className={`md:text-2xl text-xl font-semibold transition-colors duration-300 ${
+          isScrolled ? "text-black " : "text-black"
+        }`}>
+          ProjectMATCH
+        </span>
+        <span className={`text-sm font-medium transition-colors duration-300 ${
+          isScrolled ? "text-black" : "text-black"
+        }`}>
+          by <span className="text-[#69a34b] text-md font-bold">compscope</span>
+        </span>
+      </Link>
       </motion.div>
 
       <div className="pt-16 sm:pt-24 pb-8 sm:pb-16">

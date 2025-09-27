@@ -27,7 +27,7 @@ export default function CTASection() {
               />
               <button
                 type="submit"
-                className="h-12 md:h-12 rounded-md px-6 md:px-8 text-sm md:text-base font-medium bg-white text-[#17181D] hover:bg-white/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                className="cursor-pointer h-12 md:h-12 rounded-md px-6 md:px-8 text-sm md:text-base font-medium bg-white text-[#17181D] hover:bg-white/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
               >
                 Subscribe
               </button>

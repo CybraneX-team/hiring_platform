@@ -2,6 +2,7 @@
 
 import { Menu } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useUser } from "../context/UserContext";
 import { useRouter } from "next/navigation";
@@ -57,27 +58,29 @@ export default function Header() {
 
   return (
     <nav
-      className={`flex items-center justify-between px-8 md:px-16 py-3 fixed w-full transition-colors duration-300 z-50
-        ${isScrolled ? "bg-white pt-3" : "bg-transparent"}
+      className={`flex items-center justify-between px-8 md:px-16 pt-1 fixed w-full transition-colors duration-300 z-50
+        ${isScrolled ? "bg-white pt-1" : "bg-transparent"}
       `}
     >
-      <Link href="/" className="flex flex-col">
-        <span className={`md:text-2xl text-xl font-semibold transition-colors duration-300 ${
-          isScrolled ? "text-black " : "text-white"
-        }`}>
-          ProjectMATCH
-        </span>
-        <span className={`text-sm font-medium transition-colors duration-300 ${
-          isScrolled ? "text-black" : "text-white"
-        }`}>
-          by <span className="text-[#69a34b] text-md font-bold">compscope</span>
-        </span>
+      <Link href="/" className="flex items-center gap-1">
+        <Image
+          src={isScrolled ? "/logo.png" : "/logo.png"}
+          alt="ProjectMATCH by Compscope"
+          width={200}
+          height={80}
+          className="h-8 md:h-20 w-auto"
+          priority
+        />
+        <div className="hidden md:block">
+          <h1 className="text-lg font-black text-[#163A33]">ProjectMATCH</h1>
+          <p className="text-sm text-gray-600">by <span className="text-[#98f831] font-bold">Compscope</span></p>
+        </div>
       </Link>
 
       <div className="cursor-pointer flex items-center gap-4">
         {!token && (
           <Link href="/signin">
-            <button className="cursor-pointer bg-[#69a34b] text-white px-6 py-2.5 rounded-xl font-medium hover:bg-[#69a34b] transition-colors hidden md:block">
+            <button className="cursor-pointer bg-[#9ff64f] text-black px-6 py-2.5 rounded-lg font-medium hover:bg-[#69a34b] transition-colors hidden md:block">
               Login
             </button>
           </Link>
