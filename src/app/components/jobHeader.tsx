@@ -54,26 +54,6 @@ function JobHeader() {
               </div>
             </div>
 
-            <div className="hidden lg:flex items-center space-x-10">
-              <motion.span
-                whileHover={{ y: -1 }}
-                className="text-sm text-[#32343A] font-medium cursor-pointer"
-              >
-                Explore
-              </motion.span>
-              <motion.span
-                whileHover={{ y: -1 }}
-                className="text-sm text-[#32343A] font-medium cursor-pointer"
-              >
-                Find Jobs
-              </motion.span>
-              <motion.span
-                whileHover={{ y: -1 }}
-                className="text-sm text-[#32343A] font-medium cursor-pointer"
-              >
-                Hire a Engineer
-              </motion.span>
-            </div>
 
             {/* User icons - positioned to the far right */}
             <div className="flex items-center space-x-3 ml-auto bg-white rounded-full">
@@ -131,8 +111,9 @@ function JobHeader() {
                     />
                     <motion.button
                       whileHover={{ scale: 1.05 }}
+                      
                       whileTap={{ scale: 0.95 }}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-[#76FF82] p-2 rounded-full"
+                      className="absolute right-2 top-1/2 cursor-pointer transform -translate-y-1/2 bg-[#76FF82] p-2 rounded-full"
                     >
                       <Search className="w-4 h-4 text-black" />
                     </motion.button>

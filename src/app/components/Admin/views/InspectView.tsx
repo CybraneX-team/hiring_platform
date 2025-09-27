@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, MapPin, Clock, Plus } from "lucide-react";
+import { ChevronDown, MapPin, Clock, Plus, MoreVertical, Trash2 } from "lucide-react";
 import type { InspectItem } from "@/app/types";
 import FileUploadModal from "../FileUploadModal";
 
@@ -10,6 +10,92 @@ interface InspectViewProps {
   onItemSelect: (profile: unknown) => void;
   searchQuery?: string;
 }
+
+
+const DeleteConfirmModal = ({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  inspectorName 
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  inspectorName: string;
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl"
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+            <Trash2 className="w-5 h-5 text-red-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">Delete Inspector</h3>
+        </div>
+        
+        <p className="text-gray-600 mb-6">
+          Are you sure you want to delete <strong>{inspectorName}</strong>? This action cannot be undone.
+        </p>
+        
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Delete Inspector
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+// Three Dots Menu Component
+const ThreeDotsMenu = ({ 
+  isOpen, 
+  onClose, 
+  onDelete, 
+  position = "right"
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onDelete: () => void;
+  position?: "left" | "right";
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className={`absolute top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[140px] z-20 ${
+        position === "left" ? "left-0" : "right-0"
+      }`}
+    >
+      <button
+        onClick={onDelete}
+        className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+      >
+        <Trash2 className="w-4 h-4" />
+        Delete Inspector
+      </button>
+    </motion.div>
+  );
+};
 
 const CircularProgress = ({ percentage }: { percentage: number }) => {
   const radius = 20;
@@ -20,7 +106,6 @@ const CircularProgress = ({ percentage }: { percentage: number }) => {
   return (
     <div className="relative w-12 h-12">
       <svg className="w-12 h-12 transform rotate-360" viewBox="0 0 44 44">
-        {/* Background circle */}
         <circle
           cx="22"
           cy="22"
@@ -29,7 +114,6 @@ const CircularProgress = ({ percentage }: { percentage: number }) => {
           strokeWidth="3"
           fill="none"
         />
-        {/* Progress circle */}
         <circle
           cx="22"
           cy="22"
@@ -43,7 +127,6 @@ const CircularProgress = ({ percentage }: { percentage: number }) => {
           className="transition-all duration-300 ease-in-out"
         />
       </svg>
-      {/* Percentage text */}
       <div className="absolute inset-0 flex items-center justify-center">
         <span className="text-black font-semibold text-sm">{percentage}%</span>
       </div>
@@ -57,6 +140,16 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
   const [activeFilter, setActiveFilter] = useState("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  
+  // Three dots menu state
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [deleteModalState, setDeleteModalState] = useState<{
+    isOpen: boolean;
+    inspector: InspectItem | null;
+  }>({
+    isOpen: false,
+    inspector: null,
+  });
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -163,10 +256,75 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
     }
   }, [transformProfileToItem]);
 
+  // Delete inspector function
+  const deleteInspector = useCallback(async (inspectorId: string) => {
+    const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_API_URL;
+    
+    if (!baseUrl) {
+      setError("API base URL is not configured.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${baseUrl}/api/delete-profile/${inspectorId}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to delete inspector (status ${res.status})`);
+      }
+
+      // Remove from local state
+      setItems(prev => prev.filter(item => item.id !== inspectorId));
+      setFilteredItems(prev => prev.filter(item => item.id !== inspectorId));
+      
+      // Close modal and menu
+      setDeleteModalState({ isOpen: false, inspector: null });
+      setActiveMenuId(null);
+      
+    } catch (err) {
+      console.error("Failed to delete inspector", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to delete inspector"
+      );
+    }
+  }, []);
+
+  // Handle three dots menu actions
+  const handleMenuToggle = useCallback((itemId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setActiveMenuId(activeMenuId === itemId ? null : itemId);
+  }, [activeMenuId]);
+
+  const handleDeleteClick = useCallback((inspector: InspectItem, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setDeleteModalState({ isOpen: true, inspector });
+    setActiveMenuId(null);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (deleteModalState.inspector) {
+      deleteInspector(deleteModalState.inspector.id);
+    }
+  }, [deleteModalState.inspector, deleteInspector]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setActiveMenuId(null);
+    };
+
+    if (activeMenuId) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [activeMenuId]);
+
   useEffect(() => {
     fetchProfiles();
 
-    // listen to upload events
     const handler = () => fetchProfiles();
     window.addEventListener("resumeUploaded", handler);
     return () => window.removeEventListener("resumeUploaded", handler);
@@ -198,11 +356,9 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
     ];
   }, [items]);
 
-  // Combined filtering for both search and status filters
   const combinedFilteredItems = useMemo(() => {
     let filtered = items;
 
-    // Apply search filter first
     if (searchQuery && searchQuery.trim()) {
       const query = searchQuery.trim().toLowerCase();
       filtered = filtered.filter((item) => {
@@ -220,7 +376,6 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
       });
     }
 
-    // Apply status filter
     switch (activeFilter) {
       case "active":
         filtered = filtered.filter((item) => item.status === "active");
@@ -238,7 +393,6 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
         filtered = filtered.filter((item) => item.company === "Not Assigned");
         break;
       default:
-        // "all" - no additional filtering
         break;
     }
 
@@ -250,7 +404,6 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
     setIsFilterOpen(false);
   };
 
-  // Update filteredItems when combinedFilteredItems changes
   useEffect(() => {
     setFilteredItems(combinedFilteredItems);
   }, [combinedFilteredItems]);
@@ -335,10 +488,26 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ delay: index * 0.05 }}
-                className="bg-white rounded-xl p-7 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                className="bg-white rounded-xl p-7 shadow-sm hover:shadow-md transition-shadow cursor-pointer relative"
                 onClick={() => onItemSelect(item.profile ?? item)}
               >
-                <div className="flex items-start justify-between">
+                {/* Three Dots Menu Button */}
+                <div className="absolute top-4 right-4">
+                  <button
+                    onClick={(e) => handleMenuToggle(item.id, e)}
+                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  >
+                    <MoreVertical className="w-4 h-4 text-gray-500" />
+                  </button>
+                  
+                  <ThreeDotsMenu
+                    isOpen={activeMenuId === item.id}
+                    onClose={() => setActiveMenuId(null)}
+                    onDelete={(e) => handleDeleteClick(item, e)}
+                  />
+                </div>
+
+                <div className="flex items-start justify-between pr-8">
                   {/* Left Section - Profile Info */}
                   <div className="flex items-start gap-4 flex-1">
                     {/* Avatar */}
@@ -359,7 +528,6 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
                           {item.name}
                         </h3>
 
-                        {/* Spacer to push content to the right */}
                         <div className="flex-1"></div>
 
                         {/* Role and Company positioned at the end */}
@@ -428,7 +596,13 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
         </div>
       )}
 
-      {/* Empty State */}
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModalState.isOpen}
+        onClose={() => setDeleteModalState({ isOpen: false, inspector: null })}
+        onConfirm={handleDeleteConfirm}
+        inspectorName={deleteModalState.inspector?.name || ""}
+      />
 
       <FileUploadModal
         isOpen={isUploadModalOpen}

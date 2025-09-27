@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import type * as React from "react";
 import { useState, useEffect, Suspense } from "react";
@@ -21,7 +21,8 @@ import "react-toastify/dist/ReactToastify.css";
 import { useUser } from "@/app/context/UserContext";
 
 // Interfaces
-interface CustomButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface CustomButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary";
 }
 
@@ -51,6 +52,7 @@ interface Job {
   postedDate: string;
   applicationDeadline?: string;
   companyDescription: string;
+  skillsInJobPost : string[];
   educationQualifications: string[];
   responsibilities: string[];
   benefits: string[];
@@ -58,47 +60,72 @@ interface Job {
   isActive: boolean;
   applicationCount: number;
   usersApplied: string[];
-  customQuestions : any;
+  customQuestions: any;
+  noOfOpenings: any;
+  totalApplications: any;
 }
 
 // Components (keep your existing CustomButton, CustomBadge, CustomAvatar)
-const CustomButton: React.FC<CustomButtonProps> = ({ className, children, variant = "primary", ...props }) => {
+const CustomButton: React.FC<CustomButtonProps> = ({
+  className,
+  children,
+  variant = "primary",
+  ...props
+}) => {
   const baseClasses =
-    "inline-flex items-center justify-center whitespace-nowrap rounded-full font-medium transition-colors focus:outline-none  disabled:opacity-50"
+    "inline-flex items-center justify-center whitespace-nowrap rounded-full font-medium transition-colors focus:outline-none  disabled:opacity-50";
 
   const variantClasses = {
     primary: "bg-[#76FF82] hover:bg-[#69e874] text-black text-sm px-8 py-2.5",
-    secondary: "bg-white hover:bg-gray-50 text-[#4B5563] border border-[#E5E7EB] shadow-sm",
-  }
+    secondary:
+      "bg-white hover:bg-gray-50 text-[#4B5563] border border-[#E5E7EB] shadow-sm",
+  };
 
   return (
-    <button className={`${baseClasses} ${variantClasses[variant]} ${className}`} {...props}>
+    <button
+      className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+      {...props}
+    >
       {children}
     </button>
-  )
-}
+  );
+};
 
-const CustomBadge: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, children, ...props }) => {
+const CustomBadge: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
+  className,
+  children,
+  ...props
+}) => {
   return (
-    <div className={`px-3 py-1.5 bg-[#F3F4F6] text-[#6B7280] text-xs font-medium rounded-full ${className}`} {...props}>
+    <div
+      className={`px-3 py-1.5 bg-[#F3F4F6] text-[#6B7280] text-xs font-medium rounded-full ${className}`}
+      {...props}
+    >
       {children}
     </div>
-  )
-}
+  );
+};
 
-const CustomAvatar: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, children, ...props }) => {
+const CustomAvatar: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
+  className,
+  children,
+  ...props
+}) => {
   return (
-    <div className={`rounded-full flex items-center justify-center flex-shrink-0 ${className}`} {...props}>
+    <div
+      className={`rounded-full flex items-center justify-center flex-shrink-0 ${className}`}
+      {...props}
+    >
       {children}
     </div>
-  )
-}
+  );
+};
 
 const ApplicationPopup: React.FC<{
-  isOpen: boolean
-  onClose: () => void
-  onSubmit: (data: any) => void
-  job?: Job | null // Add job prop
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: any) => void;
+  job?: Job | null; // Add job prop
 }> = ({ isOpen, onClose, onSubmit, job }) => {
   const [formData, setFormData] = useState({
     fullName: "",
@@ -115,39 +142,46 @@ const ApplicationPopup: React.FC<{
     problemSolvingExample: "",
     remoteWorkExperience: "",
     expectedSalary: "",
-  })
+  });
 
   // State for custom questions
-  const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({})
+  const [customAnswers, setCustomAnswers] = useState<Record<string, string>>(
+    {}
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     // If this is for custom questions, submit those answers
     if (job?.customQuestions && job.customQuestions.length > 0) {
-      onSubmit(customAnswers)
+      onSubmit(customAnswers);
     } else {
       // Otherwise submit the full form data
-      onSubmit(formData)
+      onSubmit(formData);
     }
-  }
+  };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
-    })
-  }
+    });
+  };
 
   const handleCustomAnswerChange = (questionId: string, value: string) => {
-    setCustomAnswers(prev => ({
+    setCustomAnswers((prev) => ({
       ...prev,
-      [questionId]: value
-    }))
-  }
+      [questionId]: value,
+    }));
+  };
 
   // Check if we should show custom questions
-  const showCustomQuestions = job?.customQuestions && job.customQuestions.length > 0
+  const showCustomQuestions =
+    job?.customQuestions && job.customQuestions.length > 0;
 
   return (
     <AnimatePresence>
@@ -170,9 +204,14 @@ const ApplicationPopup: React.FC<{
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-[#1F2937]">
-                  {showCustomQuestions ? `Apply for ${job?.title}` : "Apply for Software Development Engineer"}
+                  {showCustomQuestions
+                    ? `Apply for ${job?.title}`
+                    : "Apply for Software Development Engineer"}
                 </h2>
-                <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <button
+                  onClick={onClose}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
                   <X className="h-5 w-5 text-[#6B7280]" />
                 </button>
               </div>
@@ -183,34 +222,47 @@ const ApplicationPopup: React.FC<{
                 // Custom Questions Form
                 <div className="space-y-6">
                   <div className="text-sm text-[#6B7280] mb-4">
-                    Please answer the following questions to complete your application:
+                    Please answer the following questions to complete your
+                    application:
                   </div>
-                  
+
                   {job.customQuestions.map((question: any, index: number) => (
                     <div key={question.id || index} className="space-y-2">
                       <label className="block text-sm font-medium text-[#1F2937] mb-2">
                         {question.question} *
                       </label>
-                      
+
                       {question.type === "MCQ" ? (
                         <select
                           required
                           value={customAnswers[question.id] || ""}
-                          onChange={(e) => handleCustomAnswerChange(question.id, e.target.value)}
+                          onChange={(e) =>
+                            handleCustomAnswerChange(
+                              question.id,
+                              e.target.value
+                            )
+                          }
                           className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
                         >
                           <option value="">Select an option</option>
-                          {question.options?.map((option: string, optIndex: number) => (
-                            <option key={optIndex} value={option}>
-                              {option}
-                            </option>
-                          ))}
+                          {question.options?.map(
+                            (option: string, optIndex: number) => (
+                              <option key={optIndex} value={option}>
+                                {option}
+                              </option>
+                            )
+                          )}
                         </select>
                       ) : (
                         <textarea
                           required
                           value={customAnswers[question.id] || ""}
-                          onChange={(e) => handleCustomAnswerChange(question.id, e.target.value)}
+                          onChange={(e) =>
+                            handleCustomAnswerChange(
+                              question.id,
+                              e.target.value
+                            )
+                          }
                           rows={3}
                           className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all resize-none"
                           placeholder="Enter your answer..."
@@ -224,7 +276,9 @@ const ApplicationPopup: React.FC<{
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-[#1F2937] mb-2">Full Name *</label>
+                      <label className="block text-sm font-medium text-[#1F2937] mb-2">
+                        Full Name *
+                      </label>
                       <input
                         type="text"
                         name="fullName"
@@ -236,7 +290,9 @@ const ApplicationPopup: React.FC<{
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-[#1F2937] mb-2">Email Address *</label>
+                      <label className="block text-sm font-medium text-[#1F2937] mb-2">
+                        Email Address *
+                      </label>
                       <input
                         type="email"
                         name="email"
@@ -251,7 +307,9 @@ const ApplicationPopup: React.FC<{
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-[#1F2937] mb-2">Phone Number *</label>
+                      <label className="block text-sm font-medium text-[#1F2937] mb-2">
+                        Phone Number *
+                      </label>
                       <input
                         type="tel"
                         name="phone"
@@ -263,7 +321,9 @@ const ApplicationPopup: React.FC<{
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-[#1F2937] mb-2">Years of Experience *</label>
+                      <label className="block text-sm font-medium text-[#1F2937] mb-2">
+                        Years of Experience *
+                      </label>
                       <select
                         name="experience"
                         required
@@ -282,7 +342,9 @@ const ApplicationPopup: React.FC<{
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-[#1F2937] mb-2">Portfolio/GitHub URL</label>
+                    <label className="block text-sm font-medium text-[#1F2937] mb-2">
+                      Portfolio/GitHub URL
+                    </label>
                     <input
                       type="url"
                       name="portfolio"
@@ -294,11 +356,15 @@ const ApplicationPopup: React.FC<{
                   </div>
 
                   <div className="border-t border-gray-100 pt-6">
-                    <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Technical Questions</h3>
+                    <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                      Technical Questions
+                    </h3>
 
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-[#1F2937] mb-2">Programming Languages *</label>
+                        <label className="block text-sm font-medium text-[#1F2937] mb-2">
+                          Programming Languages *
+                        </label>
                         <input
                           type="text"
                           name="programmingLanguages"
@@ -311,7 +377,9 @@ const ApplicationPopup: React.FC<{
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-[#1F2937] mb-2">Frameworks & Technologies *</label>
+                        <label className="block text-sm font-medium text-[#1F2937] mb-2">
+                          Frameworks & Technologies *
+                        </label>
                         <input
                           type="text"
                           name="frameworks"
@@ -324,7 +392,9 @@ const ApplicationPopup: React.FC<{
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-[#1F2937] mb-2">Database Experience *</label>
+                        <label className="block text-sm font-medium text-[#1F2937] mb-2">
+                          Database Experience *
+                        </label>
                         <input
                           type="text"
                           name="databaseExperience"
@@ -352,7 +422,9 @@ const ApplicationPopup: React.FC<{
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-[#1F2937] mb-2">Problem-solving example *</label>
+                        <label className="block text-sm font-medium text-[#1F2937] mb-2">
+                          Problem-solving example *
+                        </label>
                         <textarea
                           name="problemSolvingExample"
                           required
@@ -366,7 +438,9 @@ const ApplicationPopup: React.FC<{
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-[#1F2937] mb-2">Remote Work Experience *</label>
+                          <label className="block text-sm font-medium text-[#1F2937] mb-2">
+                            Remote Work Experience *
+                          </label>
                           <select
                             name="remoteWorkExperience"
                             required
@@ -375,10 +449,18 @@ const ApplicationPopup: React.FC<{
                             className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
                           >
                             <option value="">Select experience</option>
-                            <option value="no-experience">No remote work experience</option>
-                            <option value="some-experience">Some remote work experience</option>
-                            <option value="extensive-experience">Extensive remote work experience</option>
-                            <option value="fully-remote">Worked fully remote for 1+ years</option>
+                            <option value="no-experience">
+                              No remote work experience
+                            </option>
+                            <option value="some-experience">
+                              Some remote work experience
+                            </option>
+                            <option value="extensive-experience">
+                              Extensive remote work experience
+                            </option>
+                            <option value="fully-remote">
+                              Worked fully remote for 1+ years
+                            </option>
                           </select>
                         </div>
 
@@ -402,7 +484,9 @@ const ApplicationPopup: React.FC<{
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-[#1F2937] mb-2">When can you start? *</label>
+                    <label className="block text-sm font-medium text-[#1F2937] mb-2">
+                      When can you start? *
+                    </label>
                     <select
                       name="availability"
                       required
@@ -420,7 +504,9 @@ const ApplicationPopup: React.FC<{
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-[#1F2937] mb-2">Cover Letter *</label>
+                    <label className="block text-sm font-medium text-[#1F2937] mb-2">
+                      Cover Letter *
+                    </label>
                     <textarea
                       name="coverLetter"
                       required
@@ -435,7 +521,12 @@ const ApplicationPopup: React.FC<{
               )}
 
               <div className="flex gap-3 pt-4">
-                <CustomButton type="button" variant="secondary" onClick={onClose} className="flex-1">
+                <CustomButton
+                  type="button"
+                  variant="secondary"
+                  onClick={onClose}
+                  className="flex-1"
+                >
                   Cancel
                 </CustomButton>
                 <CustomButton type="submit" className="flex-1 font-semibold">
@@ -447,13 +538,12 @@ const ApplicationPopup: React.FC<{
         </motion.div>
       )}
     </AnimatePresence>
-  )
-}
-
+  );
+};
 
 const SuccessPopup: React.FC<{
-  isOpen: boolean
-  onClose: () => void
+  isOpen: boolean;
+  onClose: () => void;
 }> = ({ isOpen, onClose }) => {
   return (
     <AnimatePresence>
@@ -489,10 +579,13 @@ const SuccessPopup: React.FC<{
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.4 }}
             >
-              <h3 className="text-2xl font-semibold text-[#1F2937] mb-3">Application Submitted!</h3>
+              <h3 className="text-2xl font-semibold text-[#1F2937] mb-3">
+                Application Submitted!
+              </h3>
               <p className="text-[#6B7280] mb-6 leading-relaxed">
-                Thank you for your interest! We've received your application and will review it carefully. You'll hear
-                back from us within 3-5 business days.
+                Thank you for your interest! We've received your application and
+                will review it carefully. You'll hear back from us within 3-5
+                business days.
               </p>
               <CustomButton onClick={onClose} className="font-semibold px-8">
                 Got it!
@@ -502,8 +595,8 @@ const SuccessPopup: React.FC<{
         </motion.div>
       )}
     </AnimatePresence>
-  )
-}
+  );
+};
 
 // Error component
 const ErrorMessage = ({
@@ -545,7 +638,9 @@ function JobListingContent() {
   // Modal states
   const [showApplicationPopup, setShowApplicationPopup] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-  const [customQAnswers, setCustomQAnswers] = useState<Record<string,string>>({});
+  const [customQAnswers, setCustomQAnswers] = useState<Record<string, string>>(
+    {}
+  );
 
   // Get user and profile data from context
   const { user, profile } = useUser();
@@ -671,8 +766,6 @@ function JobListingContent() {
     }
   }, [job, user]);
 
-
-
   const handleCloseSuccessPopus = () => {
     setShowSuccessPopup(false);
   };
@@ -681,35 +774,34 @@ function JobListingContent() {
   //   setShowApplicationPopup(true)
   // }
 
-const handleApplicationSubmit = (data: any) => {
-  // console.log("Application submitted:", data)
-  setShowApplicationPopup(false)
-  
-  // If this was custom questions, call the actual API
-  if (job?.customQuestions && job.customQuestions.length > 0) {
-    handleActualApply() // Call your actual API
-  } else {
-    setShowSuccessPopup(true) // Show success for full form
-  }
-}
+  const handleApplicationSubmit = (data: any) => {
+    // console.log("Application submitted:", data)
+    setShowApplicationPopup(false);
 
+    // If this was custom questions, call the actual API
+    if (job?.customQuestions && job.customQuestions.length > 0) {
+      handleActualApply(); // Call your actual API
+    } else {
+      setShowSuccessPopup(true); // Show success for full form
+    }
+  };
 
   const handleCloseApplicationPopup = () => {
-    setShowApplicationPopup(false)
-  }
+    setShowApplicationPopup(false);
+  };
 
   const handleCloseSuccessPopup = () => {
-    setShowSuccessPopup(false)
-  }
+    setShowSuccessPopup(false);
+  };
   const handleApplyClick = () => {
-  if (job?.customQuestions && job?.customQuestions.length > 0) {
-    // show modal that only contains the custom Qs
-    setShowApplicationPopup(true);
-  } else {
-    // no questions → fire API right away
-    handleActualApply();
-  }
-};
+    if (job?.customQuestions && job?.customQuestions.length > 0) {
+      // show modal that only contains the custom Qs
+      setShowApplicationPopup(true);
+    } else {
+      // no questions → fire API right away
+      handleActualApply();
+    }
+  };
 
   // Loading and error states
   if (loading) {
@@ -785,7 +877,6 @@ const handleApplicationSubmit = (data: any) => {
           initial="hidden"
           animate="visible"
         >
-          
           {/* Top Section - Company Info and Details */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Left Card - Company Info */}
@@ -799,18 +890,24 @@ const handleApplicationSubmit = (data: any) => {
                     {job.company.companyName.charAt(0).toUpperCase()}
                   </CustomAvatar>
                   <div className="flex-1">
-                    <h1 className="text-xl font-semibold text-[#1F2937] mb-2">{job.title}</h1>
+                    <h1 className="text-xl font-semibold text-[#1F2937] mb-2">
+                      {job.title}
+                    </h1>
                     <p className="text-sm text-[#6B7280] leading-relaxed mb-8">
                       {job.companyDescription}
                     </p>
-                    <div className="text-sm text-[#6B7280] mt-auto">@{job.company.companyName.toLowerCase()}</div>
+                    <div className="text-sm text-[#6B7280] mt-auto">
+                      @{job.company.companyName.toLowerCase()}
+                    </div>
                   </div>
                 </div>
 
                 {/* Right side - Pay and Link */}
                 <div className="flex flex-col items-end mt-4 lg:mt-0 lg:ml-6">
                   <div className="text-right">
-                    <div className="text-xl font-bold text-[#1F2937]">{formatSalary()}</div>
+                    <div className="text-xl font-bold text-[#1F2937]">
+                      {formatSalary()}
+                    </div>
                     <div className="text-sm text-[#6B7280]">
                       {job.salaryRange?.period || "Per/Hr"}
                     </div>
@@ -820,24 +917,27 @@ const handleApplicationSubmit = (data: any) => {
             </motion.div>
 
             {/* Right Card - Job Details */}
+            {/* Right Card - Job Details */}
             <motion.div
               className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-4"
               variants={itemVariants}
             >
               <div className="space-y-3">
                 <div className="flex items-start space-x-3">
-                  <Clock className="h-4 w-4 text-[#6B7280] mt-0.5 flex-shrink-0" />
+                  <Users className="h-4 w-4 text-[#6B7280] mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
-                    <div className="font-semibold text-[#A1A1A1]">Experience</div>
-                    <div className="text-[#32343A]">{job.experienceLevel || "Not specified"}</div>
+                    <div className="font-semibold text-[#A1A1A1]">Openings</div>
+                    <div className="text-[#32343A]">
+                      {job.noOfOpenings || 1}
+                    </div>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-3">
                   <CalendarDays className="h-4 w-4 text-[#6B7280] mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
-                    <div className="font-semibold text-[#A1A1A1]">Job Type</div>
-                    <div className="text-[#32343A]">{job.jobType}</div>
+                    <div className="font-semibold text-[#A1A1A1]">Applications</div>
+                    <div className="text-[#32343A]">{job.totalApplications}</div>
                   </div>
                 </div>
 
@@ -845,7 +945,9 @@ const handleApplicationSubmit = (data: any) => {
                   <MapPin className="h-4 w-4 text-[#6B7280] mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
                     <div className="font-semibold text-[#A1A1A1]">Location</div>
-                    <div className="text-[#32343A]">{job.location || "Remote"}</div>
+                    <div className="text-[#32343A]">
+                      {job.location || "Remote"}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -860,9 +962,9 @@ const handleApplicationSubmit = (data: any) => {
             {/* Apply Button - Top Right */}
             <div className="flex justify-end mb-6">
               <CustomButton
-                className="font-semibold px-14 py-3 focus:outline-none"
+                className="font-semibold px-14 py-3 focus:outline-none cursor-pointer"
                 disabled={!job.isActive || isApplying || hasApplied}
-                onClick={handleApplyClick}  // This opens the modal
+                onClick={handleApplyClick} // This opens the modal
               >
                 {isApplying ? (
                   <>
@@ -882,7 +984,9 @@ const handleApplicationSubmit = (data: any) => {
             <div className="space-y-8">
               {/* Job Description */}
               <div className="-mt-12">
-                <h2 className="text-lg font-semibold text-[#1F2937] mb-3">Job description</h2>
+                <h2 className="text-lg font-semibold text-[#1F2937] mb-3">
+                  Job description
+                </h2>
                 <div className="space-y-4 text-sm text-[#4B5563] leading-relaxed max-w-4xl">
                   <p>{job.description}</p>
                 </div>
@@ -908,26 +1012,29 @@ const handleApplicationSubmit = (data: any) => {
               )}
 
               {/* Qualifications */}
-              {job.educationQualifications && job.educationQualifications.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
-                    Qualifications
-                  </h3>
-                  <ul className="space-y-2 text-sm text-[#4B5563]">
-                    {job.educationQualifications.map((requirement, index) => (
-                      <li key={index} className="flex items-start">
-                        <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                        {requirement}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              {job.educationQualifications &&
+                job.educationQualifications.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                      Qualifications
+                    </h3>
+                    <ul className="space-y-2 text-sm text-[#4B5563]">
+                      {job.educationQualifications.map((requirement, index) => (
+                        <li key={index} className="flex items-start">
+                          <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                          {requirement}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
               {/* Key Responsibilities */}
               {job.responsibilities && job.responsibilities.length > 0 && (
                 <div>
-                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Key Responsibilities</h3>
+                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                    Key Responsibilities
+                  </h3>
                   <ul className="space-y-2 text-sm text-[#4B5563]">
                     {job.responsibilities.map((responsibility, index) => (
                       <li key={index} className="flex items-start">
@@ -955,11 +1062,14 @@ const handleApplicationSubmit = (data: any) => {
       <ApplicationPopup
         isOpen={showApplicationPopup}
         onClose={handleCloseApplicationPopup}
-        onSubmit={handleApplicationSubmit}  // This calls your actual API
-         job={job}
+        onSubmit={handleApplicationSubmit} // This calls your actual API
+        job={job}
       />
 
-      <SuccessPopup isOpen={showSuccessPopup}  onClose={handleCloseSuccessPopup} />
+      <SuccessPopup
+        isOpen={showSuccessPopup}
+        onClose={handleCloseSuccessPopup}
+      />
     </div>
   );
 }

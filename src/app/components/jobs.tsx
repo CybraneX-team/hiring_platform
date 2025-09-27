@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -29,6 +30,8 @@ interface JobListing {
   jobType: string;
   experienceLevel: string;
   department: string;
+  noOfOpenings: number;
+  totalApplications: number;
 }
 
 interface ApiResponse {
@@ -41,7 +44,7 @@ interface ApiResponse {
   };
 }
 
-const filterTabs = ["All", "Full-Time", "Remote"];
+const filterTabs = ["All", "Full-Time", "Part-Time", "Remote"];
 
 export default function JobComponent() {
   const [activeFilter, setActiveFilter] = useState("All");
@@ -49,6 +52,7 @@ export default function JobComponent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [jobListings, setJobListings] = useState<JobListing[]>([]);
+  const [allJobs, setAllJobs] = useState<JobListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
@@ -70,14 +74,16 @@ export default function JobComponent() {
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
+    const diffInHours = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    );
+
     if (diffInHours < 1) return "Just now";
     if (diffInHours < 24) return `${diffInHours} hrs ago`;
-    
+
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) return `${diffInDays} days ago`;
-    
+
     const diffInWeeks = Math.floor(diffInDays / 7);
     return `${diffInWeeks} weeks ago`;
   };
@@ -85,53 +91,70 @@ export default function JobComponent() {
   // Function to format salary
   const formatSalary = (salaryRange: any) => {
     if (!salaryRange) return { salary: "Negotiable", salaryType: "" };
-    
-    const { min, max, currency = "$" } = salaryRange;
-    
+
+    const { min, max, currency = "₹" } = salaryRange;
+
     if (min && max) {
       return {
         salary: `${currency}${min}-${max}`,
-        salaryType: "Per/Year"
+        salaryType: "Per/Year",
       };
     } else if (min) {
       return {
         salary: `${currency}${min}+`,
-        salaryType: "Per/Year"
+        salaryType: "Per/Year",
       };
     } else if (max) {
       return {
         salary: `Up to ${currency}${max}`,
-        salaryType: "Per/Year"
+        salaryType: "Per/Year",
       };
     }
-    
+
     return { salary: "Negotiable", salaryType: "" };
   };
 
   // Function to map API response to frontend format
-  const mapJobData = (apiJobs: any[]): JobListing[] => {
+  const mapJobData = (apiJobs: any[]): any => {
     return apiJobs.map((job: any) => {
       const { salary, salaryType } = formatSalary(job.salaryRange);
-      
+
       return {
         id: job.id,
         title: job.title,
         company: job.company?.companyName || "",
         salary,
         salaryType,
-        tags: [
-          job.department,
-          job.experienceLevel,
-          job.jobType,
-          ...(job.requiredSkills?.slice(0, 2).map((skill: any) => skill.name) || [])
-        ].filter(Boolean),
         description: job.description,
         location: job.location,
         timePosted: formatTimeAgo(job.postedDate),
         jobType: job.jobType,
         experienceLevel: job.experienceLevel,
         department: job.department,
+        noOfOpenings: job.noOfOpenings,
+        totalApplications: job.totalApplications,
       };
+    });
+  };
+
+  // Function to filter jobs based on active filter
+  const filterJobs = (jobs: JobListing[], filter: string): JobListing[] => {
+    if (filter === "All") return jobs;
+
+    return jobs.filter((job) => {
+      const jobType = job.jobType?.toLowerCase() || "";
+      const location = job.location?.toLowerCase() || "";
+
+      switch (filter) {
+        case "Full-Time":
+          return jobType.includes("full-time") || jobType.includes("fulltime") || jobType.includes("Full-time");
+        case "Part-Time":
+          return jobType.includes("part-time") || jobType.includes("parttime") || jobType.includes("Part-time");
+        case "Remote":
+          return  jobType.includes("remote");
+        default:
+          return true;
+      }
     });
   };
 
@@ -143,7 +166,7 @@ export default function JobComponent() {
 
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: "20",
+        limit: "100", // Fetch more jobs to allow client-side filtering
       });
 
       // Add search query if exists
@@ -151,25 +174,7 @@ export default function JobComponent() {
         params.append("search", searchQuery.trim());
       }
 
-      // Add job type filter if not "All"
-      if (activeFilter !== "All") {
-        // Map frontend filter to backend jobType
-        const jobTypeMap: { [key: string]: string } = {
-          "Part-Time": "part-time",
-          "Full-Time": "full-time",
-          "Remote": "remote",
-          "On-site": "on-site",
-        };
-        
-        if (jobTypeMap[activeFilter]) {
-          params.append("jobType", jobTypeMap[activeFilter]);
-        }
-      }
-
       const apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs?${params}`;
-      console.log("Fetching jobs from:", apiUrl);
-      console.log("Search query:", searchQuery);
-      console.log("Active filter:", activeFilter);
 
       const response = await fetch(apiUrl, {
         headers: {
@@ -180,17 +185,24 @@ export default function JobComponent() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("API Error:", response.status, errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data: ApiResponse = await response.json();
-      console.log("API Response:", data);
-      
-      const mappedJobs = mapJobData(data.jobs);
-      setJobListings(mappedJobs);
-      setPagination(data.pagination);
 
+      const mappedJobs = mapJobData(data.jobs);
+      setAllJobs(mappedJobs);
+
+      // Apply current filter to the fetched jobs
+      const filteredJobs = filterJobs(mappedJobs, activeFilter);
+      setJobListings(filteredJobs);
+
+      // Update pagination based on filtered results
+      setPagination({
+        current: 1,
+        total: Math.ceil(filteredJobs.length / 20),
+        totalItems: filteredJobs.length,
+      });
     } catch (err: any) {
       console.error("Error fetching jobs:", err);
       setError(err.message || "Failed to fetch jobs");
@@ -199,10 +211,24 @@ export default function JobComponent() {
     }
   };
 
-  // Fetch jobs on component mount and when filters change
+  // Handle filter change
+  const handleFilterChange = (filter: string) => {
+    setActiveFilter(filter);
+    if (allJobs.length > 0) {
+      const filteredJobs = filterJobs(allJobs, filter);
+      setJobListings(filteredJobs);
+      setPagination({
+        current: 1,
+        total: Math.ceil(filteredJobs.length / 20),
+        totalItems: filteredJobs.length,
+      });
+    }
+  };
+
+  // Fetch jobs on component mount and when search changes
   useEffect(() => {
     fetchJobs(1);
-  }, [activeFilter, token]);
+  }, [token]);
 
   // Handle search with debouncing
   useEffect(() => {
@@ -214,6 +240,19 @@ export default function JobComponent() {
 
     return () => clearTimeout(delayedSearch);
   }, [searchQuery]);
+
+  // Apply filter when activeFilter changes
+  useEffect(() => {
+    if (allJobs.length > 0) {
+      const filteredJobs = filterJobs(allJobs, activeFilter);
+      setJobListings(filteredJobs);
+      setPagination({
+        current: 1,
+        total: Math.ceil(filteredJobs.length / 20),
+        totalItems: filteredJobs.length,
+      });
+    }
+  }, [activeFilter, allJobs]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -272,35 +311,14 @@ export default function JobComponent() {
             </form>
           </div>
 
-          <div className="hidden lg:flex items-center space-x-10">
-            <motion.span
-              whileHover={{ y: -1 }}
-              className="text-sm text-[#32343A] font-medium cursor-pointer"
-            >
-              Explore
-            </motion.span>
-            <motion.span
-              whileHover={{ y: -1 }}
-              className="text-sm text-[#32343A] font-medium cursor-pointer"
-            >
-              Find Jobs
-            </motion.span>
-            <motion.span
-              whileHover={{ y: -1 }}
-              className="text-sm text-[#32343A] font-medium cursor-pointer"
-            >
-              Hire a Engineer
-            </motion.span>
-          </div>
-
           <div className="flex items-center space-x-3 ml-auto bg-white rounded-full">
             <Link href="/notifications">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              className="px-3 rounded-full"
-            >
-              <Mail className="w-4 h-4 text-gray-600" />
-            </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                className="px-3 rounded-full"
+              >
+                <Mail className="w-4 h-4 text-gray-600" />
+              </motion.button>
             </Link>
             <Link href="/profile">
               <motion.div
@@ -365,27 +383,6 @@ export default function JobComponent() {
                   </motion.button>
                 </form>
               </div>
-
-              <div className="space-y-3">
-                <motion.div
-                  whileHover={{ x: 4 }}
-                  className="text-sm text-[#32343A] font-medium cursor-pointer py-2"
-                >
-                  Explore
-                </motion.div>
-                <motion.div
-                  whileHover={{ x: 4 }}
-                  className="text-sm text-[#32343A] font-medium cursor-pointer py-2"
-                >
-                  Find Jobs
-                </motion.div>
-                <motion.div
-                  whileHover={{ x: 4 }}
-                  className="text-sm text-[#32343A] font-medium cursor-pointer py-2"
-                >
-                  Hire a Engineer
-                </motion.div>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -407,6 +404,11 @@ export default function JobComponent() {
                   Results for "{searchQuery}"
                 </p>
               )}
+              {activeFilter !== "All" && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Showing {activeFilter} positions
+                </p>
+              )}
             </div>
             {pagination.totalItems > 0 && (
               <p className="text-sm text-gray-600">
@@ -423,7 +425,7 @@ export default function JobComponent() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ y: -1 }}
-                onClick={() => setActiveFilter(tab)}
+                onClick={() => handleFilterChange(tab)}
                 disabled={loading}
                 className={`px-6 py-1 text-xs mx-2 mb-2 font-medium rounded-full transition-all disabled:opacity-50 ${
                   activeFilter === tab
@@ -447,9 +449,7 @@ export default function JobComponent() {
           {/* Error State */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
-              <p className="text-red-600 text-center">
-                Error: {error}
-              </p>
+              <p className="text-red-600 text-center">Error: {error}</p>
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -465,76 +465,95 @@ export default function JobComponent() {
           {!loading && !error && jobListings.length === 0 && (
             <div className="text-center py-12">
               <p className="text-gray-600 text-lg mb-4">
-                {searchQuery ? `No jobs found for "${searchQuery}"` : "No jobs found"}
+                {searchQuery
+                  ? `No jobs found for "${searchQuery}"`
+                  : activeFilter !== "All" 
+                    ? `No ${activeFilter} jobs found`
+                    : "No jobs found"}
               </p>
               <p className="text-gray-500 text-sm mb-4">
-                {searchQuery 
-                  ? "Try different keywords or check your spelling" 
-                  : "Try adjusting your filters"
-                }
+                {searchQuery
+                  ? "Try different keywords or check your spelling"
+                  : activeFilter !== "All"
+                    ? "Try selecting a different filter or search for specific roles"
+                    : "Try adjusting your filters"}
               </p>
-              {searchQuery && (
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setSearchQuery("")}
-                  className="bg-[#76FF82] text-black px-6 py-2 rounded-full text-sm font-medium"
-                >
-                  Clear Search
-                </motion.button>
-              )}
+              <div className="flex gap-3 justify-center">
+                {searchQuery && (
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setSearchQuery("")}
+                    className="bg-[#76FF82] text-black px-6 py-2 rounded-full text-sm font-medium"
+                  >
+                    Clear Search
+                  </motion.button>
+                )}
+                {activeFilter !== "All" && (
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleFilterChange("All")}
+                    className="bg-gray-200 text-gray-700 px-6 py-2 rounded-full text-sm font-medium"
+                  >
+                    Show All Jobs
+                  </motion.button>
+                )}
+              </div>
             </div>
           )}
 
           {/* Job Listings */}
           {!loading && !error && jobListings.length > 0 && (
             <div className="space-y-6">
-              {jobListings.map((job, index) => (
+              {jobListings.map((job: any, index) => (
                 <motion.div
                   key={job.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
-                  whileHover={{ y: -2, boxShadow: "0 8px 25px rgba(0,0,0,0.1)" }}
+                  whileHover={{
+                    y: -2,
+                    boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
+                  }}
                   className="bg-white rounded-xl p-6"
                 >
                   <div className="flex flex-col lg:flex-row">
                     <div className="flex flex-1">
-                      {/* <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        className="w-12 h-12 bg-[#C5BCFF] rounded-full flex items-center justify-center text-[#32343A] font-medium mr-4 flex-shrink-0"
-                      >
-                        {job.company.charAt(0)}
-                      </motion.div> */}
-
                       <div className="flex-1">
-                        <h3 className="text-lg font-medium text-black mb-1">
-                          {job.title}
-                        </h3>
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <h3 className="text-lg font-medium text-black">
+                            {job.title}
+                          </h3>
+                          {job.jobType && (
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
+                              {job.jobType}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-500 mb-4">
                           {job.company}
                         </p>
 
                         <div className="flex flex-wrap space-x-3 mb-6">
-                          {job.tags.slice(0, 3).map((tag, tagIndex) => (
-                            <motion.span
-                              key={`${job.id}-${tagIndex}`}
-                              whileHover={{ scale: 1.02 }}
-                              className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full mb-2"
-                            >
-                              {tag}
-                            </motion.span>
-                          ))}
-                        </div>
+                          <div className="flex items-center space-x-2 mb-2">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                              Applications
+                            </span>
+                            <span className="text-sm font-bold text-gray-900">
+                              {job.totalApplications || 0}
+                            </span>
+                          </div>
 
-                        {/* <div className="mb-4">
-                          <h4 className="text-sm font-medium text-black mb-2">
-                            About Job
-                          </h4>
-                          <p className="text-sm text-gray-600 leading-relaxed">
-                            {job.description}
-                          </p>
-                        </div> */}
+                          <div className="flex items-center space-x-2 mb-2">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                              Positions
+                            </span>
+                            <span className="text-sm font-bold text-gray-900">
+                              {job.noOfOpenings || 1}
+                            </span>
+                          </div>
+                        </div>
 
                         <div className="flex items-center space-x-4 text-xs text-gray-400">
                           <div className="flex items-center space-x-1">
@@ -567,7 +586,7 @@ export default function JobComponent() {
                             boxShadow: "0 4px 12px rgba(118, 255, 130, 0.3)",
                           }}
                           whileTap={{ scale: 0.98 }}
-                          className="bg-[#76FF82] text-black font-medium px-6 py-2 rounded-full text-sm"
+                          className="bg-[#76FF82] text-black font-medium cursor-pointer px-6 py-2 rounded-full text-sm"
                         >
                           View Role
                         </motion.button>
@@ -579,29 +598,35 @@ export default function JobComponent() {
             </div>
           )}
 
-          {/* Pagination */}
+          {/* Pagination - Only show if there are many jobs */}
           {!loading && !error && pagination.total > 1 && (
             <div className="flex justify-center mt-8">
               <div className="flex space-x-2">
-                {Array.from({ length: Math.min(5, pagination.total) }, (_, i) => {
-                  const page = i + 1;
-                  return (
-                    <motion.button
-                      key={page}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => fetchJobs(page)}
-                      disabled={loading}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all disabled:opacity-50 ${
-                        pagination.current === page
-                          ? "bg-[#76FF82] text-black"
-                          : "bg-white text-gray-600 hover:bg-gray-50"
-                      }`}
-                    >
-                      {page}
-                    </motion.button>
-                  );
-                })}
+                {Array.from(
+                  { length: Math.min(5, pagination.total) },
+                  (_, i) => {
+                    const page = i + 1;
+                    return (
+                      <motion.button
+                        key={page}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          // For client-side pagination, you might want to implement chunking
+                          // For now, all filtered results are shown
+                        }}
+                        disabled={loading}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all disabled:opacity-50 ${
+                          pagination.current === page
+                            ? "bg-[#76FF82] text-black"
+                            : "bg-white text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >
+                        {page}
+                      </motion.button>
+                    );
+                  }
+                )}
               </div>
             </div>
           )}

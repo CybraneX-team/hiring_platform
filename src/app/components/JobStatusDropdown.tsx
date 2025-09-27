@@ -25,14 +25,6 @@ const JobStatusDropdown = ({
 
   const statusOptions = [
     { 
-      value: "Draft", 
-      label: "Draft", 
-      dotColor: "bg-slate-400",
-      textColor: "text-slate-600",
-      bgColor: "bg-slate-50",
-      borderColor: "border-slate-200"
-    },
-    { 
       value: "Open", 
       label: "Open", 
       dotColor: "bg-emerald-500",
@@ -55,30 +47,6 @@ const JobStatusDropdown = ({
       textColor: "text-red-700",
       bgColor: "bg-red-50",
       borderColor: "border-red-200"
-    },
-    { 
-      value: "Filled", 
-      label: "Filled", 
-      dotColor: "bg-blue-500",
-      textColor: "text-blue-700",
-      bgColor: "bg-blue-50",
-      borderColor: "border-blue-200"
-    },
-    { 
-      value: "Expired", 
-      label: "Expired", 
-      dotColor: "bg-orange-500",
-      textColor: "text-orange-700",
-      bgColor: "bg-orange-50",
-      borderColor: "border-orange-200"
-    },
-    { 
-      value: "Cancelled", 
-      label: "Cancelled", 
-      dotColor: "bg-gray-500",
-      textColor: "text-gray-700",
-      bgColor: "bg-gray-50",
-      borderColor: "border-gray-200"
     }
   ];
 

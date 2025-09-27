@@ -515,6 +515,8 @@ export default function PostRole() {
   const [workEndDate, setWorkEndDate] = useState("");
 
   const [workLocation, setWorkLocation] = useState("");
+  const [jobType, setJobType] = useState("Full-time"); 
+
   const [locationSearchQuery, setLocationSearchQuery] = useState("");
   const [locationSuggestions, setLocationSuggestions] = useState<
     OlaMapsPlace[]
@@ -568,11 +570,10 @@ export default function PostRole() {
   const [fatAdded, setFatAdded] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   useEffect(() => {
-    if( noOfOpenings < 0 ){
-      setnoOfOpenings(0)
+    if (noOfOpenings < 0) {
+      setnoOfOpenings(0);
     }
-  }, [noOfOpenings])
-  
+  }, [noOfOpenings]);
 
   const addPerk = () => {
     if (
@@ -784,6 +785,10 @@ export default function PostRole() {
     if (!validateWorkDates()) {
       return;
     }
+    if (noOfOpenings <= 0) {
+      toast.error("no of opening cant be zero or in minus");
+      return;
+    }
     setIsPosting(true);
 
     try {
@@ -791,7 +796,7 @@ export default function PostRole() {
         company: `${user?.id}`,
         userId: `${user?.id}`,
         title: jobTittle,
-        jobType: "Part-time",
+        jobType,
         companyPerks,
         requiredSkillset,
         mandatoryCertificates,
@@ -1088,6 +1093,28 @@ export default function PostRole() {
                 </div>
               )}
             </div>
+            {/* Job Type Selection - Add this after the "Add No Of Openings" section */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-gray-700">
+                Job Type
+              </label>
+              <div className="flex bg-gray-100 rounded-lg p-1 w-fit">
+                {["Full-time", "Part-time", "Remote"].map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setJobType(type)}
+                    className={`px-6 py-2 text-sm font-medium rounded-md transition-all ${
+                      jobType === type
+                        ? "bg-[#76FF82] text-black shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-3">
               <label className="text-sm font-medium text-gray-700">
                 Add No Of Openings
@@ -1098,7 +1125,7 @@ export default function PostRole() {
                   value={noOfOpenings}
                   required
                   onChange={(e) => {
-                    setnoOfOpenings( +e.target.value )
+                    setnoOfOpenings(+e.target.value);
                   }}
                   placeholder="50"
                   className="w-48 px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"

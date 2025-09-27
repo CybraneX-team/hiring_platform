@@ -1323,9 +1323,30 @@ export default function ProfileTab() {
                           />
                         </div>
 
-                        <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
-                          {job.totalApplications || 0} Applicants
-                        </p>
+                        {/* Simple Inline Stats */}
+                        <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-6">
+                            <div>
+                              <span className="text-lg font-bold text-gray-900">
+                                {job.totalApplications || 0}
+                              </span>
+                              <span className="text-sm text-gray-600 ml-2">
+                                Applicants
+                              </span>
+                            </div>
+
+                            <div className="text-gray-300">•</div>
+
+                            <div>
+                              <span className="text-lg font-bold text-gray-900">
+                                {job.noOfOpenings || 0}
+                              </span>
+                              <span className="text-sm text-gray-600 ml-2">
+                                No Of Openings
+                              </span>
+                            </div>
+                          </div>
+                        </div>
 
                         {job.description && (
                           <p className="text-xs text-gray-600 line-clamp-2 mb-2">
@@ -1381,18 +1402,23 @@ export default function ProfileTab() {
         transition={{ duration: 0.5 }}
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
-      <Link href="/" className="flex flex-col">
-        <span className={`md:text-2xl text-xl font-semibold transition-colors duration-300 ${
-          isScrolled ? "text-black " : "text-black"
-        }`}>
-          ProjectMATCH
-        </span>
-        <span className={`text-sm font-medium transition-colors duration-300 ${
-          isScrolled ? "text-black" : "text-black"
-        }`}>
-          by <span className="text-[#69a34b] text-md font-bold">compscope</span>
-        </span>
-      </Link>
+        <Link href="/" className="flex flex-col">
+          <span
+            className={`md:text-2xl text-xl font-semibold transition-colors duration-300 ${
+              isScrolled ? "text-black " : "text-black"
+            }`}
+          >
+            ProjectMATCH
+          </span>
+          <span
+            className={`text-sm font-medium transition-colors duration-300 ${
+              isScrolled ? "text-black" : "text-black"
+            }`}
+          >
+            by{" "}
+            <span className="text-[#69a34b] text-md font-bold">compscope</span>
+          </span>
+        </Link>
       </motion.div>
 
       <div className="pt-16 sm:pt-24 pb-8 sm:pb-16">
