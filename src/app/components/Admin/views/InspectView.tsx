@@ -67,12 +67,12 @@ const DeleteConfirmModal = ({
 const ThreeDotsMenu = ({ 
   isOpen, 
   onClose, 
-  onDelete, 
+  onDelete , 
   position = "right"
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onDelete: () => void;
+  onDelete: any
   position?: "left" | "right";
 }) => {
   if (!isOpen) return null;
@@ -503,7 +503,7 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
                   <ThreeDotsMenu
                     isOpen={activeMenuId === item.id}
                     onClose={() => setActiveMenuId(null)}
-                    onDelete={(e) => handleDeleteClick(item, e)}
+                    onDelete={(e : any) => handleDeleteClick(item, e)}
                   />
                 </div>
 
