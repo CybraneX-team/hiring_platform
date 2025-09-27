@@ -397,7 +397,6 @@ const OlaMapComponent = ({
       // Import and check for Marker constructor
       if (!olaMaps.Marker) {
         console.error("OlaMaps.Marker constructor not available");
-        console.log("Available OlaMaps properties:", Object.keys(olaMaps));
         return;
       }
 
@@ -421,7 +420,6 @@ const OlaMapComponent = ({
         markerRef.current.setPopup(popup);
       }
 
-      console.log("Marker added successfully at:", lat, lng);
     } catch (error) {
       console.error("Error adding marker:", error);
       console.error("OlaMaps object:", olaMaps);
@@ -450,7 +448,6 @@ const OlaMapComponent = ({
 
       if (response.ok) {
         const data = await response.json();
-        console.log("Reverse geocoding data:", data);
         const address =
           data.results?.[0]?.formatted_address ||
           `${lat.toFixed(4)}, ${lng.toFixed(4)}`;

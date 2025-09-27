@@ -222,7 +222,6 @@ function ApplicationDetailContent() {
       const node = contentRef.current;
       const rect = node.getBoundingClientRect();
 
-      console.log("[v0] Generating CV page...");
       const cvDataUrl = await toJpeg(node, {
         quality: 0.95,
         backgroundColor: "#ffffff",
@@ -253,11 +252,9 @@ function ApplicationDetailContent() {
         heightLeft -= pageHeight;
       }
 
-      console.log("[v0] Saving consolidated PDF...");
       pdf.save(
         `${applicant.name.replace(/\s+/g, "-")}-Consolidated-Profile.pdf`
       );
-      console.log("[v0] PDF generation completed successfully!");
     } catch (error) {
       console.error("[v0] Error generating consolidated PDF:", error);
       alert("Error generating PDF. Please try again.");

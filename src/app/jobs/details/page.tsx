@@ -724,6 +724,8 @@ function JobListingContent() {
           autoClose: 5000,
         }
       );
+      
+      await fetchJobDetails()
 
       if (result.data.matchAnalysis.recommendations?.length > 0) {
         setTimeout(() => {

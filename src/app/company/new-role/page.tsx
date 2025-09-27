@@ -69,7 +69,6 @@ const OlaMapComponent = ({
           // Default location (Bengaluru)
           const defaultLocation = location || { lat: 12.9716, lng: 77.5946 };
 
-          console.log("Initializing map with location:", defaultLocation);
 
           mapInstanceRef.current = olaMaps.init({
             style:
@@ -84,7 +83,6 @@ const OlaMapComponent = ({
 
             // Add marker if location exists
             if (location) {
-              console.log("Adding initial marker:", location);
               addMarker(
                 location.lat,
                 location.lng,
@@ -96,7 +94,6 @@ const OlaMapComponent = ({
           // Add click event listener
           mapInstanceRef.current.on("click", (e: any) => {
             const { lat, lng } = e.lngLat;
-            console.log("Map clicked at:", lat, lng);
 
             reverseGeocode(lat, lng);
           });
@@ -124,7 +121,6 @@ const OlaMapComponent = ({
   // Handle search when searchQuery changes
   useEffect(() => {
     if (searchQuery && searchQuery.trim() && isMapLoaded) {
-      console.log("Triggering search for:", searchQuery);
       handleAddressSearch(searchQuery);
     }
   }, [searchQuery, isMapLoaded]);
@@ -132,7 +128,6 @@ const OlaMapComponent = ({
   const geocodeAddress = async (address: string) => {
     if (!address.trim()) return;
 
-    console.log("Geocoding address:", address);
 
     try {
       const response = await fetch(
@@ -141,22 +136,18 @@ const OlaMapComponent = ({
         )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
       );
 
-      console.log("Geocoding response status:", response.status);
 
       if (response.ok) {
         const data = await response.json();
-        console.log("Geocoding data:", data);
 
         if (data.geocodingResults && data.geocodingResults.length > 0) {
           const result = data.geocodingResults[0];
           const { lat, lng } = result.geometry.location;
           const formattedAddress = result.formatted_address || address;
 
-          console.log("Found location:", { lat, lng, formattedAddress });
 
           // Update map center and add marker
           if (mapInstanceRef.current) {
-            console.log("Flying to location:", lng, lat);
             mapInstanceRef.current.flyTo({
               center: [lng, lat],
               zoom: 15,
@@ -175,7 +166,6 @@ const OlaMapComponent = ({
 
           return { lat, lng, address: formattedAddress };
         } else {
-          console.log("No geocoding results found");
         }
       } else {
         const errorText = await response.text();
@@ -207,12 +197,10 @@ const OlaMapComponent = ({
       return;
     }
 
-    console.log("Adding marker at:", lat, lng, title);
 
     try {
       // Remove existing marker
       if (markerRef.current) {
-        console.log("Removing existing marker");
         markerRef.current.remove();
         markerRef.current = null;
       }
@@ -250,7 +238,6 @@ const OlaMapComponent = ({
       `;
       markerElement.appendChild(innerDot);
 
-      console.log("Created marker element:", markerElement);
 
       // Ensure we have the Marker constructor
       if (!olaMaps || !olaMaps.Marker) {
@@ -266,7 +253,6 @@ const OlaMapComponent = ({
         .setLngLat([lng, lat])
         .addTo(mapInstanceRef.current);
 
-      console.log("Marker added successfully:", markerRef.current);
 
       // Add popup if available
       if (olaMaps.Popup) {
@@ -277,7 +263,6 @@ const OlaMapComponent = ({
         );
 
         markerRef.current.setPopup(popup);
-        console.log("Popup added to marker");
       }
     } catch (error) {
       console.error("Error adding marker:", error);
@@ -285,7 +270,6 @@ const OlaMapComponent = ({
   };
 
   const reverseGeocode = async (lat: number, lng: number) => {
-    console.log("Reverse geocoding:", lat, lng);
 
     try {
       const response = await fetch(
@@ -294,7 +278,6 @@ const OlaMapComponent = ({
 
       if (response.ok) {
         const data = await response.json();
-        console.log("Reverse geocoding data:", data);
         const address =
           data.results?.[0]?.formatted_address ||
           `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
@@ -331,12 +314,10 @@ const OlaMapComponent = ({
     }
 
     setIsDetecting(true);
-    console.log("Starting geolocation detection");
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        console.log("Geolocation detected:", latitude, longitude);
 
         // Fly to detected location
         if (mapInstanceRef.current) {

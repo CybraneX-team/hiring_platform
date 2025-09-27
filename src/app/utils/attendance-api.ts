@@ -59,8 +59,7 @@ export const attendanceAPI = {
     year: number
   ): Promise<AttendanceResponse> => {
     try {
-      console.log(`🔍 Fetching attendance for profile ${profileId}, month ${month}, year ${year}`);
-      console.log(`📡 API URL: ${apiClient.defaults.baseURL}/api/profile/${profileId}/attendance`);
+
       
       const response = await apiClient.get(
         `/api/profile/${profileId}/attendance`,
@@ -69,7 +68,7 @@ export const attendanceAPI = {
         }
       );
       
-      console.log('✅ Attendance data fetched successfully:', response.status);
+
       return response.data as AttendanceResponse;
     } catch (error: any) {
       console.error('❌ Error fetching attendance:', error);
@@ -91,16 +90,13 @@ export const attendanceAPI = {
   ): Promise<UpdateAttendanceResponse> => {
     try {
       const encodedDate = encodeURIComponent(date);
-      console.log(`🔄 Updating attendance for profile ${profileId}, date ${date}`);
-      console.log(`📡 API URL: ${apiClient.defaults.baseURL}/api/profile/${profileId}/attendance/${encodedDate}`);
-      console.log('📝 Update data:', data);
+
       
       const response = await apiClient.put(
         `/api/profile/${profileId}/attendance/${encodedDate}`,
         data
       );
       
-      console.log('✅ Attendance updated successfully:', response.status);
       return response.data as UpdateAttendanceResponse;
     } catch (error: any) {
       console.error('❌ Error updating attendance:', error);

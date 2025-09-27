@@ -73,7 +73,6 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
         }
       })
       
-      console.log(`🎯 Recalculated event days from records:`, eventDays)
       return eventDays
     }
 
@@ -92,16 +91,7 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
       // Recalculate event days from the actual records for verification
       const recalculatedEventDays = recalculateEventDays(response.data.records)
       
-      console.log(`📊 Fetched attendance data:`, {
-        recordsCount: response.data.records.length,
-        presentDays: response.data.presentDays,
-        absentDays: response.data.absentDays,
-        holidayDays: response.data.holidayDays,
-        daysWithLogsFromServer: response.data.daysWithLogs,
-        recalculatedEventDays: recalculatedEventDays,
-        totalPresent: response.data.summary.totalPresent,
-        totalHolidays: response.data.summary.totalHolidays,
-      })
+
       
       // Use recalculated event days to ensure accuracy
       setAttendanceData({
@@ -145,32 +135,19 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
     const targetDate = createSelectedDateUTC()
     const targetDateString = targetDate.toISOString().split('T')[0] // YYYY-MM-DD format
     
-    console.log(`🔍 Looking for logs on ${targetDateString} (selected day: ${selectedDate})`)
-    console.log(`📋 All attendance records:`, attendanceRecords.map(r => ({
-      date: r.date,
-      dateString: new Date(r.date).toISOString().split('T')[0],
-      logsCount: r.logs?.length || 0,
-      logs: r.logs
-    })))
+
     
     const currentRecord = attendanceRecords.find(record => {
       const recordDate = new Date(record.date)
       const recordDateString = recordDate.toISOString().split('T')[0] // YYYY-MM-DD format
       const matches = recordDateString === targetDateString
       
-      if (matches) {
-        console.log(`✅ Found matching record for ${targetDateString}:`, {
-          recordDate: record.date,
-          recordDateString,
-          logsCount: record.logs?.length || 0
-        })
-      }
+      
       
       return matches
     })
     
     const logs = currentRecord?.logs || []
-    console.log(`🔍 Returning ${logs.length} logs for ${targetDateString}:`, logs)
     return logs
   }
 
@@ -178,7 +155,6 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
     if (!profileId || !selectedDate) return
 
     const dateStr = getSelectedDateISOString()
-    console.log(`📅 Marking as present for day ${selectedDate} -> ${dateStr}`)
 
     try {
       setIsSaving(true)
@@ -237,9 +213,7 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
       const isSunday = (firstDay + day - 1) % 7 === 0
       
       // Debug logging for event indicators
-      if (hasEvent) {
-        console.log(`🎯 Day ${day} has event indicator (eventDays: ${attendanceData.eventDays.join(', ')})`)
-      }
+     
 
       let cellClasses =
         "h-16 flex items-center justify-center text-sm font-medium cursor-pointer relative rounded-md transition-colors duration-150 "
@@ -298,7 +272,6 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
     
     // Get fresh logs for the currently selected date
     const currentLogs = getCurrentDayLogs()
-    console.log(`📝 Opening modal for date ${selectedDate} with logs:`, currentLogs)
     
     // Deep copy to avoid reference issues
     const logsToEdit = currentLogs.map(log => ({
@@ -327,10 +300,8 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
       activity: "",
       notes: ""
     }
-    console.log(`➕ Adding new record for date ${selectedDate}:`, newRecord)
     setEditingRecords((prev) => {
       const updated = [...prev, newRecord]
-      console.log(`📝 Updated editing records (${updated.length} total):`, updated)
       return updated
     })
   }
@@ -344,8 +315,6 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
 
     const dateStr = getSelectedDateISOString()
     
-    console.log(`💾 Saving records for date ${selectedDate}:`, editingRecords)
-    console.log(`📅 Target date string: ${dateStr} (UTC-based to avoid timezone shifts)`)
 
     try {
       setIsSaving(true)
@@ -356,7 +325,6 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
       )
       
       await attendanceAPI.updateActivityLogs(profileId, dateStr, validRecords)
-      console.log(`✅ Successfully saved ${validRecords.length} records`)
       
       // Immediately update local state to show the dot indicator
       if (validRecords.length > 0) {
@@ -366,19 +334,16 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
             ? prev.eventDays 
             : [...prev.eventDays, selectedDate]
         }))
-        console.log(`🎯 Added day ${selectedDate} to eventDays for immediate UI update`)
       } else {
         // Remove the day from eventDays if no valid records
         setAttendanceData(prev => ({
           ...prev,
           eventDays: prev.eventDays.filter(day => day !== selectedDate)
         }))
-        console.log(`🎯 Removed day ${selectedDate} from eventDays (no valid records)`)
       }
       
       // Refresh data to get updated state from server
       await fetchAttendanceData()
-      console.log(`🔄 Refreshed attendance data from server`)
       
       // Close modal and clear editing state
       setShowUpdateModal(false)
@@ -484,7 +449,6 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
       
       // Close modal
       setShowDownloadModal(false)
-      console.log(`📄 Downloaded attendance report: ${filename}`)
       
     } catch (err: any) {
       setError(err.message || "Failed to download attendance data")
