@@ -43,60 +43,60 @@ export default function Footer() {
   };
   return (
     <footer className="bg-white text-black border-t border-gray-200">
-      <div className="max-w-7xl mx-auto px-6 py-14">
-        <div className="grid md:grid-cols-4 gap-12">
-          <div>
-            <button onClick={scrollToTop} className="mb-4 block cursor-pointer">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-6 py-8 sm:py-10 md:py-12 lg:py-14">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 sm:gap-10 md:gap-12">
+          <div className="sm:col-span-2 md:col-span-1">
+            <button onClick={scrollToTop} className="mb-3 sm:mb-4 block cursor-pointer">
               <Image
                 src="/logo.png"
                 alt="ProjectMATCH by Compscope"
                 width={140}
                 height={50}
-                className="h-24 w-auto"
+                className="h-16 sm:h-20 md:h-24 w-auto"
                 priority
               />
             </button>
-            <p className="text-gray-600 text-sm mb-5 leading-relaxed">
+            <p className="text-gray-600 text-xs sm:text-sm mb-4 sm:mb-5 leading-relaxed">
               Connecting talent to the projects — securely and efficiently.
             </p>
             <Link
               href="https://www.linkedin.com/company/compscope-nonmetallics-technology-solutions/"
               target="_blank"
-              className="text-sm text-[#17181D] ring-1 ring-gray-300 rounded-md px-3 py-1.5 inline-block hover:bg-gray-50 transition-colors"
+              className="text-xs sm:text-sm text-[#17181D] ring-1 ring-gray-300 rounded-md px-2.5 sm:px-3 py-1 sm:py-1.5 inline-block hover:bg-gray-50 transition-colors"
             >
               LinkedIn
             </Link>
           </div>
 
           <div>
-            <h3 className="font-semibold mb-4 text-[#17181D]">Company</h3>
-            <ul className="space-y-3 text-sm">
+            <h3 className="font-semibold mb-3 sm:mb-4 text-[#17181D] text-sm sm:text-base">Company</h3>
+            <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
               <li>
                 <span className="text-gray-400 cursor-not-allowed">
-                  About us <span className="text-xs">(coming soon)</span>
+                  About us <span className="text-[10px] sm:text-xs">(coming soon)</span>
                 </span>
               </li>
               <li>
                 <span className="text-gray-400 cursor-not-allowed">
-                  Our team <span className="text-xs">(coming soon)</span>
+                  Our team <span className="text-[10px] sm:text-xs">(coming soon)</span>
                 </span>
               </li>
               <li>
                 <span className="text-gray-400 cursor-not-allowed">
-                  Careers <span className="text-xs">(coming soon)</span>
+                  Careers <span className="text-[10px] sm:text-xs">(coming soon)</span>
                 </span>
               </li>
               <li>
                 <span className="text-gray-400 cursor-not-allowed">
-                  News <span className="text-xs">(coming soon)</span>
+                  News <span className="text-[10px] sm:text-xs">(coming soon)</span>
                 </span>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-semibold mb-4 text-[#17181D]">Sectors</h3>
-            <ul className="space-y-3 text-sm">
+            <h3 className="font-semibold mb-3 sm:mb-4 text-[#17181D] text-sm sm:text-base">Sectors</h3>
+            <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
               <li>
                 <button onClick={() => scrollToSpecificSector('Oil & Gas')} className="text-gray-600 cursor-pointer hover:text-[#17181D] transition-colors text-left">
                   Oil & Gas
@@ -126,16 +126,16 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 className="font-semibold mb-4 text-[#17181D]">Resources</h3>
-            <ul className="space-y-3 text-sm">
+            <h3 className="font-semibold mb-3 sm:mb-4 text-[#17181D] text-sm sm:text-base">Resources</h3>
+            <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
               <li>
                 <span className="text-gray-400 cursor-not-allowed">
-                  Documentation <span className="text-xs">(coming soon)</span>
+                  Documentation <span className="text-[10px] sm:text-xs">(coming soon)</span>
                 </span>
               </li>
               <li>
                 <span className="text-gray-400 cursor-not-allowed">
-                  Case Studies <span className="text-xs">(coming soon)</span>
+                  Case Studies <span className="text-[10px] sm:text-xs">(coming soon)</span>
                 </span>
               </li>
               <li>
@@ -147,9 +147,9 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-gray-600">© 2025 Compscope. All rights reserved.</p>
-          <div className="flex items-center gap-4 text-xs">
+        <div className="mt-8 sm:mt-10 md:mt-12 pt-6 sm:pt-7 md:pt-8 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+          <p className="text-[10px] sm:text-xs text-gray-600">© 2025 Compscope. All rights reserved.</p>
+          <div className="flex items-center gap-3 sm:gap-4 text-[10px] sm:text-xs">
             <Link href="/privacy" className="text-gray-600 hover:text-[#17181D]">Privacy</Link>
             <span className="text-gray-300">|</span>
             <Link href="/terms" className="text-gray-600 hover:text-[#17181D]">Terms</Link>

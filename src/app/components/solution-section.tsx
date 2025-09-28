@@ -92,20 +92,20 @@ export default function SolutionsSection() {
   }, []);
 
   return (
-    <section className="py-14 bg-white" id="sectors">
-      <div className="max-w-[83rem] mx-auto px-6">
+    <section className="py-8 sm:py-12 md:py-14 bg-white" id="sectors">
+      <div className="max-w-[83rem] mx-auto px-4 sm:px-6 md:px-6">
         <motion.div
-          className="flex justify-between items-center mb-16"
+          className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 sm:mb-12 md:mb-16"
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
           <div>
-            <h2 className="text-2xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight ml-5">Our Empowerment</h2>
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight ml-0 sm:ml-5">Our Empowerment</h2>
           </div>
           <button
-            className="relative flex mt-10 items-center text-black/80 hover:text-black text-xs md:text-sm rounded-lg transition-colors underline-offset-4 font-medium group focus:outline-none"
+            className="relative flex mt-4 sm:mt-10 items-center text-black/80 hover:text-black text-xs md:text-sm rounded-lg transition-colors underline-offset-4 font-medium group focus:outline-none"
             style={{ paddingBottom: 7, paddingRight: 15, letterSpacing: 4 }}
           >
             <span
@@ -137,7 +137,7 @@ export default function SolutionsSection() {
         </motion.div>
 
         <div className="relative overflow-x-auto overflow-y-hidden scrollbar-hide flex">
-          <motion.div layout className="flex items-start gap-10 w-max p-4">
+          <motion.div layout className="flex items-start gap-4 sm:gap-6 md:gap-10 w-max p-2 sm:p-4">
             {solutions.map((solution, index) => {
               const isExpanded = expandedCard === index
               return (
@@ -150,8 +150,8 @@ export default function SolutionsSection() {
                     border border-white/10
                     transition-[width] duration-450
                     ${isExpanded
-                      ? "w-[32rem] md:w-[50rem] h-[30rem] p-10 ring-2 ring-emerald-300/20 z-10 overflow-hidden"
-                      : "w-96 h-[30rem] p-8 overflow-hidden"
+                      ? "w-[28rem] sm:w-[32rem] md:w-[50rem] h-[28rem] sm:h-[30rem] p-6 sm:p-8 md:p-10 ring-2 ring-emerald-300/20 z-10 overflow-hidden"
+                      : "w-80 sm:w-96 h-[28rem] sm:h-[30rem] p-6 sm:p-8 overflow-hidden"
                     }
                     flex flex-col justify-between
                   `}
@@ -165,9 +165,9 @@ export default function SolutionsSection() {
                   }}
                 >
                   <div className="pointer-events-none absolute inset-0" />
-                  <div className="absolute -top-2 -right-2 bg-[#A6F56B] rounded-lg p-2 shadow-2xl">
+                  <div className="absolute -top-2 -right-2 bg-[#A6F56B] rounded-lg p-1.5 sm:p-2 shadow-2xl">
                     {solution.iconSrc && (
-                      <Image src={solution.iconSrc} alt={`${solution.title} icon`} width={28} height={28} className="object-contain" />
+                      <Image src={solution.iconSrc} alt={`${solution.title} icon`} width={24} height={24} className="sm:w-7 sm:h-7 object-contain" />
                     )}
                   </div>
                   <div className="relative z-10 flex flex-col h-full">
@@ -183,7 +183,7 @@ export default function SolutionsSection() {
                     <motion.h3
                       layout={isExpanded ? true : false}
                       className={`
-                        text-2xl md:text-3xl font-extrabold mb-2 text-left tracking-tight text-[#A6F56B]
+                        text-xl sm:text-2xl md:text-3xl font-extrabold mb-2 text-left tracking-tight text-[#A6F56B]
                         ${isExpanded ? "mt-2" : ""}
                       `}
                     >
@@ -198,14 +198,14 @@ export default function SolutionsSection() {
                           alt={`${solution.title}`}
                           width={900}
                           height={300}
-                          className="object-cover w-full h-32 md:h-auto rounded-2xl border border-white/10"
+                          className="object-cover w-full rounded-2xl border border-white/10"
                         />
                       </div>
                     )}
                     {!isExpanded && (
-                      <div className="mt-4 flex items-center gap-2 text-[#A6F56B] font-semibold">
+                      <div className="mt-3 sm:mt-4 flex items-center gap-2 text-[#A6F56B] font-semibold text-sm sm:text-base">
                         <span className="underline underline-offset-4 ">Learn more</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="-translate-x-1 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sm:w-5 sm:h-5 -translate-x-1 transition-transform">
                           <path d="M5 12h14" />
                           <path d="M12 5l7 7-7 7" />
                         </svg>
@@ -224,29 +224,29 @@ export default function SolutionsSection() {
                         >
                           {/* Expanded view: large media image at right within card bounds */}
                         <motion.div
-                          className="border border-white/10 rounded-xl bg-white/5 p-6 mb-0"
+                          className="border border-white/10 rounded-xl bg-white/5 p-4 sm:p-6 mb-0"
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 8 }}
                           transition={{ duration: 0.35, ease: easeEmphatic as any }}
                         >
-                          <div className="space-y-6">
+                          <div className="space-y-4 sm:space-y-6">
                             {/* Market Size */}
                             <div>
-                              <h4 className="text-[#A6F56B] font-bold text-lg mb-2">Market Size</h4>
-                              <p className="text-white/90 text-base">{solution.marketSize}</p>
+                              <h4 className="text-[#A6F56B] font-bold text-base sm:text-lg mb-2">Market Size</h4>
+                              <p className="text-white/90 text-sm sm:text-base">{solution.marketSize}</p>
                             </div>
                             
                             {/* Challenge */}
                             <div>
-                              <h4 className="text-[#A6F56B] font-bold text-lg mb-2">Challenge</h4>
-                              <p className="text-white/90 text-base">{solution.challenge}</p>
+                              <h4 className="text-[#A6F56B] font-bold text-base sm:text-lg mb-2">Challenge</h4>
+                              <p className="text-white/90 text-sm sm:text-base">{solution.challenge}</p>
                             </div>
                             
                             {/* ProjectMATCH Impact */}
                             <div>
-                              <h4 className="text-[#A6F56B] font-bold text-lg mb-2">ProjectMATCH Impact</h4>
-                              <p className="text-white/90 text-base">{solution.impact}</p>
+                              <h4 className="text-[#A6F56B] font-bold text-base sm:text-lg mb-2">ProjectMATCH Impact</h4>
+                              <p className="text-white/90 text-sm sm:text-base">{solution.impact}</p>
                             </div>
                           </div>
                         </motion.div>

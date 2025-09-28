@@ -48,30 +48,30 @@ export default function DarkImpactSection() {
   ];
 
   return (
-    <section className="py-24 bg-[#17181D] text-white relative overflow-hidden">
+    <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-[#17181D] text-white relative overflow-hidden">
       <div className="absolute inset-0 opacity-10">
         <div className="w-full h-full bg-gradient-to-br from-teal-600 to-teal-900"></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6">
-        <div className="text-center mb-12 md:mb-16">
-          <p className="text-[11px] md:text-xs uppercase tracking-[0.18em] text-white/70 mb-3">Core field disciplines</p>
-          <h2 className="text-2xl md:text-5xl font-semibold leading-tight max-w-4xl mx-auto">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 md:px-6">
+        <div className="text-center mb-8 sm:mb-10 md:mb-12 lg:mb-16">
+          <p className="text-[10px] sm:text-[11px] md:text-xs uppercase tracking-[0.18em] text-white/70 mb-2 sm:mb-3">Core field disciplines</p>
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-5xl font-semibold leading-tight max-w-4xl mx-auto">
             Core Disciplines & On-Site Capabilities
           </h2>
-          <div className="mt-4 h-px w-24 mx-auto bg-white/15"></div>
+          <div className="mt-3 sm:mt-4 h-px w-16 sm:w-20 md:w-24 mx-auto bg-white/15"></div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 mb-14">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6 mb-8 sm:mb-10 md:mb-12 lg:mb-14">
           {stats.map((stat, index) => (
             <div
               key={index}
-              className="rounded-xl ring-1 ring-white/10 bg-white/5 hover:bg-white/7 transition-colors duration-200 p-5 md:p-6 h-full"
+              className="rounded-xl ring-1 ring-white/10 bg-white/5 hover:bg-white/7 transition-colors duration-200 p-4 sm:p-5 md:p-6 h-full"
             >
-              <h3 className="md:text-lg text-base font-medium mb-2.5 text-white">
+              <h3 className="text-sm sm:text-base md:text-lg font-medium mb-2 sm:mb-2.5 text-white">
                 {stat.title}
               </h3>
-              <p className="text-gray-300 md:text-sm text-[13px] leading-relaxed">
+              <p className="text-gray-300 text-xs sm:text-[13px] md:text-sm leading-relaxed">
                 {stat.description}
               </p>
             </div>

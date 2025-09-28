@@ -5,8 +5,8 @@ import { motion } from "framer-motion";
 
 export default function ImpactSection() {
   return (
-    <section className="bg-white py-12 md:py-16">
-      <div className="max-w-[100rem] mx-auto px-6">
+    <section className="bg-white py-8 sm:py-12 md:py-16">
+      <div className="max-w-[100rem] mx-auto px-4 sm:px-6 md:px-6">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -16,21 +16,21 @@ export default function ImpactSection() {
         >
           <div className="grid grid-cols-1 md:grid-cols-2">
             {/* Left copy */}
-            <div className="px-6 md:px-10 py-10 md:py-14">
+            <div className="px-4 sm:px-6 md:px-10 py-8 sm:py-10 md:py-14">
               <div className="max-w-3xl">
-                <p className="text-[11px] md:text-xs uppercase tracking-[0.18em] text-[#163A33]/70 mb-3">How it works</p>
-                <p className="tracking-wide font-bold text-[#163A33] mb-4 mt-1 text-xl md:text-5xl">
+                <p className="text-[10px] sm:text-[11px] md:text-xs uppercase tracking-[0.18em] text-[#163A33]/70 mb-2 sm:mb-3">How it works</p>
+                <p className="tracking-wide font-bold text-[#163A33] mb-3 sm:mb-4 mt-1 text-lg sm:text-xl md:text-5xl">
                   Define • Match • Deliver
                 </p>
-                <p className="text-sm md:text-base text-gray-600 leading-relaxed mb-8 md:mb-10">
+                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed mb-6 sm:mb-8 md:mb-10">
                   Define your project scope, timeline, and budget. Our AI Talent Match instantly connects you with verified professionals. Collaborate with clear milestones and complete payments securely — from requisition to closeout.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3 mt-40">
+                <div className="flex flex-col sm:flex-row gap-3 mt-8 sm:mt-12 md:mt-40">
                   <Link href="/signup" className="inline-flex">
                     <motion.button
                       whileHover={{ y: -1 }}
                       whileTap={{ scale: 0.98 }}
-                      className="cursor-pointer w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-[#17181D] text-white md:font-medium md:px-7 md:py-3 px-5 py-2 text-xs md:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#163A33]/30"
+                      className="cursor-pointer w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-[#17181D] text-white md:font-medium md:px-7 md:py-3 px-4 py-2.5 text-xs md:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#163A33]/30"
                     >
                       Get Started
                     </motion.button>
@@ -40,11 +40,11 @@ export default function ImpactSection() {
             </div>
 
             {/* Right illustration */}
-            <div className="relative bg-[#F6FBF7] p-8 md:p-10 md:border-l md:border-gray-200">
+            <div className="relative bg-[#F6FBF7] p-4 sm:p-6 md:p-8 lg:p-10 md:border-l md:border-gray-200">
               <div className="absolute inset-0 opacity-60" aria-hidden="true" style={{
                 backgroundImage: "repeating-linear-gradient(0deg, #EAF5EE, #EAF5EE 1px, transparent 1px, transparent 18px), repeating-linear-gradient(90deg, #EAF5EE, #EAF5EE 1px, transparent 1px, transparent 18px)"
               }} />
-              <div className="relative h-[320px] md:h-[380px]">
+              <div className="relative h-[280px] sm:h-[320px] md:h-[380px]">
                 {/* Motive: AI hub connecting Projects and Professionals, with sectors */}
                 <svg className="absolute inset-0 w-full h-full" viewBox="0 0 700 420" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="ProjectMATCH flow">
                   {/* defs */}
@@ -105,8 +105,8 @@ export default function ImpactSection() {
                 </svg>
 
                 {/* small legend */}
-                <div className="absolute bottom-3 left-0 right-0 flex justify-center">
-                  <div className="rounded-md bg-white/85 backdrop-blur px-3 py-1.5 text-[11px] md:text-xs text-gray-700 ring-1 ring-gray-200">
+                <div className="absolute bottom-2 sm:bottom-3 left-0 right-0 flex justify-center">
+                  <div className="rounded-md bg-white/85 backdrop-blur px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-[11px] md:text-xs text-gray-700 ring-1 ring-gray-200">
                     Projects → AI Match → Professionals → Deliver • Sectors connected by AI
                   </div>
                 </div>

@@ -34,7 +34,7 @@ const benefits = [
 
 export default function BenefitsSection() {
   return (
-    <section className="relative h-[100vh] bg-white py-12 md:py-20 overflow-hidden">
+    <section className="relative min-h-screen bg-white py-8 sm:py-12 md:py-16 lg:py-20 xl:py-24 overflow-hidden">
       {/* World map background */}
       <div className="pointer-events-none absolute inset-0 z-0">
         <WorldMap
@@ -50,13 +50,13 @@ export default function BenefitsSection() {
         />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-7xl px-6 md:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-10 lg:gap-12 xl:gap-16 items-start">
           {/* Left: headline and CTA */}
           <div>
-            <p className="text-sm text-gray-500 mb-2">COMPSCOPE</p>
+            <p className="text-xs sm:text-sm text-gray-500 mb-2">COMPSCOPE</p>
             <motion.h2
-              className="text-3xl md:text-4xl font-semibold leading-tight tracking-tight text-[#163A33]"
+              className="text-2xl sm:text-3xl md:text-4xl font-semibold leading-tight tracking-tight text-[#163A33]"
               initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.3 }}
@@ -64,21 +64,21 @@ export default function BenefitsSection() {
             >
               Exceptional Projects and Talent in energy and Infra Sector at one place
             </motion.h2>
-            <p className="mt-3 text-sm md:text-base text-gray-600 md:max-w-xl leading-relaxed">
+            <p className="mt-3 text-sm sm:text-base md:text-base text-gray-600 md:max-w-xl leading-relaxed">
               Access verified experts or high-value projects in oil, gas, green energy, and heavy infrastructure — instantly, securely, and intelligently powered by AI.
             </p>
 
             {/* How it works (moved below CTAs) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-[27rem] text-[#163A33]">
-              <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-8 sm:mt-12 md:mt-16 lg:mt-[26rem] xl:mt-[27.5rem] text-[#163A33]">
+              <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4 sm:p-5 md:p-6">
                 <p className="text-sm font-semibold mb-1">1) Define your project</p>
                 <p className="text-sm text-gray-600">Share scope, timeline, and budget.</p>
               </div>
-              <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4">
+              <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4 sm:p-5 md:p-6">
                 <p className="text-sm font-semibold mb-1">2) AI Talent Match</p>
                 <p className="text-sm text-gray-600">Instantly connects you with verified experts.</p>
               </div>
-              <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4">
+              <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4 sm:p-5 md:p-6 sm:col-span-2 lg:col-span-1">
                 <p className="text-sm font-semibold mb-1">3) Collaborate & Deliver</p>
                 <p className="text-sm text-gray-600">Track milestones, communicate, and complete payments securely.</p>
               </div>
@@ -97,22 +97,22 @@ export default function BenefitsSection() {
               <img
                 src="/images/solar-wind.png"
                 alt="Clean energy"
-                className="w-full h-56 md:h-72 object-cover"
+                className="w-full h-48 sm:h-56 md:h-64 lg:h-72 xl:h-80 object-cover"
               />
-              <div className="bg-[#A6F56B] text-[#163A33] p-6 md:p-8">
-                <div className="flex items-start gap-3">
-                  <span className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-md bg-[#e7ffd6] text-[#163A33] font-bold">✳</span>
+              <div className="bg-[#A6F56B] text-[#163A33] p-4 sm:p-6 md:p-8 lg:p-10">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <span className="mt-1 inline-flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-md bg-[#e7ffd6] text-[#163A33] font-bold text-sm sm:text-base">✳</span>
                   <div className="w-full">
-                    <p className="text-base md:text-lg leading-relaxed font-medium">
+                    <p className="text-base md:text-base leading-relaxed font-medium">
                       {blurb}
                     </p>
                   </div>
                 </div>
                 {/* Professional 2-column list of benefits */}
-                <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <div className="mt-4 sm:mt-5 md:mt-6 grid grid-cols-1 lg:grid-cols-2 gap-x-4 sm:gap-x-6 md:gap-x-8 gap-y-3 sm:gap-y-4">
                   {benefits.map((b, i) => (
-                    <div key={i} className="relative pl-5">
-                      <span className="absolute left-0 top-2 h-2 w-2 rounded-full bg-[#163A33]" />
+                    <div key={i} className="relative pl-4 sm:pl-5">
+                      <span className="absolute left-0 top-1.5 sm:top-2 h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-[#163A33]" />
                       <p className="font-semibold text-sm md:text-base leading-snug">{b.title}</p>
                       <p className="text-sm text-[#163A33]/80 leading-relaxed mt-1">{b.content}</p>
                     </div>
