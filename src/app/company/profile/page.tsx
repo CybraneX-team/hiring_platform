@@ -728,7 +728,7 @@ export default function ProfileTab() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs/getAllJobsByCompany?companyId=${profile._id}`
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/jobs/getAllJobsByCompany?companyId=${profile._id}`
       );
 
       if (!response.ok) {
@@ -1070,7 +1070,7 @@ export default function ProfileTab() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs/updateJobStatus`,
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/jobs/updateJobStatus`,
         {
           method: "PUT",
           headers: {

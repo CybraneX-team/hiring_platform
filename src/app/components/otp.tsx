@@ -59,7 +59,7 @@ export default function Otp() {
 
       if (mode === "register") {
         // Inspector OTP verification
-        url = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/verify-otp`;
+        url = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/auth/verify-otp`;
         body = {
           name: userCreds.name,
           email: loginCreds?.email || userCreds.email,

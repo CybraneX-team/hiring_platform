@@ -230,7 +230,7 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
     setError(null);
 
     try {
-      const res = await fetch(`${baseUrl}/api/getProfile?limit=100&page=1`);
+      const res = await fetch(`${baseUrl}/profile/getProfile?limit=100&page=1`);
 
       if (!res.ok) {
         throw new Error(`Failed to fetch profiles (status ${res.status})`);
@@ -266,7 +266,7 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
     }
 
     try {
-      const res = await fetch(`${baseUrl}/api/delete-profile/${inspectorId}`, {
+      const res = await fetch(`${baseUrl}/profile/delete-profile/${inspectorId}`, {
         method: 'DELETE',
       });
 

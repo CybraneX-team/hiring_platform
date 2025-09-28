@@ -111,7 +111,7 @@ function ApplicationDetailContent() {
       setError(null);
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/application/${applicationId}`
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/${applicationId}`
       );
 
       if (!response.ok) {

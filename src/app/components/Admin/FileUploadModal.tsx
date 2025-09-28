@@ -84,7 +84,7 @@ export default function FileUploadModal({
 
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/resume`,
+          `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/profile/inspector-profile/resume`,
           {
             method: "POST",
             body: formData,

@@ -85,7 +85,7 @@ export default function SignupPage() {
 
   async function verifyAccount() {
     const req = await fetch(
-      `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/register`,
+      `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/auth/register`,
       {
         method: "POST",
         headers: {
@@ -146,7 +146,7 @@ export default function SignupPage() {
     const state = JSON.stringify({ mode: "Inspector" });
     const encodedState = encodeURIComponent(state);
 
-    window.location.href = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/google?state=${encodedState}`;
+    window.location.href = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/auth/google?state=${encodedState}`;
   };
   return (
     <motion.div

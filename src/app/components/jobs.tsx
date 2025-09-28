@@ -174,7 +174,7 @@ export default function JobComponent() {
         params.append("search", searchQuery.trim());
       }
 
-      const apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs?${params}`;
+      const apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/jobs?${params}`;
 
       const response = await fetch(apiUrl, {
         headers: {

@@ -150,7 +150,7 @@ export default function SignupPage() {
     const state = JSON.stringify({ mode: "Company" });
     const encodedState = encodeURIComponent(state);
 
-    window.location.href = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/google?state=${encodedState}`;
+    window.location.href = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/auth/google?state=${encodedState}`;
   };
 
   return (

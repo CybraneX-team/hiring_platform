@@ -61,7 +61,7 @@ export default function NotificationsPage() {
           const storedUser = localStorage.getItem("user")
           const userId = storedUser ? JSON.parse(storedUser).id : null
           const res = await fetch(
-            `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/notifications/${userId}`
+            `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/auth/notifications/${userId}`
           )
           const data = await res.json()
 

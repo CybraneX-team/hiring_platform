@@ -30,7 +30,7 @@ export const debugAPI = {
       
       // Test GET endpoint
       const response = await apiClient.get(
-        `/api/profile/${profileId}/attendance`,
+        `/profile/${profileId}/attendance`,
         { params: { month: 9, year: 2025 } }
       );
       

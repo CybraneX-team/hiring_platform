@@ -62,7 +62,7 @@ export const attendanceAPI = {
 
       
       const response = await apiClient.get(
-        `/api/profile/${profileId}/attendance`,
+        `/profile/${profileId}/attendance`,
         {
           params: { month, year }
         }
@@ -93,7 +93,7 @@ export const attendanceAPI = {
 
       
       const response = await apiClient.put(
-        `/api/profile/${profileId}/attendance/${encodedDate}`,
+        `/profile/${profileId}/attendance/${encodedDate}`,
         data
       );
       

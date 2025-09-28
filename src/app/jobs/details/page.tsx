@@ -652,7 +652,7 @@ function JobListingContent() {
       setLoading(true);
       setError(null);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/jobs/${jobId}`
+        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/jobs/${jobId}`
       );
 
       if (!response.ok) {

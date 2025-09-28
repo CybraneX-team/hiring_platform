@@ -1495,8 +1495,8 @@ export default function ProfileTab() {
       // formData.append("certificates", JSON.stringify(validCertificates));
 
       const apiUrl = profile?._id // Use ._id instead of .id
-        ? `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/edit-profile/${profile._id}`
-        : `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/create-profile`;
+        ? `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/profile/edit-profile/${profile._id}`
+        : `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/profile/create-profile`;
       const method = profile?._id ? "PUT" : "POST";
 
       const response = await fetch(apiUrl, {
@@ -1647,10 +1647,10 @@ export default function ProfileTab() {
       let method: string;
 
       if (!profileId) {
-        apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/create-profile`;
+        apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/profile/create-profile`;
         method = "POST";
       } else {
-        apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/edit-profile/${profileId}`;
+        apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/profile/edit-profile/${profileId}`;
         method = "PUT";
       }
 
@@ -1983,7 +1983,7 @@ export default function ProfileTab() {
         });
       }
 
-      const apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/edit-profile/${profile?._id}`;
+      const apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/profile/edit-profile/${profile?._id}`;
       const response = await fetch(apiUrl, { method: "PUT", body: formData });
 
       if (!response.ok) {

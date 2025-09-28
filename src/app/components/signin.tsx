@@ -42,12 +42,12 @@ export default function LoginPage() {
   const handleGoogleSignIn = () => {
 
 
-    window.location.href = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/google`;
+    window.location.href = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/auth/google`;
   };
 
   const login = async () => {
     const makeReq = await fetch(
-      `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/auth/login`,
+      `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/auth/login`,
       {
         method: "POST",
         headers: {

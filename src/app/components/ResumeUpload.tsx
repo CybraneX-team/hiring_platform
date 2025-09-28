@@ -104,7 +104,7 @@ export default function ResumeUpload({ userId, onUploadComplete, onClose }: Resu
       formData.append('userId', userId || (user ? user.id : ""));
         try {
           const res = await fetch(
-            `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/api/profile/resume`,
+            `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/profile/inspector-profile/resume`,
             {
               method: "POST",
               body: formData,
