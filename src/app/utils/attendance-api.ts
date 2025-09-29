@@ -59,14 +59,11 @@ export const attendanceAPI = {
     year: number
   ): Promise<AttendanceResponse> => {
     try {
-
+      const url = `/profile/${profileId}/attendance`;
       
-      const response = await apiClient.get(
-        `/profile/${profileId}/attendance`,
-        {
-          params: { month, year }
-        }
-      );
+      const response = await apiClient.get(url, {
+        params: { month, year }
+      });
       
 
       return response.data as AttendanceResponse;
