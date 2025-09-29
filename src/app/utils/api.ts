@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create an axios instance with default configuration
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_FIREBASE_API_URL || 'http://localhost:8000',
+  baseURL: process.env.NEXT_PUBLIC_FIREBASE_API_URL || 'http://localhost:8000/api',
   timeout: 60000, // 60 seconds for better job matching support
   headers: {
     'Content-Type': 'application/json',

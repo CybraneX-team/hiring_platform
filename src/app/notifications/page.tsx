@@ -113,7 +113,7 @@ export default function NotificationsPage() {
               onClick={() => {
                 if (notification.label === "Document Request") {
                   router.push('/profile?tab=jobsApplied');
-                } else if (notification.label === "New Job Match") {
+                } else if (notification.label === "Top Job Match") {
                   // Extract job ID from description
                   const jobIdMatch = notification.description.match(/jobId: ([a-f0-9]+)/);
                   if (jobIdMatch && jobIdMatch[1]) {
