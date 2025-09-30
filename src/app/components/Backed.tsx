@@ -1,28 +1,40 @@
 import Link from "next/link";
+import Image from "next/image";
 export default function BackedSection() {
   return (
     <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white text-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-6">
+        {/* Section heading */}
+        <div className="text-center mb-8 sm:mb-10 md:mb-12">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold uppercase tracking-tight text-[#17181D]">
+            Backed by Compscope
+          </h2>
+        </div>
         <div className="relative rounded-2xl ring-1 ring-gray-200 overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-2">
             {/* Left: statement */}
             <div className="p-6 sm:p-8 md:p-10 lg:p-14 bg-white">
-              <p className="text-[10px] sm:text-[11px] md:text-xs uppercase tracking-[0.18em] text-gray-500 mb-2">
-                Backed by Compscope
-              </p>
-              <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight text-[#17181D] mb-4 sm:mb-5 mt-2">
+              <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-medium tracking-tight text-[#17181D] mb-4 sm:mb-5 mt-2">
                 ProjectMATCH is backed by deep field experience and credibility
               </h3>
+              
               <blockquote className="text-xs sm:text-sm md:text-base text-gray-700 leading-relaxed md:max-w-xl mt-4 sm:mt-5">
                 "ProjectMATCH is an ambitious initiative by Compscope, created to redefine how energy professionals and organizations connect, collaborate, and execute projects with precision and excellence. Leveraging decades of expertise in hydrocarbon industrial projects, inspection, and advanced energy solutions, Compscope ensures that every connection on ProjectMATCH is backed by trust, technical depth, and verified credibility."
               </blockquote>
 
-              <div className="mt-8 sm:mt-12 md:mt-16 lg:mt-40">
-                <Link href="https://www.linkedin.com/company/compscope-nonmetallics-technology-solutions/" className="inline-flex">
-                  <button className="cursor-pointer bg-[#17181D] text-white font-medium md:px-8 py-2.5 sm:py-3 px-4 sm:px-5 text-xs sm:text-sm md:text-base rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#17181D]/30">
-                    About Compscope
-                  </button>
-                </Link>
+              
+
+              <div className="mt-5">
+              <div className="mt-2 sm:mt-3 mb-4 sm:mb-6">
+                <Image
+                  src="/backed.png"
+                  alt="Backed by Compscope visual"
+                  width={800}
+                  height={600}
+                  className="w-full h-80 object-cover rounded-lg ring-1 ring-gray-200"
+                  priority
+                />
+              </div>
               </div>
             </div>
 
@@ -86,6 +98,12 @@ export default function BackedSection() {
               <p className="mt-3 sm:mt-4 text-xs sm:text-sm md:text-sm text-gray-600">
                 Compscope brings decades of practical know‑how so your teams can hire confidently and deliver with discipline.
               </p>
+
+              <Link href="https://www.linkedin.com/company/compscope-nonmetallics-technology-solutions/" className="inline-flex mt-7">
+                  <button className="cursor-pointer bg-[#17181D] text-white font-medium md:px-8 py-2.5 sm:py-3 px-4 sm:px-5 text-xs sm:text-sm md:text-base rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#17181D]/30">
+                    About Compscope
+                  </button>
+                </Link>
             </div>
           </div>
         </div>

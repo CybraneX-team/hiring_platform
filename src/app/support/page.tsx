@@ -66,7 +66,7 @@ export default function SupportPage() {
                 Support Center
               </h1>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Get help with ProjectMATCH. Our team is here to assist you with any questions or issues.
+                Get help with ProjectMATCH.
               </p>
             </motion.div>
 
@@ -79,7 +79,7 @@ export default function SupportPage() {
                 className="space-y-8"
               >
                 <div>
-                  <h2 className="text-2xl font-bold text-[#163A33] mb-6">Get in Touch</h2>
+                  <h2 className="text-2xl font-bold text-[#163A33] mb-6 mt-10">Get in Touch</h2>
                   <p className="text-gray-600 mb-8">
                     Reach out to our support team for assistance with your ProjectMATCH account, 
                     technical issues, or general inquiries.
@@ -94,7 +94,7 @@ export default function SupportPage() {
                     <div>
                       <h3 className="font-semibold text-[#163A33] mb-1">Phone Support</h3>
                       <p className="text-gray-600">+1 (555) 123-4567</p>
-                      <p className="text-sm text-gray-500">Mon-Fri, 9AM-6PM CST</p>
+                      <p className="text-sm text-gray-500">Mon-Fri, 9AM-6PM</p>
                     </div>
                   </div>
 
@@ -105,7 +105,6 @@ export default function SupportPage() {
                     <div>
                       <h3 className="font-semibold text-[#163A33] mb-1">Email Support</h3>
                       <p className="text-gray-600">support@projectmatch.com</p>
-                      <p className="text-sm text-gray-500">24/7 response within 24 hours</p>
                     </div>
                   </div>
 

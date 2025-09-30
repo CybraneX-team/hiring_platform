@@ -34,6 +34,13 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Prefetch homepage for instant navigation when clicking the logo
+  useEffect(() => {
+    try {
+      (router as any)?.prefetch?.("/");
+    } catch (_) {}
+  }, [router]);
+
   const { user, setuser, setprofile } = useUser();
   
   return (
@@ -42,25 +49,29 @@ export default function Header() {
         ${isScrolled ? "bg-white pt-1" : "bg-transparent"}
       `}
     >
-      <Link href="/" className="flex items-center gap-1 sm:gap-2 md:gap-3">
+      <Link href="/" prefetch className="flex items-center gap-1">
         <Image
           src={isScrolled ? "/logo.png" : "/logo.png"}
           alt="ProjectMATCH by Compscope"
           width={200}
           height={80}
-          className="h-16 sm:h-16 md:h-16 lg:h-16 xl:h-20 w-auto"
+          className="h-16 sm:h-16 md:h-16 lg:h-16 xl:h-24 w-auto"
           priority
         />
-        <div className="block">
-          <h1 className={`text-xs sm:text-sm md:text-base lg:text-lg font-black ${isScrolled ? "text-black" : "text-white"}`}>ProjectMATCH</h1>
-          <p className={`text-xs sm:text-xs md:text-sm text-gray-600 ${isScrolled ? "text-black" : "text-white"}`}>by <span className="text-[#98f831] font-bold">Compscope</span></p>
+        <div className={`leading-tight ${isScrolled ? "text-[#163A33]" : "text-white"}`}>
+          <div className="text-xs sm:text-sm md:text-base lg:text-lg font-black">
+            ProjectMATCH
+          </div>
+          <div className="text-[10px] sm:text-xs md:text-sm text-gray-600">
+            <span className="text-[#3EA442] font-bold">by Compscope</span>
+          </div>
         </div>
       </Link>
 
       <div className="cursor-pointer flex items-center gap-2 sm:gap-3 md:gap-4">
         {!token && (
           <Link href="/signin">
-            <button className="cursor-pointer bg-[#9ff64f] text-black px-3 py-1.5 sm:px-4 sm:py-2 md:px-6 md:py-2.5 rounded-lg font-medium hover:bg-[#69a34b] transition-colors text-xs sm:text-sm md:text-base">
+            <button className="cursor-pointer bg-[#3EA442] text-white px-3 py-1.5 sm:px-4 sm:py-2 md:px-6 md:py-2.5 rounded-lg font-medium hover:bg-[#69a34b] transition-colors text-xs sm:text-sm md:text-base">
               Login
             </button>
           </Link>

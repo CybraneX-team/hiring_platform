@@ -165,7 +165,19 @@ export default function SignupPage() {
     >
       <div className="container mx-auto px-6 py-8">
         <motion.div className="mb-10" variants={itemVariants}>
-          <h1 className="text-lg font-medium text-gray-900">Logo</h1>
+          <Link href="/" className="flex flex-col items-center">
+            <Image
+              src="/logo.png"
+              alt="ProjectMATCH by Compscope"
+              width={200}
+              height={80}
+              className="h-16 sm:h-16 md:h-16 lg:h-16 xl:h-24 w-auto"
+              priority
+            />
+            <p className="text-xs mb-2 sm:text-xs md:text-sm text-gray-600 font-black -mt-1">
+               <span className="text-[#3EA442] font-bold">by Compscope</span>
+            </p>
+          </Link>
         </motion.div>
 
         <div className="max-w-md mx-auto space-y-6">

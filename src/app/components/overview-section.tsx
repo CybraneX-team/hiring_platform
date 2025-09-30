@@ -13,7 +13,7 @@ export default function OverviewSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="mb-12 sm:mb-16 md:mb-20 lg:mb-24"
+          className="mb-12 sm:mb-16 md:mb-20 lg:mb-28"
         >
           <div className="text-center mb-8 sm:mb-12 md:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#163A33] mb-3 sm:mb-4">
@@ -122,12 +122,12 @@ export default function OverviewSection() {
         </motion.div>
 
         {/* Our Industry Coverage */}
-        {/* <motion.div
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="mb-24"
+          className="mb-16"
         >
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-[#163A33] mb-4">
@@ -138,30 +138,30 @@ export default function OverviewSection() {
             </p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 max-w-8xl mx-auto">
             {[
               { 
-                image: "/flaticon_assets/oil-and-gas.png", 
+                image: "/flaticon_assets/oil-barrel.png", 
                 label: "Oil & Gas", 
-                color: "bg-orange-50 border-orange-200" 
+                color: "bg-green-50 border-green-200" 
               },
               { 
-                image: "/flaticon_assets/solar-for-overview.png", 
+                image: "/flaticon_assets/solar-energy.png", 
                 label: "Solar Energy", 
-                color: "bg-yellow-50 border-yellow-200" 
+                color: "bg-green-50 border-green-200" 
               },
               { 
-                image: "/flaticon_assets/wind-turbine.png", 
+                image: "/flaticon_assets/wind-energy.png", 
                 label: "Wind Energy", 
-                color: "bg-blue-50 border-blue-200" 
+                color: "bg-green-50 border-green-200" 
               },
               { 
-                image: "/flaticon_assets/infrastructure.png", 
+                image: "/flaticon_assets/mega-industry.png", 
                 label: "Infrastructure", 
-                color: "bg-gray-50 border-gray-200" 
+                color: "bg-green-50 border-green-200" 
               },
               { 
-                image: "/flaticon_assets/green-energy.png", 
+                image: "/flaticon_assets/hydrogen.png", 
                 label: "Green Energy", 
                 color: "bg-green-50 border-green-200" 
               },
@@ -174,24 +174,24 @@ export default function OverviewSection() {
                 transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.1 }}
                 className="group"
               >
-                <div className={`${item.color} rounded-2xl p-6 border-2 hover:shadow-lg transition-all duration-300 group-hover:scale-105`}>
+                <div className={`${item.color} rounded-2xl p-8 md:p-10 border-2 hover:shadow-lg transition-all duration-300`}>
                   <div className="text-center">
-                    <div className="bg-white rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <div className="bg-white rounded-full w-20 h-20 md:w-28 md:h-28 flex items-center justify-center mx-auto mb-6 transition-transform duration-300">
                       <Image
                         src={item.image}
                         alt={item.label}
-                        width={32}
-                        height={32}
-                        className="w-8 h-8 object-contain"
+                        width={80}
+                        height={80}
+                        className="w-12 h-12 md:w-20 md:h-20 object-contain"
                       />
                     </div>
-                    <h3 className="font-semibold text-[#163A33] text-sm md:text-base">{item.label}</h3>
+                    <h3 className="font-semibold text-[#163A33] text-lg md:text-xl">{item.label}</h3>
                   </div>
                 </div>
               </motion.div>
             ))}
           </div>
-        </motion.div> */}
+        </motion.div>
       </div>
     </section>
   );

@@ -68,17 +68,17 @@ export default function BenefitsSection() {
               Access verified experts or high-value projects in oil, gas, green energy, and heavy infrastructure — instantly, securely, and intelligently powered by AI.
             </p>
 
-            {/* How it works (moved below CTAs) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-8 sm:mt-12 md:mt-16 lg:mt-[26rem] xl:mt-[27.5rem] text-[#163A33]">
-              <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4 sm:p-5 md:p-6">
+            {/* How it works (stacked vertically to utilize left empty space) */}
+            <div className="mt-6 sm:mt-8 md:mt-10 lg:mt-[19rem] flex flex-col gap-3 sm:gap-4 text-[#163A33]">
+              <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4 sm:p-5 md:p-6 shadow-sm">
                 <p className="text-sm font-semibold mb-1">1) Define your project</p>
                 <p className="text-sm text-gray-600">Share scope, timeline, and budget.</p>
               </div>
-              <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4 sm:p-5 md:p-6">
+              <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4 sm:p-5 md:p-6 shadow-sm">
                 <p className="text-sm font-semibold mb-1">2) AI Talent Match</p>
                 <p className="text-sm text-gray-600">Instantly connects you with verified experts.</p>
               </div>
-              <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4 sm:p-5 md:p-6 sm:col-span-2 lg:col-span-1">
+              <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4 sm:p-5 md:p-6 shadow-sm">
                 <p className="text-sm font-semibold mb-1">3) Collaborate & Deliver</p>
                 <p className="text-sm text-gray-600">Track milestones, communicate, and complete payments securely.</p>
               </div>

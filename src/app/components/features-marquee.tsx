@@ -120,7 +120,7 @@ export default function FeaturesMarquee() {
                 key={`marquee-1-${index}`}
                 className="flex-shrink-0 mx-2 sm:mx-3 md:mx-4 group"
               >
-                <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 w-80 sm:w-96 md:w-auto shadow-t-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+                <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 w-80 sm:w-96 md:w-auto shadow-t-lg border border-gray-100 transition-all duration-300">
                   <div className="flex items-start gap-3 sm:gap-4">
                     <div className="bg-[#9ff64f] rounded-full p-2 sm:p-3 flex-shrink-0">
                       <feature.icon className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-[#163A33]" />
@@ -158,7 +158,7 @@ export default function FeaturesMarquee() {
                 key={`marquee-2-${index}`}
                 className="flex-shrink-0 mx-2 sm:mx-3 md:mx-4 group"
               >
-                <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 w-80 sm:w-96 md:w-auto shadow-t-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+                <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 w-80 sm:w-96 md:w-auto shadow-t-lg border border-gray-100  transition-all duration-300">
                   <div className="flex items-start gap-3 sm:gap-4">
                     <div className="bg-[#9ff64f] rounded-full p-2 sm:p-3 flex-shrink-0">
                       <feature.icon className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-[#163A33]" />

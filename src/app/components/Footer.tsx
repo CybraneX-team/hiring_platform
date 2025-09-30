@@ -17,29 +17,44 @@ export default function Footer() {
   const scrollToSectors = () => {
     const sectorsSection = document.getElementById('sectors');
     if (sectorsSection) {
-      sectorsSection.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
+      sectorsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
     }
+
+    // Not on the home page; navigate to home and then scroll
+    router.push('/#sectors');
+    setTimeout(() => {
+      const el = document.getElementById('sectors');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 600);
   };
 
   const scrollToSpecificSector = (sectorName: string) => {
     const sectorsSection = document.getElementById('sectors');
     if (sectorsSection) {
-      sectorsSection.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
-      
-      // Dispatch custom event to expand the specific sector card
+      sectorsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setTimeout(() => {
-        const event = new CustomEvent('expandSector', { 
-          detail: { sectorName } 
-        });
+        const event = new CustomEvent('expandSector', { detail: { sectorName } });
         window.dispatchEvent(event);
-      }, 500); // Small delay to ensure scroll completes
+      }, 500);
+      return;
     }
+
+    // If not on a page with sectors, navigate to home and then expand the sector
+    try {
+      sessionStorage.setItem('expandSector', sectorName);
+    } catch (_) {}
+    router.push('/#sectors');
+    setTimeout(() => {
+      const el = document.getElementById('sectors');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      const event = new CustomEvent('expandSector', { detail: { sectorName } });
+      window.dispatchEvent(event);
+    }, 700);
   };
   return (
     <footer className="bg-white text-black border-t border-gray-200">
@@ -55,6 +70,7 @@ export default function Footer() {
                 className="h-16 sm:h-20 md:h-24 w-auto"
                 priority
               />
+              <p className={`text-xs mb-2 sm:text-xs md:text-sm text-gray-600 font-black -mt-1`}> <span className="text-[#000] font-bold">by Compscope</span></p>
             </button>
             <p className="text-gray-600 text-xs sm:text-sm mb-4 sm:mb-5 leading-relaxed">
               Connecting talent to the projects — securely and efficiently.

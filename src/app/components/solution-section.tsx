@@ -1,13 +1,12 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
-import { motion, AnimatePresence } from "motion/react"
-import { X } from "lucide-react"
+import { motion } from "motion/react"
 
 export default function SolutionsSection() {
-  const [expandedCard, setExpandedCard] = useState<number | null>(null)
+  const [showAll, setShowAll] = useState(false)
   const easeEmphatic: number[] = [0.22, 1, 0.36, 1]
 
   const solutions = [
@@ -53,43 +52,42 @@ export default function SolutionsSection() {
     }
   ]
 
-  const handleCardClick = (index: number) => {
-    setExpandedCard(expandedCard === index ? null : index)
-  }
-
-  const handleCloseCard = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setExpandedCard(null)
-  }
-
-  // Listen for custom events from footer to expand specific sectors
+  // Footer → sector jump: ensure the required card is visible and scrolled into view
   useEffect(() => {
-    const handleExpandSector = (event: CustomEvent) => {
-      const { sectorName } = event.detail;
-      const sectorIndex = solutions.findIndex(solution => solution.title === sectorName);
-      if (sectorIndex !== -1) {
-        setExpandedCard(sectorIndex);
-        
-        // Scroll to the expanded card horizontally
-        setTimeout(() => {
-          const cardElement = document.querySelector(`[data-card-index="${sectorIndex}"]`);
-          if (cardElement) {
-            cardElement.scrollIntoView({
-              behavior: 'smooth',
-              block: 'nearest',
-              inline: 'center'
-            });
-          }
-        }, 100); // Small delay to ensure the card is expanded
+    try {
+      const stored = sessionStorage.getItem('expandSector')
+      if (stored) {
+        const sectorIndex = solutions.findIndex(s => s.title === stored)
+        if (sectorIndex !== -1) {
+          if (sectorIndex > 2) setShowAll(true)
+          setTimeout(() => {
+            const cardElement = document.querySelector(`[data-card-index="${sectorIndex}"]`)
+            if (cardElement) {
+              cardElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+          }, 250)
+        }
+        sessionStorage.removeItem('expandSector')
       }
-    };
+    } catch (_) {}
 
-    window.addEventListener('expandSector', handleExpandSector as EventListener);
-    
-    return () => {
-      window.removeEventListener('expandSector', handleExpandSector as EventListener);
-    };
-  }, []);
+    const handleExpandSector = (event: CustomEvent) => {
+      const { sectorName } = event.detail
+      const sectorIndex = solutions.findIndex(s => s.title === sectorName)
+      if (sectorIndex !== -1) {
+        if (sectorIndex > 2) setShowAll(true)
+        setTimeout(() => {
+          const cardElement = document.querySelector(`[data-card-index="${sectorIndex}"]`)
+          if (cardElement) {
+            cardElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }
+        }, 150)
+      }
+    }
+
+    window.addEventListener('expandSector', handleExpandSector as EventListener)
+    return () => window.removeEventListener('expandSector', handleExpandSector as EventListener)
+  }, [])
 
   return (
     <section className="py-8 sm:py-12 md:py-14 bg-white" id="sectors">
@@ -104,266 +102,67 @@ export default function SolutionsSection() {
           <div>
             <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight ml-0 sm:ml-5">Our Empowerment</h2>
           </div>
-          <button
-            className="relative flex mt-4 sm:mt-10 items-center text-black/80 hover:text-black text-xs md:text-sm rounded-lg transition-colors underline-offset-4 font-medium group focus:outline-none"
-            style={{ paddingBottom: 7, paddingRight: 15, letterSpacing: 4 }}
-          >
-            <span
-              className="relative pb-5 uppercase"
-              style={{ paddingBottom: 20, display: "inline-block" }}
-            >
-              {/* <span
-                className="relative inline-flex items-center after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-[60%] after:h-[2px] after:bg-black after:scale-x-0 after:origin-bottom-right after:transition-transform after:duration-200 group-hover:after:scale-x-100 group-hover:after:origin-bottom-left"
-                style={{ position: "relative", display: "inline-flex", paddingBottom: 4 }}
-              >
-                View All&nbsp;
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="30"
-                  height="10"
-                  viewBox="0 0 46 16"
-                  className="ml-1 transition-transform duration-300 ease-in-out -translate-x-2 group-hover:translate-x-0 group-active:scale-90"
-                  style={{ minWidth: 30 }}
-                >
-                  <path
-                    d="M8,0,6.545,1.455l5.506,5.506H-30V9.039H12.052L6.545,14.545,8,16l8-8Z"
-                    transform="translate(30)"
-                    fill="currentColor"
-                  />
-                </svg>
-              </span> */}
-            </span>
-          </button>
         </motion.div>
 
-        <div className="relative overflow-x-auto overflow-y-hidden scrollbar-hide flex">
-          <motion.div layout className="flex items-start gap-4 sm:gap-6 md:gap-10 w-max p-2 sm:p-4">
-            {solutions.map((solution, index) => {
-              const isExpanded = expandedCard === index
-              return (
-                <motion.div
-                  key={index}
-                  data-card-index={index}
-                  layout="position"
-                  className={`
-                    bg-[#163A37] text-white rounded-xl relative overflow-visible cursor-pointer flex-none shrink-0
-                    border border-white/10
-                    transition-[width] duration-450
-                    ${isExpanded
-                      ? "w-[28rem] sm:w-[32rem] md:w-[50rem] h-[28rem] sm:h-[30rem] p-6 sm:p-8 md:p-10 ring-2 ring-emerald-300/20 z-10 overflow-hidden"
-                      : "w-80 sm:w-96 h-[28rem] sm:h-[30rem] p-6 sm:p-8 overflow-hidden"
-                    }
-                    flex flex-col justify-between
-                  `}
-                  onClick={() => handleCardClick(index)}
-                  initial={false}
-                  viewport={{ once: true, amount: 0.2 }}
-                  transition={{
-                    layout: isExpanded
-                      ? { type: "spring", stiffness: 160, damping: 22 }
-                      : { duration: 0 },
-                  }}
-                >
-                  <div className="pointer-events-none absolute inset-0" />
-                  <div className="absolute -top-2 -right-2 bg-[#A6F56B] rounded-lg p-1.5 sm:p-2 shadow-2xl">
-                    {solution.iconSrc && (
-                      <Image src={solution.iconSrc} alt={`${solution.title} icon`} width={24} height={24} className="sm:w-7 sm:h-7 object-contain" />
-                    )}
+        <div className="space-y-8 sm:space-y-10 md:space-y-12">
+          {solutions.map((solution, index) => {
+            if (!showAll && index >= 3) return null
+            const isReversed = (index % 2) === 1
+            return (
+              <motion.div
+                key={solution.title}
+                data-card-index={index}
+                className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-center rounded-2xl ring-1 ring-gray-200 p-4 sm:p-6 md:p-8 bg-white"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{ duration: 0.5, ease: easeEmphatic as any }}
+              >
+                <div className={`${isReversed ? 'md:order-2' : ''}`}>
+                  <Image
+                    src={(solution as any).heroSrc}
+                    alt={solution.title}
+                    width={900}
+                    height={600}
+                    className="w-full h-56 sm:h-64 md:h-72 lg:h-80 object-cover rounded-xl"
+                  />
+                </div>
+                <div className={`${isReversed ? 'md:order-1' : ''}`}>
+                  {/* <div className="inline-flex items-center gap-2 bg-[#A6F56B]/20 text-[#163A33] px-3 py-1 rounded-md mb-3">
+                    <Image src={solution.iconSrc} alt={`${solution.title} icon`} width={22} height={22} className="w-5 h-5" />
+                    <span className="text-xs font-semibold uppercase tracking-wide">{solution.title}</span>
+                  </div> */}
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#163A33] mb-3">{solution.title}</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="text-[#163A33] font-semibold text-sm sm:text-base">Market Size</h4>
+                      <p className="text-gray-700 text-sm sm:text-base">{solution.marketSize}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-[#163A33] font-semibold text-sm sm:text-base">Challenge</h4>
+                      <p className="text-gray-700 text-sm sm:text-base">{solution.challenge}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-[#163A33] font-semibold text-sm sm:text-base">ProjectMATCH Impact</h4>
+                      <p className="text-gray-700 text-sm sm:text-base">{solution.impact}</p>
+                    </div>
                   </div>
-                  <div className="relative z-10 flex flex-col h-full">
-                    {isExpanded && (
-                      <button
-                        onClick={handleCloseCard}
-                        className="absolute top-5 right-5 text-white hover:text-gray-200 transition-colors z-20 pointer-events-auto"
-                      >
-                        <X size={24} />
-                      </button>
-                    )}
-
-                    <motion.h3
-                      layout={isExpanded ? true : false}
-                      className={`
-                        text-xl sm:text-2xl md:text-3xl font-extrabold mb-2 text-left tracking-tight text-[#A6F56B]
-                        ${isExpanded ? "mt-2" : ""}
-                      `}
-                    >
-                      {solution.title}
-                    </motion.h3>
-
-                    {/* Replaced description with a media preview inside the tile */}
-                    {!isExpanded && (solution as any).heroSrc && (
-                      <div className="relative mt-2">
-                        <Image
-                          src={(solution as any).heroSrc}
-                          alt={`${solution.title}`}
-                          width={900}
-                          height={300}
-                          className="object-cover w-full rounded-2xl border border-white/10"
-                        />
-                      </div>
-                    )}
-                    {!isExpanded && (
-                      <div className="mt-3 sm:mt-4 flex items-center gap-2 text-[#A6F56B] font-semibold text-sm sm:text-base">
-                        <span className="underline underline-offset-4 ">Learn more</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sm:w-5 sm:h-5 -translate-x-1 transition-transform">
-                          <path d="M5 12h14" />
-                          <path d="M12 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    )}
-
-                    <AnimatePresence initial={false}>
-                      {isExpanded && (
-                        <motion.div
-                          layout
-                          className="mt-2"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.3, ease: easeEmphatic as any }}
-                        >
-                          {/* Expanded view: large media image at right within card bounds */}
-                        <motion.div
-                          className="border border-white/10 rounded-xl bg-white/5 p-4 sm:p-6 mb-0"
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 8 }}
-                          transition={{ duration: 0.35, ease: easeEmphatic as any }}
-                        >
-                          <div className="space-y-4 sm:space-y-6">
-                            {/* Market Size */}
-                            <div>
-                              <h4 className="text-[#A6F56B] font-bold text-base sm:text-lg mb-2">Market Size</h4>
-                              <p className="text-white/90 text-sm sm:text-base">{solution.marketSize}</p>
-                            </div>
-                            
-                            {/* Challenge */}
-                            <div>
-                              <h4 className="text-[#A6F56B] font-bold text-base sm:text-lg mb-2">Challenge</h4>
-                              <p className="text-white/90 text-sm sm:text-base">{solution.challenge}</p>
-                            </div>
-                            
-                            {/* ProjectMATCH Impact */}
-                            <div>
-                              <h4 className="text-[#A6F56B] font-bold text-base sm:text-lg mb-2">ProjectMATCH Impact</h4>
-                              <p className="text-white/90 text-sm sm:text-base">{solution.impact}</p>
-                            </div>
-                          </div>
-                        </motion.div>
-                          {/* Removed footer CTA to keep height stable */}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </motion.div>
-              )
-            })}
-          </motion.div>
+                </div>
+              </motion.div>
+            )
+          })}
         </div>
-      </div>
-      {/* Scroll Indicator  */}
-      <div
-        className="relative flex flex-col items-center"
-        style={{
-          transform: "rotate(270deg)",
-          width: "30px",
-          height: "50px",
-          marginLeft: "50%",
-          marginBottom: "16px",
-          cursor: "pointer",
-        }}
-      >
-        <div
-          className="absolute left-0 top-0"
-          style={{
-            width: "30px",
-            height: "50px",
-            border: "3px solid green",
-            borderRadius: "50px",
-            boxSizing: "border-box",
-          }}
-        ></div>
-        <div
-          className="absolute"
-          style={{
-            left: "50%",
-            bottom: "30px",
-            width: "6px",
-            height: "6px",
-            marginLeft: "-3px",
-            backgroundColor: "green",
-            borderRadius: "100%",
-            boxShadow: "0px -5px 3px 1px #2a547066",
-            animation: "scrolldown-anim 2s infinite",
-          }}
-        ></div>
-        <div
-          className="flex flex-col items-center"
-          style={{
-            paddingTop: "6px",
-            marginLeft: "-3px",
-            marginTop: "48px",
-            width: "30px",
-          }}
-        >
-          <div
-            style={{
-              marginTop: "-6px",
-              border: "solid green",
-              borderWidth: "0 3px 3px 0",
-              display: "inline-block",
-              width: "10px",
-              height: "10px",
-              transform: "rotate(45deg)",
-              animation: "pulse54012 500ms ease-in-out infinite alternate",
-              opacity: 0.5,
-            }}
-          ></div>
-          <div
-            style={{
-              marginTop: "-6px",
-              border: "solid green",
-              borderWidth: "0 3px 3px 0",
-              display: "inline-block",
-              width: "10px",
-              height: "10px",
-              transform: "rotate(45deg)",
-              animation: "pulse54012 500ms ease-in-out infinite alternate 250ms",
-              opacity: 0.5,
-            }}
-          ></div>
-        </div>
-        <style>
-          {`
-            @keyframes scrolldown-anim {
-              0% {
-                opacity: 0;
-                height: 6px;
-              }
-              40% {
-                opacity: 1;
-                height: 10px;
-              }
-              80% {
-                transform: translate(0, 20px);
-                height: 10px;
-                opacity: 0;
-              }
-              100% {
-                height: 3px;
-                opacity: 0;
-              }
-            }
-            @keyframes pulse54012 {
-              from {
-                opacity: 0;
-              }
-              to {
-                opacity: 0.5;
-              }
-            }
-          `}
-        </style>
+
+        {!showAll && (
+          <div className="flex justify-center mt-10">
+            <button
+              onClick={() => setShowAll(true)}
+              className="cursor-pointer bg-[#9ff64f] text-black px-6 py-2.5 rounded-lg font-medium hover:bg-[#69a34b] transition-colors text-sm md:text-base"
+            >
+              View more
+            </button>
+          </div>
+        )}
       </div>
     </section>
   )
