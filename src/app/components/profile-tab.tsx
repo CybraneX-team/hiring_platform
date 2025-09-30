@@ -18,6 +18,7 @@ import {
   MapPin,
   Calendar,
   Clock,
+  LogOut,
   Plus,
   Phone,
 } from "lucide-react";
@@ -30,6 +31,14 @@ import { useUser } from "../context/UserContext";
 import { toast } from "react-toastify";
 import ApplicationDetailView from "./cv";
 import Link from "next/link";
+import {
+  appendIf,
+  processCerts,
+  processEducation,
+  processExperiences,
+  UpdatedData,
+} from "../Helper/profile-helper";
+import { handleLogout } from "../Helper/logout";
 
 // OlaMaps integration
 let OlaMaps: any = null;
@@ -419,7 +428,6 @@ const OlaMapComponent = ({
 
         markerRef.current.setPopup(popup);
       }
-
     } catch (error) {
       console.error("Error adding marker:", error);
       console.error("OlaMaps object:", olaMaps);
@@ -895,11 +903,12 @@ const parseEducationPeriod = (period: string): string | undefined => {
 export default function ProfileTab() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("resume");
-  const { user, profile, updateProfile } = useUser();
+  const { user, profile, updateProfile, setuser, setprofile } = useUser();
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [httpMethod, sethttpMethod] = useState<string>("PUT");
+  const [token, setToken] = useState<string | null>(null);
   const [applications, setApplications] = useState<any[]>([]);
   const [isScrolled, setIsScrolled] = useState(false);
   const [modalType, setModalType] = useState<
@@ -965,7 +974,7 @@ export default function ProfileTab() {
     setLoadingApplications(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/allApplicationsOfUser?userId=${user.id}`
+        `${process.env.NEXT_PUBLIC_API_URL}/application/allApplicationsOfUser?userId=${user.id}`
       );
 
       if (response.ok) {
@@ -996,6 +1005,14 @@ export default function ProfileTab() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    // Only runs on the client
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      setToken(storedToken);
+    }
+  }, []);
+
   const uploadDocument = async (
     applicationId: string,
     docId: number,
@@ -1008,7 +1025,7 @@ export default function ProfileTab() {
       formData.append("docId", docId.toString());
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/${applicationId}/upload-document`,
+        `${process.env.NEXT_PUBLIC_API_URL}/application/${applicationId}/upload-document`,
         {
           method: "POST",
           body: formData,
@@ -1139,6 +1156,7 @@ export default function ProfileTab() {
   const [profilePicture, setProfilePicture] = useState("");
   const [isProfilePictureModalOpen, setIsProfilePictureModalOpen] =
     useState(false);
+  const [uploadingProfilePicture, setUploadingProfilePicture] = useState(false);
   const [profileFormData, setProfileFormData] = useState({
     name: "",
     location: "",
@@ -1212,10 +1230,115 @@ export default function ProfileTab() {
   }, [profileData.profile.unavailability]);
 
   useEffect(() => {
+    if (profile?.profile_image_url) {
+      setProfilePicture(profile.profile_image_url);
+    }
+  }, [profile]);
+
+  // Profile picture upload handler
+  const handleProfilePictureUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file || !user?.id) return;
+
+    // Validate file type
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+      toast.error("Please select a valid image file (JPEG, PNG, GIF, or WebP)");
+      return;
+    }
+
+    // Validate file size (5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+
+    setUploadingProfilePicture(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("profilePicture", file);
+      formData.append("userId", user.id);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/profile/upload-profile-picture`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Upload failed");
+      }
+
+      const result = await response.json();
+      setProfilePicture(result.profile_image_url);
+      updateProfile?.(result.profile);
+      toast.success("Profile picture uploaded successfully!");
+      setIsProfilePictureModalOpen(false);
+    } catch (error: any) {
+      console.error("Profile picture upload failed:", error);
+      toast.error(error.message || "Failed to upload profile picture");
+    } finally {
+      setUploadingProfilePicture(false);
+      // Reset file input
+      if (profileFileInputRef.current) {
+        profileFileInputRef.current.value = "";
+      }
+    }
+  };
+
+  // Profile picture removal handler
+  const handleRemoveProfilePicture = async () => {
+    if (!user?.id) return;
+
+    setUploadingProfilePicture(true);
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/profile/remove-profile-picture`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId: user.id }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Removal failed");
+      }
+
+      const result = await response.json();
+      setProfilePicture("");
+      updateProfile?.(result.profile);
+      toast.success("Profile picture removed successfully!");
+      setIsProfilePictureModalOpen(false);
+    } catch (error: any) {
+      console.error("Profile picture removal failed:", error);
+      toast.error(error.message || "Failed to remove profile picture");
+    } finally {
+      setUploadingProfilePicture(false);
+    }
+  };
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
       try {
         if (profile && profile._id && profile.name) {
-
           // Helper function to safely convert description to points
           const safeConvertDescriptionToPoints = (
             description: string
@@ -1335,73 +1458,53 @@ export default function ProfileTab() {
     }
   }, [profile]);
 
-  const handleProfilePictureUpload = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfilePicture(e.target?.result as string);
-        setIsProfilePictureModalOpen(false);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleRemoveProfilePicture = () => {
-    setProfilePicture("");
-    setIsProfilePictureModalOpen(false);
-    if (profileFileInputRef.current) {
-      profileFileInputRef.current.value = "";
-    }
-  };
-
   const renderProfilePicture = () => {
-    if (profilePicture) {
-      return (
-        <>
-          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-lg sm:text-xl">
-              {profile?.name
-                ? profile?.name.charAt(0)
-                : user?.name
-                ? user?.name.charAt(0)
-                : ""}
-            </span>
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 truncate">
-              {profile?.name ? profile?.name : user?.name ? user?.name : ""}
-            </h2>
-            <p className="text-gray-500 text-sm sm:text-base">
-              {getLocationDisplay(profile?.location)}
-            </p>
-          </div>
-        </>
-      );
-    }
-
     return (
-      <>
-        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-          <span className="text-white font-bold text-lg sm:text-xl">
-            {profile?.name
-              ? profile?.name.charAt(0)
-              : user?.name
-              ? user?.name.charAt(0)
-              : ""}
-          </span>
+      <div className="flex items-center gap-4">
+        <div className="relative">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+            {profilePicture ? (
+              <img
+                src={profilePicture}
+                alt="Profile"
+                className="w-full h-full object-cover"
+                onError={() => {
+                  setProfilePicture("");
+                  toast.error("Failed to load profile picture");
+                }}
+              />
+            ) : (
+              <span className="text-gray-500 font-bold text-lg sm:text-xl">
+                {profile?.name
+                  ? profile.name.charAt(0).toUpperCase()
+                  : user?.name
+                  ? user.name.charAt(0).toUpperCase()
+                  : "?"}
+              </span>
+            )}
+          </div>
+
+          {/* Upload button overlay */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setIsProfilePictureModalOpen(true)}
+            className="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors"
+            title="Change profile picture"
+          >
+            <Edit2 className="w-4 h-4" />
+          </motion.button>
         </div>
+
         <div className="min-w-0">
           <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 truncate">
-            {profile?.name ? profile?.name : user?.name ? user?.name : ""}
+            {profile?.name || user?.name || "Unknown User"}
           </h2>
           <p className="text-gray-500 text-sm sm:text-base">
-            {profile?.location ? profile?.location : ""}
+            {getLocationDisplay(profile?.location)}
           </p>
         </div>
-      </>
+      </div>
     );
   };
 
@@ -1409,6 +1512,33 @@ export default function ProfileTab() {
     try {
       setIsLoading(true);
 
+      const formData = new FormData();
+
+      // Always include userId (required)
+      if (user?.id) {
+        formData.append("userId", user.id);
+      }
+
+      // Only append if field has been changed and is valid
+      if (
+        profileFormData.name?.trim() &&
+        profileFormData.name !== (profile?.name || user?.name)
+      ) {
+        formData.append("name", profileFormData.name);
+      }
+
+      if (
+        profileFormData.phone?.trim() &&
+        profileFormData.phone !== profile?.phoneNumber
+      ) {
+        formData.append("phoneNumber", profileFormData.phone);
+      }
+
+      if (profileFormData.bio?.trim() && profileFormData.bio !== profile?.bio) {
+        formData.append("bio", profileFormData.bio);
+      }
+
+      // Handle skills only if changed
       const skillsArray: string[] = profileFormData.skills
         ? profileFormData.skills
             .split(",")
@@ -1416,6 +1546,15 @@ export default function ProfileTab() {
             .filter((skill) => skill)
         : [];
 
+      if (skillsArray.length > 0) {
+        const currentSkills = JSON.stringify(profile?.skills || []);
+        const newSkills = JSON.stringify(skillsArray);
+        if (currentSkills !== newSkills) {
+          formData.append("skills", newSkills);
+        }
+      }
+
+      // Handle languages only if changed
       const languagesArray: string[] = profileFormData.languages
         ? profileFormData.languages
             .split(",")
@@ -1423,80 +1562,134 @@ export default function ProfileTab() {
             .filter((lang) => lang)
         : [];
 
-      // Prepare FormData for API call
-      const formData = new FormData();
-      formData.append("userId", user?.id!);
-      formData.append("name", profileFormData.name);
-      formData.append("phoneNumber", profileFormData.phone);
-      formData.append("location", profileFormData.location); // Basic location string
-      formData.append("bio", profileFormData.bio);
-      formData.append("skills", JSON.stringify(skillsArray));
-      formData.append("languages", JSON.stringify(languagesArray));
-      formData.append("availability", JSON.stringify(availabilitySlots));
-
-      // Handle location data with coordinates
-      if (
-        profileFormData.locationData &&
-        profileFormData.locationData.lat &&
-        profileFormData.locationData.lng
-      ) {
-        // Send structured location data with coordinates
-        formData.append(
-          "locationData",
-          JSON.stringify({
-            lat: profileFormData.locationData.lat,
-            lng: profileFormData.locationData.lng,
-            address:
-              profileFormData.locationData.address || profileFormData.location,
-          })
-        );
-      } else {
-        // Send just the basic location string
-        formData.append("locationData", profileFormData.location);
+      if (languagesArray.length > 0) {
+        const currentLangs = JSON.stringify(profile?.languages || []);
+        const newLangs = JSON.stringify(languagesArray);
+        if (currentLangs !== newLangs) {
+          formData.append("languages", newLangs);
+        }
       }
 
-      // Include existing sections with proper filtering
-      const validEducation = profileData.education
-        .filter((edu: any) => edu.institution && edu.institution.trim())
-        .map((edu: any) => ({
-          institure: edu.institution || edu.institure,
-          Graduation: parseEducationPeriod(edu.period),
-          Degree: edu.type || edu.Degree,
-          GPA: edu.description?.includes("GPA")
-            ? edu.description.replace("GPA: ", "")
-            : edu.GPA,
-        }));
+      // Handle availability only if changed
+      if (availabilitySlots && availabilitySlots.length > 0) {
+        const currentAvailability = JSON.stringify(profile?.availability || []);
+        const newAvailability = JSON.stringify(availabilitySlots);
+        if (currentAvailability !== newAvailability) {
+          formData.append("availability", newAvailability);
+        }
+      }
 
-      formData.append("education", JSON.stringify(validEducation));
+      // Handle location data properly
+      if (
+        profileFormData.locationData?.lat &&
+        profileFormData.locationData?.lng &&
+        profileFormData.locationData?.address
+      ) {
+        const locationData = {
+          lat: profileFormData.locationData.lat,
+          lng: profileFormData.locationData.lng,
+          address:
+            profileFormData.locationData.address || profileFormData.location,
+        };
 
-      const validWorkExperience = profileData.experiences
-        .filter((exp: any) => exp.company && exp.company.trim())
-        .map((exp: any) => ({
-          company: exp.company,
-          title: exp.title,
-          points: exp.points || [], // Include points array
-          description:
-            exp.points && exp.points.length > 0
-              ? exp.points.map((p: any) => p.point).join("\n") // Create description from points for compatibility
-              : exp.description || "", // Fallback to existing description
-        }));
+        const currentLocationData = JSON.stringify(profile?.locationData || {});
+        const newLocationData = JSON.stringify(locationData);
+        if (currentLocationData !== newLocationData) {
+          formData.append("locationData", newLocationData);
+        }
+      } else if (
+        profileFormData.location?.trim() &&
+        profileFormData.location !== profile?.location
+      ) {
+        formData.append("location", profileFormData.location);
+      }
 
-      formData.append("WorkExperience", JSON.stringify(validWorkExperience));
+      // Handle education only if there are valid entries and they've changed
+      const validEducation =
+        profileData.education
+          ?.filter((edu: any) => edu.institution && edu.institution.trim())
+          .map((edu: any) => ({
+            institure: edu.institution || edu.institure,
+            Graduation: parseEducationPeriod(edu.period),
+            Degree: edu.type || edu.Degree,
+            GPA: edu.description?.includes("GPA")
+              ? edu.description.replace("GPA: ", "")
+              : edu.GPA,
+          })) || [];
 
-      const validCertificates = profileData.certifications
-        .filter((cert: any) => cert.name && cert.issuer)
-        .map((cert: any) => ({
-          name: cert.name || "Unknown Certificate",
-          issuer: cert.issuer || "Unknown Issuer",
-          date: cert.date || "Unknown Date",
-          description: cert.description || "",
-        }));
+      if (validEducation.length > 0) {
+        const currentEducation = JSON.stringify(profile?.education || []);
+        const newEducation = JSON.stringify(validEducation);
+        if (currentEducation !== newEducation) {
+          formData.append("education", newEducation);
+        }
+      }
 
-      // formData.append("certificates", JSON.stringify(validCertificates));
+      // Handle work experience only if there are valid entries and they've changed
+      const validWorkExperience =
+        profileData.experiences
+          ?.filter((exp: any) => exp.company && exp.company.trim())
+          .map((exp: any) => ({
+            company: exp.company,
+            title: exp.title,
+            points: exp.points || [],
+            description:
+              exp.points && exp.points.length > 0
+                ? exp.points.map((p: any) => p.point).join("\n")
+                : exp.description || "",
+          })) || [];
 
-      const apiUrl = profile?._id // Use ._id instead of .id
-        ? `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/profile/edit-profile/${profile._id}`
-        : `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/profile/create-profile`;
+      if (validWorkExperience.length > 0) {
+        const currentExperience = JSON.stringify(profile?.WorkExperience || []);
+        const newExperience = JSON.stringify(validWorkExperience);
+        if (currentExperience !== newExperience) {
+          formData.append("WorkExperience", newExperience);
+        }
+      }
+
+      // Handle certificates only if there are valid entries and they've changed
+      const validCertificates =
+        profileData.certifications
+          ?.filter((cert: any) => cert.name && cert.issuer)
+          .map((cert: any) => ({
+            name: cert.name || "Unknown Certificate",
+            issuer: cert.issuer || "Unknown Issuer",
+            date: cert.date || "Unknown Date",
+            description: cert.description || "",
+          })) || [];
+
+      if (validCertificates.length > 0) {
+        const currentCerts = JSON.stringify(profile?.certificates || []);
+        const newCerts = JSON.stringify(validCertificates);
+        if (currentCerts !== newCerts) {
+          formData.append("certificates", newCerts);
+        }
+      }
+
+      // Debug: Log what we're actually sending
+      console.log("FormData entries being sent:");
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+
+      // Only make API call if we have data to send (besides userId)
+      let hasDataToSend = false;
+      for (let pair of formData.entries()) {
+        if (pair[0] !== "userId") {
+          hasDataToSend = true;
+          break;
+        }
+      }
+
+      if (!hasDataToSend) {
+        toast.info("No changes detected to save.");
+        setIsProfileEditOpen(false);
+        return;
+      }
+
+      const apiUrl = profile?._id
+        ? `${process.env.NEXT_PUBLIC_API_URL}/profile/edit-profile/${profile._id}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/profile/create-profile`;
       const method = profile?._id ? "PUT" : "POST";
 
       const response = await fetch(apiUrl, {
@@ -1638,140 +1831,138 @@ export default function ProfileTab() {
     setIsProfileEditOpen(true);
   };
 
-  const updateProfileAPI = async (updatedData: any) => {
+  const updateProfileAPI = async (updatedData: UpdatedData) => {
     try {
       setIsLoading(true);
+
       const profileId = profile?._id;
+      const apiUrl = profileId
+        ? `${process.env.NEXT_PUBLIC_API_URL}/profile/edit-profile/${profileId}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/profile/create-profile`;
+      const method = profileId ? "PUT" : "POST";
 
-      let apiUrl: string;
-      let method: string;
+      const fd = new FormData();
 
-      if (!profileId) {
-        apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/profile/create-profile`;
-        method = "POST";
-      } else {
-        apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/profile/edit-profile/${profileId}`;
-        method = "PUT";
+      // Only append userId (always required)
+      if (user?.id) {
+        fd.append("userId", user.id);
       }
 
-      const formData = new FormData();
-
-      formData.append("userId", user ? user?.id : "");
-
+      // Profile sub-object - only if exists and has content
       if (updatedData.profile) {
-        if (updatedData.profile.bio) {
-          formData.append("bio", updatedData.profile.bio);
+        if (updatedData.profile.bio && updatedData.profile.bio.trim()) {
+          fd.append("bio", updatedData.profile.bio);
         }
-        if (updatedData.profile.skills) {
-          formData.append("skills", JSON.stringify(updatedData.profile.skills));
+        if (
+          updatedData.profile.skills &&
+          updatedData.profile.skills.length > 0
+        ) {
+          fd.append("skills", JSON.stringify(updatedData.profile.skills));
         }
-        if (updatedData.profile.languages) {
-          formData.append(
-            "languages",
-            JSON.stringify(updatedData.profile.languages)
-          );
+        if (
+          updatedData.profile.languages &&
+          updatedData.profile.languages.length > 0
+        ) {
+          fd.append("languages", JSON.stringify(updatedData.profile.languages));
         }
-        if (updatedData.profile.availability) {
-          formData.append(
+        if (
+          updatedData.profile.availability &&
+          updatedData.profile.availability.length > 0
+        ) {
+          fd.append(
             "availability",
             JSON.stringify(updatedData.profile.availability)
           );
         }
-        if (updatedData.profile.location) {
-          formData.append(
-            "profileLocation",
-            JSON.stringify(updatedData.profile.location)
-          );
+      }
+
+      // Simple text fields - only if changed and valid
+      if (
+        profileFormData.name?.trim() &&
+        profileFormData.name !== (profile?.name ?? user?.name)
+      ) {
+        fd.append("name", profileFormData.name);
+      }
+
+      // Location handling - only if valid data exists
+      if (
+        profileFormData.locationData?.lat &&
+        profileFormData.locationData?.lng &&
+        profileFormData.locationData?.address
+      ) {
+        fd.append("locationData", JSON.stringify(profileFormData.locationData));
+      } else if (
+        profileFormData.location?.trim() &&
+        profileFormData.location !== profile?.location
+      ) {
+        fd.append("location", profileFormData.location);
+      }
+
+      // Phone - only if valid and different
+      if (
+        profileFormData.phone?.trim() &&
+        profileFormData.phone !== profile?.phoneNumber
+      ) {
+        fd.append("phoneNumber", profileFormData.phone);
+      }
+
+      // Complex arrays - only process and send if data exists
+      if (
+        updatedData.education &&
+        Array.isArray(updatedData.education) &&
+        updatedData.education.length > 0
+      ) {
+        const processed = processEducation(updatedData.education);
+        if (processed.length > 0) {
+          fd.append("education", JSON.stringify(processed));
         }
       }
 
-      if (profileFormData.name) {
-        formData.append("name", profileFormData.name);
-      }
-      if (profileFormData.location) {
-        formData.append("location", profileFormData.location);
-      }
-
-      if (updatedData.education) {
-        formData.append(
-          "education",
-          JSON.stringify(
-            updatedData.education
-              .map((edu: any) => ({
-                institure: edu.institution || edu.institure || "",
-                Graduation: parseEducationPeriod(edu.period),
-                Degree: edu.type || edu.Degree || "",
-                GPA: edu.description?.includes("GPA:")
-                  ? edu.description.replace("GPA: ", "")
-                  : edu.GPA || "",
-              }))
-              .filter((edu: any) => edu.institure)
-          )
-        );
+      if (
+        updatedData.experiences &&
+        Array.isArray(updatedData.experiences) &&
+        updatedData.experiences.length > 0
+      ) {
+        const processed = processExperiences(updatedData.experiences);
+        if (processed.length > 0) {
+          fd.append("WorkExperience", JSON.stringify(processed));
+        }
       }
 
-      if (updatedData.experiences) {
-        formData.append(
-          "WorkExperience",
-          JSON.stringify(
-            updatedData.experiences
-              .map((exp: any) => ({
-                company: exp.company || "",
-                title: exp.title || "",
-                points: exp.points || [], // Include points array
-                description:
-                  exp.points && exp.points.length > 0
-                    ? exp.points.map((p: any) => p.point).join("\n") // Create description from points for compatibility
-                    : exp.description || "", // Fallback to existing description
-              }))
-              .filter((exp: any) => exp.company)
-          )
-        );
+      if (
+        updatedData.certifications &&
+        Array.isArray(updatedData.certifications) &&
+        updatedData.certifications.length > 0
+      ) {
+        const processed = processCerts(updatedData.certifications);
+        if (processed.length > 0) {
+          fd.append("certificates", JSON.stringify(processed));
+        }
       }
 
-      if (updatedData.certifications) {
-        const certData = updatedData.certifications.map((cert: any) => ({
-          name: cert.name || "Unknown Certificate",
-          issuer: cert.issuer || "Unknown Issuer",
-          date: cert.date || "Unknown Date",
-          description: cert.description || "",
-          certificateFiles: cert.certificateFile || "",
-        }));
-
-        formData.append("certificates", JSON.stringify(certData));
+      // Debug: Log what we're actually sending
+      console.log("FormData entries being sent:");
+      for (let pair of fd.entries()) {
+        console.log(pair[0], pair[1]);
       }
 
-      // updatedData.certifications?.forEach((cert: any) => {
-      //   if (cert.certificateFile instanceof File) {
-      //     formData.append("certificateFiles", cert.certificateFile);
-      //   }
-      // });
-
-      const response = await fetch(apiUrl, {
-        method: method,
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API Error Response:", errorData);
+      // API call
+      const res = await fetch(apiUrl, { method, body: fd });
+      if (!res.ok) {
+        const err = await res.json();
         throw new Error(
-          `HTTP error! status: ${response.status}, message: ${
-            errorData.message || "Unknown error"
-          }`
+          `HTTP ${res.status}: ${err.message ?? "Unknown error"}`
         );
       }
 
-      const result = await response.json();
+      const result = await res.json();
+      if (result.profile) updateProfile!(result.profile);
 
-      if (result.profile && updateProfile) {
-        updateProfile(result.profile);
-      }
-      return result;
-    } catch (error: any) {
-      toast.error(error.message);
-      console.error("Error updating profile:", error);
-      throw error;
+      toast.success("Profile updated successfully!");
+      setIsProfileEditOpen(false);
+    } catch (e: any) {
+      console.error("Failed to update profile", e);
+      toast.error(e.message ?? "Failed to update profile. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -1787,23 +1978,45 @@ export default function ProfileTab() {
   }, [user, router]);
 
   const renderStars = () => {
+    console.log('profile', profile)
+    const rating = profile?.averageRating || 0;
+
     return (
       <div className="flex items-center gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <motion.div
-            key={star}
-            whileHover={{ scale: 1.1 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Star
-              className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                star <= 3
-                  ? "fill-yellow-400 text-yellow-400"
-                  : "fill-gray-300 text-gray-300"
-              }`}
-            />
-          </motion.div>
-        ))}
+        {[1, 2, 3, 4, 5].map((star) => {
+          const isFilled = star <= Math.floor(rating);
+          const isHalfFilled = star === Math.ceil(rating) && rating % 1 !== 0;
+
+          return (
+            <motion.div
+              key={star}
+              whileHover={{ scale: 1.1 }}
+              transition={{ duration: 0.2 }}
+              className="relative"
+            >
+              {isHalfFilled ? (
+                <div className="relative">
+                  <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-gray-300 text-gray-300" />
+                  <div className="absolute inset-0 overflow-hidden w-1/2">
+                    <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-yellow-400 text-yellow-400" />
+                  </div>
+                </div>
+              ) : (
+                <Star
+                  className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                    isFilled
+                      ? "fill-yellow-400 text-yellow-400"
+                      : "fill-gray-300 text-gray-300"
+                  }`}
+                />
+              )}
+            </motion.div>
+          );
+        })}
+        <span className="ml-2 text-sm text-gray-600">
+          {rating.toFixed(1)} ({profile?.totalJobsCompleted || 0} jobs
+          completed)
+        </span>
       </div>
     );
   };
@@ -1983,7 +2196,7 @@ export default function ProfileTab() {
         });
       }
 
-      const apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/profile/edit-profile/${profile?._id}`;
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/profile/edit-profile/${profile?._id}`;
       const response = await fetch(apiUrl, { method: "PUT", body: formData });
 
       if (!response.ok) {
@@ -2464,7 +2677,7 @@ export default function ProfileTab() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={closeModal}
-                  className="flex-1 px-4 py-2 sm:py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
+                  className="flex-1 px-4 py-2 cursor-pointer sm:py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
                 >
                   Cancel
                 </motion.button>
@@ -3118,16 +3331,16 @@ export default function ProfileTab() {
         transition={{ duration: 0.5 }}
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
-            <Link href="/" className="flex flex-col">
-        <Image
-          src="/logo.png"
-          alt="ProjectMATCH by Compscope"
-          width={200}
-          height={80}
-          className="h-8 md:h-24 w-auto"
-          priority
-        />
-      </Link>
+        <Link href="/" className="flex flex-col">
+          <Image
+            src="/logo.png"
+            alt="ProjectMATCH by Compscope"
+            width={200}
+            height={80}
+            className="h-8 md:h-24 w-auto"
+            priority
+          />
+        </Link>
       </motion.div>
       {/* Document Upload Modal */}
       <AnimatePresence>
@@ -3255,6 +3468,18 @@ export default function ProfileTab() {
 
       <div className="pt-16 sm:pt-24 pb-8 sm:pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          {token && (
+            <button
+              className="absolute cursor-pointer top-4 right-4 z-50 p-2 text-gray-500 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-all duration-200 group"
+              onClick={() => {
+                handleLogout(setToken, setuser, setprofile, router);
+              }}
+              title="Logout"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          )}
+
           <div className="mb-10 flex items-center justify-between">
             <motion.button
               onClick={() => router.back()}
@@ -3265,15 +3490,19 @@ export default function ProfileTab() {
               <ArrowLeft className="w-4 h-4" />
               Back
             </motion.button>
-            <motion.button
-              onClick={() => router.push("/jobs")}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
-            >
-              Explore Jobs
-            </motion.button>
+
+            <div className="flex items-center gap-3">
+              <motion.button
+                onClick={() => router.push("/jobs")}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
+              >
+                Explore Jobs
+              </motion.button>
+            </div>
           </div>
+
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -3288,35 +3517,27 @@ export default function ProfileTab() {
                 >
                   {renderProfilePicture()}
                 </motion.div>
-
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setIsProfilePictureModalOpen(true)}
-                  className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-5 sm:h-5 p-1 bg-blue-600
-                   hover:bg-blue-700 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
-                >
-                  <Pencil className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                </motion.button>
               </div>
             </div>
             <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-8">
               {renderStars()}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  if (isProfileComplete()) {
-                    openProfileEditModal();
-                  } else {
-                    setActiveTab("profile");
-                    openProfileEditModal();
-                  }
-                }}
-                className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 border border-[#12372B] text-gray-700 bg-transparent hover:bg-gray-50 transition-colors text-sm sm:text-base whitespace-nowrap"
-              >
-                {isProfileComplete() ? "Edit Profile" : "Add Profile"}
-              </motion.button>
+              <div className="flex items-center gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    if (isProfileComplete()) {
+                      openProfileEditModal();
+                    } else {
+                      setActiveTab("profile");
+                      openProfileEditModal();
+                    }
+                  }}
+                  className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 border border-[#12372B] text-gray-700 bg-transparent hover:bg-gray-50 transition-colors text-sm sm:text-base whitespace-nowrap"
+                >
+                  {isProfileComplete() ? "Edit Profile" : "Add Profile"}
+                </motion.button>
+              </div>
             </div>
           </motion.div>
 
@@ -3364,6 +3585,7 @@ export default function ProfileTab() {
       </div>
 
       {/* Profile Picture Upload Modal */}
+      {/* Profile Picture Upload Modal */}
       <AnimatePresence>
         {isProfilePictureModalOpen && (
           <motion.div
@@ -3381,7 +3603,9 @@ export default function ProfileTab() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsProfilePictureModalOpen(false)}
+              onClick={() =>
+                !uploadingProfilePicture && setIsProfilePictureModalOpen(false)
+              }
             />
 
             <motion.div
@@ -3390,71 +3614,90 @@ export default function ProfileTab() {
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 24, opacity: 0, scale: 0.98 }}
             >
+              {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <h2
                   id="profile-picture-title"
-                  className="text-lg font-semibold text-gray-900"
+                  className="text-xl font-semibold text-gray-900"
                 >
                   Profile Picture
                 </h2>
                 <button
-                  onClick={() => setIsProfilePictureModalOpen(false)}
+                  onClick={() =>
+                    !uploadingProfilePicture &&
+                    setIsProfilePictureModalOpen(false)
+                  }
+                  disabled={uploadingProfilePicture}
                   aria-label="Close"
-                  className="p-2 rounded-full hover:bg-gray-100"
+                  className="p-2 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex justify-center mb-4">
-                  <div className="w-20 h-20 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-full overflow-hidden">
-                    {profilePicture ? (
-                      <img
-                        src={profilePicture || "/placeholder.svg"}
-                        alt="Profile Preview"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-gray-400 text-sm">No photo</span>
-                    )}
-                  </div>
+              {/* Current Picture Preview */}
+              <div className="flex justify-center mb-6">
+                <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                  {profilePicture ? (
+                    <img
+                      src={profilePicture}
+                      alt="Current profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-gray-400 text-sm">No photo</span>
+                  )}
                 </div>
+              </div>
 
-                <div className="flex flex-col gap-3">
-                  <input
-                    ref={profileFileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleProfilePictureUpload}
-                    className="hidden"
-                  />
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                <input
+                  ref={profileFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePictureUpload}
+                  className="hidden"
+                  disabled={uploadingProfilePicture}
+                />
 
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => profileFileInputRef.current?.click()}
+                  disabled={uploadingProfilePicture}
+                  className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {uploadingProfilePicture ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      Upload New Photo
+                    </>
+                  )}
+                </motion.button>
+
+                {profilePicture && (
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => profileFileInputRef.current?.click()}
-                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+                    onClick={handleRemoveProfilePicture}
+                    disabled={uploadingProfilePicture}
+                    className="w-full px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
                   >
-                    Upload Photo
+                    Remove Photo
                   </motion.button>
-
-                  {profilePicture && (
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={handleRemoveProfilePicture}
-                      className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium"
-                    >
-                      Remove Photo
-                    </motion.button>
-                  )}
-                </div>
-
-                <p className="text-xs text-gray-500 text-center">
-                  Supported formats: JPG, PNG, SVG. Max size: 5MB
-                </p>
+                )}
               </div>
+
+              {/* File Requirements */}
+              <p className="text-xs text-gray-500 text-center mt-4">
+                Supported formats: JPEG, PNG, GIF, WebP. Max size: 5MB
+              </p>
             </motion.div>
           </motion.div>
         )}
@@ -3627,7 +3870,7 @@ export default function ProfileTab() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setShowAvailabilityModal(true)}
-                      className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-600 rounded-md text-sm hover:bg-blue-100 transition-colors"
+                      className="flex cursor-pointer items-center gap-1 px-3 py-1 bg-blue-50 text-blue-600 rounded-md text-sm hover:bg-blue-100 transition-colors"
                     >
                       <Plus className="w-4 h-4" />
                       Add Slot
@@ -3669,7 +3912,7 @@ export default function ProfileTab() {
 
               <div className="mt-6 flex items-center justify-end gap-3">
                 <button
-                  className="px-4 py-2 rounded-full border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 rounded-full cursor-pointer border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"
                   onClick={() => setIsProfileEditOpen(false)}
                 >
                   Cancel
@@ -3677,7 +3920,7 @@ export default function ProfileTab() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm"
+                  className="px-5 py-2 rounded-full cursor-pointer bg-blue-600 hover:bg-blue-700 text-white text-sm"
                   onClick={handleProfileSave}
                   disabled={isLoading}
                 >
@@ -3766,7 +4009,7 @@ export default function ProfileTab() {
 
               <div className="mt-6 flex items-center justify-end gap-3">
                 <button
-                  className="px-4 py-2 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 cursor-pointer rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"
                   onClick={() => setShowAvailabilityModal(false)}
                 >
                   Cancel
@@ -3774,7 +4017,7 @@ export default function ProfileTab() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-5 py-2 cursor-pointer rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={addAvailabilitySlot}
                   disabled={
                     !newAvailabilityStartDate || !newAvailabilityEndDate

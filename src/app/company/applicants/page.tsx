@@ -111,7 +111,7 @@ function ApplicationDetailContent() {
       setError(null);
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/${applicationId}`
+        `${process.env.NEXT_PUBLIC_API_URL}/application/${applicationId}`
       );
 
       if (!response.ok) {
@@ -150,7 +150,7 @@ function ApplicationDetailContent() {
       if (isShortlisted) {
         // If already shortlisted, we need to use the status update endpoint to change it back
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/${applicationId}/status`,
+          `${process.env.NEXT_PUBLIC_API_URL}/application/${applicationId}/status`,
           {
             method: "PATCH",
             headers: {
@@ -175,7 +175,7 @@ function ApplicationDetailContent() {
       } else {
         // Use the dedicated shortlist endpoint
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/${applicationId}/shortlist`,
+          `${process.env.NEXT_PUBLIC_API_URL}/application/${applicationId}/shortlist`,
           {
             method: "PATCH",
             headers: {
@@ -294,7 +294,7 @@ function ApplicationDetailContent() {
             onClick={() => router.back()}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
+            className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back

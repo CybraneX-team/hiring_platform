@@ -53,8 +53,9 @@ export default function Header({
       transition={{ duration: 0.6, ease: "easeOut" }}
       className="px-4 sm:px-6 lg:px-8 py-4 bg-white shadow-sm"
     >
-      <div className="flex items-center max-w-7xl mx-auto">
-        <div className="flex items-center">
+      <div className="flex items-center justify-between max-w-7xl mx-auto w-full">
+        {/* Left Section - Back button and Title */}
+        <div className="flex items-center flex-shrink-0">
           {currentView !== "companies" && (
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -67,48 +68,52 @@ export default function Header({
           )}
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="text-lg sm:text-xl font-semibold text-black"
+            className="text-lg sm:text-xl font-semibold text-black whitespace-nowrap"
           >
             Admin Panel
           </motion.div>
+        </div>
 
-          {/* Desktop Search - Always visible but disabled on analytics */}
-          <div className="hidden md:flex flex-1 max-w-sm mx-10">
-            <div className="relative w-full">
-              <input
-                type="text"
-                placeholder={getSearchPlaceholder()}
-                value={currentView === "analytics" ? "" : searchQuery}
-                onChange={(e) => currentView !== "analytics" && setSearchQuery(e.target.value)}
-                disabled={currentView === "analytics"}
-                className={`w-full px-6 py-3 text-sm border-0 rounded-full focus:outline-none placeholder-[#CFD7CF] ${
-                  currentView === "analytics" 
-                    ? "bg-gray-100 text-gray-300 cursor-not-allowed focus:ring-0" 
-                    : "bg-white text-gray-700 focus:ring-2 focus:ring-[#76FF82]"
-                }`}
-              />
-              <motion.button
-                whileHover={currentView !== "analytics" ? { scale: 1.05 } : {}}
-                whileTap={currentView !== "analytics" ? { scale: 0.95 } : {}}
-                disabled={currentView === "analytics"}
-                className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full ${
-                  currentView === "analytics"
-                    ? "bg-gray-300 cursor-not-allowed"
-                    : "bg-[#76FF82]"
-                }`}
-              >
-                <Search className={`w-4 h-4 ${
-                  currentView === "analytics" ? "text-gray-500" : "text-black"
-                }`} />
-              </motion.button>
-            </div>
+        {/* Center Section - Desktop Search */}
+        <div className="hidden md:flex flex-1 justify-center px-4 lg:px-8">
+          <div className="relative w-full max-w-md">
+            <input
+              type="text"
+              placeholder={getSearchPlaceholder()}
+              value={currentView === "analytics" ? "" : searchQuery}
+              onChange={(e) => currentView !== "analytics" && setSearchQuery(e.target.value)}
+              disabled={currentView === "analytics"}
+              className={`w-full px-6 py-3 text-sm border-0 rounded-full focus:outline-none placeholder-[#CFD7CF] ${
+                currentView === "analytics" 
+                  ? "bg-gray-100 text-gray-300 cursor-not-allowed focus:ring-0" 
+                  : "bg-white text-gray-700 focus:ring-2 focus:ring-[#76FF82]"
+              }`}
+            />
+            <motion.button
+              whileHover={currentView !== "analytics" ? { scale: 1.05 } : {}}
+              whileTap={currentView !== "analytics" ? { scale: 0.95 } : {}}
+              disabled={currentView === "analytics"}
+              className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full ${
+                currentView === "analytics"
+                  ? "bg-gray-300 cursor-not-allowed"
+                  : "bg-[#76FF82]"
+              }`}
+            >
+              <Search className={`w-4 h-4 ${
+                currentView === "analytics" ? "text-gray-500" : "text-black"
+              }`} />
+            </motion.button>
           </div>
-          {/* Desktop Analytics Navigation */}
-          <div className="hidden lg:flex items-center space-x-6 ml-8">
+        </div>
+
+        {/* Right Section - Navigation and Profile */}
+        <div className="flex items-center space-x-4 flex-shrink-0">
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center space-x-6">
             <motion.button
               whileHover={{ y: -1 }}
               onClick={() => onNavigate && onNavigate("analytics")}
-              className={`text-sm font-medium cursor-pointer transition-colors ${
+              className={`text-sm font-medium cursor-pointer transition-colors whitespace-nowrap ${
                 currentView === "analytics"
                   ? "text-[#76FF82]"
                   : "text-[#32343A] hover:text-[#76FF82]"
@@ -119,7 +124,7 @@ export default function Header({
             <motion.button
               whileHover={{ y: -1 }}
               onClick={() => onNavigate && onNavigate("companies")}
-              className={`text-sm font-medium cursor-pointer transition-colors ${
+              className={`text-sm font-medium cursor-pointer transition-colors whitespace-nowrap ${
                 currentView === "companies"
                   ? "text-[#76FF82]"
                   : "text-[#32343A] hover:text-[#76FF82]"
@@ -130,7 +135,7 @@ export default function Header({
             <motion.button
               whileHover={{ y: -1 }}
               onClick={() => onNavigate && onNavigate("inspect")}
-              className={`text-sm font-medium cursor-pointer transition-colors ${
+              className={`text-sm font-medium cursor-pointer transition-colors whitespace-nowrap ${
                 currentView === "inspect" || currentView === "inspect-detail"
                   ? "text-[#76FF82]"
                   : "text-[#32343A] hover:text-[#76FF82]"
@@ -139,44 +144,43 @@ export default function Header({
               Inspector
             </motion.button>
           </div>
-        </div>
-        {/* Desktop Admin Profile */}
-        {/* Desktop Admin Profile with Bell Icon */}
 
-        <div className="hidden sm:flex items-center space-x-3 ml-auto bg-[#F5F5F5] rounded-full px-3 lg:px-4 py-2">
+          {/* Desktop Admin Profile with Bell Icon */}
+          <div className="hidden sm:flex items-center space-x-3 bg-[#F5F5F5] rounded-full px-3 lg:px-4 py-2 flex-shrink-0">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <Link href="/notifications">
+                <Bell className="w-4 h-4 lg:w-5 lg:h-5 text-gray-600" />
+              </Link>
+            </motion.button>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="w-6 h-6 lg:w-8 lg:h-8 bg-[#3159AB] rounded-full flex items-center justify-center text-white font-medium cursor-pointer text-xs lg:text-sm flex-shrink-0"
+            >
+              A
+            </motion.div>
+            <span className="text-xs lg:text-sm font-medium text-gray-700 whitespace-nowrap">
+              Admin
+            </span>
+          </div>
+
+          {/* Mobile Menu Button */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+            onClick={toggleMenu}
+            className="sm:hidden p-2 text-gray-600 flex-shrink-0"
           >
-            <Link href="/notifications" >
-            <Bell className="w-4 h-4 lg:w-5 lg:h-5 text-gray-600" />
-            </Link>
+            {isMenuOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <Menu className="w-5 h-5" />
+            )}
           </motion.button>
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="w-6 h-6 lg:w-8 lg:h-8 bg-[#3159AB] rounded-full flex items-center justify-center text-white font-medium cursor-pointer text-xs lg:text-sm"
-          >
-            A
-          </motion.div>
-          <span className="text-xs lg:text-sm font-medium text-gray-700">
-            Admin
-          </span>
         </div>
-
-        {/* Mobile Menu Button */}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={toggleMenu}
-          className="sm:hidden ml-auto p-2 text-gray-600"
-        >
-          {isMenuOpen ? (
-            <X className="w-5 h-5" />
-          ) : (
-            <Menu className="w-5 h-5" />
-          )}
-        </motion.button>
       </div>
 
       {/* Mobile Menu */}
@@ -189,9 +193,9 @@ export default function Header({
             transition={{ duration: 0.3 }}
             className="sm:hidden bg-white mt-4 p-4 border-t border-gray-100"
           >
-            {/* Mobile Search - Always visible but disabled on analytics */}
+            {/* Mobile Search */}
             <div className="mb-4">
-              <div className="relative">
+              <div className="relative w-full">
                 <input
                   type="text"
                   placeholder={getSearchPlaceholder()}
@@ -221,11 +225,14 @@ export default function Header({
               </div>
             </div>
 
-            {/* Mobile Analytics Navigation */}
+            {/* Mobile Navigation */}
             <div className="space-y-3 mt-4">
               <motion.button
                 whileHover={{ x: 4 }}
-                onClick={() => onNavigate && onNavigate("analytics")}
+                onClick={() => {
+                  onNavigate && onNavigate("analytics");
+                  setIsMenuOpen(false);
+                }}
                 className={`block text-sm font-medium cursor-pointer py-2 transition-colors ${
                   currentView === "analytics"
                     ? "text-[#76FF82]"
@@ -236,7 +243,10 @@ export default function Header({
               </motion.button>
               <motion.button
                 whileHover={{ x: 4 }}
-                onClick={() => onNavigate && onNavigate("companies")}
+                onClick={() => {
+                  onNavigate && onNavigate("companies");
+                  setIsMenuOpen(false);
+                }}
                 className={`block text-sm font-medium cursor-pointer py-2 transition-colors ${
                   currentView === "companies"
                     ? "text-[#76FF82]"
@@ -245,13 +255,36 @@ export default function Header({
               >
                 Companies
               </motion.button>
+              <motion.button
+                whileHover={{ x: 4 }}
+                onClick={() => {
+                  onNavigate && onNavigate("inspect");
+                  setIsMenuOpen(false);
+                }}
+                className={`block text-sm font-medium cursor-pointer py-2 transition-colors ${
+                  currentView === "inspect" || currentView === "inspect-detail"
+                    ? "text-[#76FF82]"
+                    : "text-[#32343A] hover:text-[#76FF82]"
+                }`}
+              >
+                Inspector
+              </motion.button>
             </div>
 
             {/* Mobile Admin Profile */}
-            <div className="flex items-center space-x-3 bg-[#F5F5F5] rounded-full px-4 py-2 mt-4">
+            <div className="flex items-center space-x-3 bg-[#F5F5F5] rounded-full px-4 py-2 mt-4 w-fit">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <Link href="/notifications">
+                  <Bell className="w-4 h-4 text-gray-600" />
+                </Link>
+              </motion.button>
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className="w-8 h-8 bg-[#3159AB] rounded-full flex items-center justify-center text-white font-medium cursor-pointer"
+                className="w-8 h-8 bg-[#3159AB] rounded-full flex items-center justify-center text-white font-medium cursor-pointer flex-shrink-0"
               >
                 A
               </motion.div>

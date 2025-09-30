@@ -6,6 +6,8 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Upload, FileText, Check, Eye } from "lucide-react";
 import { toast } from "react-toastify";
+import { useUser } from "@/app/context/UserContext";
+import { usePathname } from "next/navigation";
 
 interface FileUploadModalProps {
   isOpen: boolean;
@@ -31,7 +33,8 @@ export default function FileUploadModal({
   const [dragActive, setDragActive] = useState(false);
   const [previewFile, setPreviewFile] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const {user}  = useUser()
+  const pathname = usePathname();
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -57,7 +60,7 @@ export default function FileUploadModal({
   };
 
   // inside FileUploadModal
-  const handleFiles = (files: File[]) => {
+ const handleFiles = (files: File[]) => {
     const validFiles = files.filter(
       (file) =>
         file.type === "application/pdf" ||
@@ -81,10 +84,27 @@ export default function FileUploadModal({
       // 🔹 Create FormData for API call
       const formData = new FormData();
       formData.append("resume", file);
+      if (user && user.id) {
+        formData.append("userId", user?.id);
+      } else {
+        toast.info("user id is required");
+        return;
+      }
+
+      // 🔹 Route checking logic
+      let apiEndpoint = "";
+      if (pathname.startsWith("/admin")) {
+        apiEndpoint = "/profile/resume";
+      } else if (pathname.startsWith("/profile")) {
+        apiEndpoint = "/profile/inspector-profile/resume";
+      } else {
+        // Default fallback (optional)
+        apiEndpoint = "/profile/resume";
+      }
 
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/profile/inspector-profile/resume`,
+          `${process.env.NEXT_PUBLIC_API_URL}${apiEndpoint}`,
           {
             method: "POST",
             body: formData,
@@ -106,8 +126,8 @@ export default function FileUploadModal({
 
         // Clean up the blob URL to prevent memory leaks
         URL.revokeObjectURL(newFile.url);
-        onClose()
-        toast.success("profile created")
+        onClose();
+        toast.success("profile created");
       } catch (err) {
         console.error("Upload failed", err);
 
@@ -122,6 +142,7 @@ export default function FileUploadModal({
       }
     });
   };
+
 
   const removeFile = (fileName: string) => {
     setUploadedFiles((prev) => prev.filter((f) => f.name !== fileName));

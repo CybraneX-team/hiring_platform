@@ -23,7 +23,7 @@ const ApplyButton: React.FC<ApplyButtonProps> = ({ jobId, userId, disabled }) =>
     setIsApplying(true);
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/applications/apply`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/applications/apply`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

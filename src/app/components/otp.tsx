@@ -59,7 +59,7 @@ export default function Otp() {
 
       if (mode === "register") {
         // Inspector OTP verification
-        url = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/auth/verify-otp`;
+        url = `${process.env.NEXT_PUBLIC_API_URL}/auth/verify-otp`;
         body = {
           name: userCreds.name,
           email: loginCreds?.email || userCreds.email,
@@ -69,7 +69,7 @@ export default function Otp() {
         };
       } else if (mode === "company") {
         // Company OTP verification (different API!)
-        url = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/company/verify-company-otp`;
+        url = `${process.env.NEXT_PUBLIC_API_URL}/company/verify-company-otp`;
         body = {
           fullName: userCreds.name,
           companyName: userCreds.companyName,

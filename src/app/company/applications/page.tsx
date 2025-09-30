@@ -171,7 +171,7 @@ function ApplicationsListContent() {
   const fetchRating = async (applicationId: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/${applicationId}/rating`
+        `${process.env.NEXT_PUBLIC_API_URL}/application/${applicationId}/rating`
       );
       const data = await response.json();
 
@@ -191,7 +191,7 @@ function ApplicationsListContent() {
     setRatingSubmitting(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/${applicationId}/rate`,
+        `${process.env.NEXT_PUBLIC_API_URL}/application/${applicationId}/rate`,
         {
           method: "POST",
           headers: {
@@ -238,7 +238,7 @@ function ApplicationsListContent() {
       setError(null);
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/application/job/${jobId}?limit=50`
+        `${process.env.NEXT_PUBLIC_API_URL}/application/job/${jobId}?limit=50`
       );
 
       if (!response.ok) {
@@ -341,7 +341,7 @@ function ApplicationsListContent() {
             onClick={() => router.back()}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
+            className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back

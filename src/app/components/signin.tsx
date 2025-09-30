@@ -38,16 +38,63 @@ export default function LoginPage() {
     }
   }, [router]);
 
-  
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
+    const userData = urlParams.get("user");
+    const profileData = urlParams.get("profile");
+
+    // Handle successful Google auth
+    if (token && userData) {
+      try {
+        const user = JSON.parse(decodeURIComponent(userData));
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("profile", JSON.stringify(profileData));
+        toast.success("Successfully signed in with Google!");
+        router.replace("/profile");
+        return; // Exit early to avoid further processing
+      } catch (error) {
+        toast.error("Error processing Google sign-in");
+      }
+    }
+
+    // Handle errors
+    const error = urlParams.get("error");
+    const message = urlParams.get("message");
+
+    if (error) {
+      // Show specific error message if available, otherwise generic message
+      if (message) {
+        toast.error(decodeURIComponent(message));
+      } else if (error === "account_exists") {
+        toast.error(
+          "Account already exists with email/password authentication. Please sign in with your email and password instead."
+        );
+      } else {
+        toast.error("Google sign-in failed. Please try again.");
+      }
+
+      // Clean up URL by removing all query parameters
+      router.replace("/signin", undefined);
+    }
+
+    const existingToken = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+
+    if (existingToken && storedUser) {
+      toast.info("Already logged in");
+      router.push("/profile");
+    }
+  }, [router]);
+
   const handleGoogleSignIn = () => {
-
-
-    window.location.href = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/auth/google`;
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
   };
 
   const login = async () => {
     const makeReq = await fetch(
-      `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/auth/login`,
+      `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
       {
         method: "POST",
         headers: {
@@ -77,7 +124,11 @@ export default function LoginPage() {
       localStorage.setItem("token", response.token);
       localStorage.setItem("user", JSON.stringify(response.user));
       localStorage.setItem("profile", JSON.stringify(response.profile));
-      router.push("/profile");
+      if(response.user && response.user.signedUpAs === "Company"){
+        router.push("/company/profile");
+      }else{
+        router.push("/profile");
+      }
     }
   };
 
@@ -127,16 +178,16 @@ export default function LoginPage() {
     >
       <div className="container mx-auto px-6 py-8">
         <motion.div className="mb-16" variants={itemVariants}>
-                <Link href="/" className="flex items-center">
-        <Image
-          src="/logo.png"
-          alt="ProjectMATCH by Compscope"
-          width={200}
-          height={80}
-          className="h-8 md:h-24 w-auto"
-          priority
-        />
-      </Link>
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/logo.png"
+              alt="ProjectMATCH by Compscope"
+              width={200}
+              height={80}
+              className="h-8 md:h-24 w-auto"
+              priority
+            />
+          </Link>
         </motion.div>
 
         <div className="max-w-md mx-auto space-y-6">
@@ -158,9 +209,7 @@ export default function LoginPage() {
               <Label className="text-sm font-medium text-gray-700">
                 {usePhone ? "Phone" : "Email"}
               </Label>
-              <Link
-                href="/forgot-password"
-              >
+              <Link href="/forgot-password">
                 <motion.button
                   // onClick={() => setUsePhone(!usePhone)}
                   className="text-xs text-gray-500 hover:text-gray-700"
@@ -172,19 +221,17 @@ export default function LoginPage() {
               </Link>
             </div>
 
-         
-              <Input
-                placeholder="xyz@email.com"
-                className="h-12 bg-white border-gray-200 rounded-lg"
-                type="email"
-                onChange={(e) => {
-                  setLoginCreds({
-                    ...loginCreds,
-                    email: e.target.value,
-                  });
-                }}
-              />
-          
+            <Input
+              placeholder="xyz@email.com"
+              className="h-12 bg-white border-gray-200 rounded-lg"
+              type="email"
+              onChange={(e) => {
+                setLoginCreds({
+                  ...loginCreds,
+                  email: e.target.value,
+                });
+              }}
+            />
           </motion.div>
 
           {/* Password with Eye Toggle */}
@@ -248,7 +295,7 @@ export default function LoginPage() {
           </motion.div>
 
           {/* Social Buttons */}
-        <motion.div
+          <motion.div
             className="grid  gap-3 cursor-pointer"
             variants={itemVariants}
           >

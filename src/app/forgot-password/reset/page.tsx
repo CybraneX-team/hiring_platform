@@ -50,7 +50,7 @@ export default function ResetPassword() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/auth/reset-password`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -76,7 +76,7 @@ export default function ResetPassword() {
       localStorage.removeItem("resetOTP");
       
       toast.success("Password reset successfully");
-      router.push("/login");
+      router.push("/signin");
     } catch (error: any) {
       toast.error(`Something went wrong: ${error.message}`);
     } finally {
@@ -150,7 +150,7 @@ export default function ResetPassword() {
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                className="absolute right-3 cursor-pointer top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
               >
                 {showNewPassword ? (
                   <EyeOff className="h-5 w-5" />
@@ -177,7 +177,7 @@ export default function ResetPassword() {
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                className="absolute cursor-pointer right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
               >
                 {showConfirmPassword ? (
                   <EyeOff className="h-5 w-5" />
@@ -190,7 +190,7 @@ export default function ResetPassword() {
 
           <motion.button
             type="submit"
-            className="w-full h-12 rounded-lg text-black font-medium transition-opacity hover:opacity-90"
+            className="w-full h-12 cursor-pointer rounded-lg text-black font-medium transition-opacity hover:opacity-90"
             style={{ backgroundColor: "#76FF82" }}
             variants={buttonVariants}
             initial="initial"
@@ -204,8 +204,8 @@ export default function ResetPassword() {
 
         <motion.div className="text-center mt-6" variants={itemVariants}>
           <button
-            onClick={() => router.push("/login")}
-            className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
+            onClick={() => router.push("/signin")}
+            className="text-sm text-gray-600 cursor-pointer hover:text-gray-800 transition-colors"
           >
             Back to Login
           </button>

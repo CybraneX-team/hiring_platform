@@ -85,7 +85,7 @@ export default function SignupPage() {
 
   async function verifyAccount() {
     const req = await fetch(
-      `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/auth/register`,
+      `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
       {
         method: "POST",
         headers: {
@@ -121,8 +121,8 @@ export default function SignupPage() {
     const token = urlParams.get("token");
     const userData = urlParams.get("user");
     const profileData = urlParams.get("profile");
-    console.log("profileData is  : ", profileData);
 
+    // Handle successful Google auth
     if (token && userData) {
       try {
         const user = JSON.parse(decodeURIComponent(userData));
@@ -130,15 +130,39 @@ export default function SignupPage() {
         localStorage.setItem("user", JSON.stringify(user));
         localStorage.setItem("profile", JSON.stringify(profileData));
         toast.success("Successfully signed in with Google!");
-        router.push("/profile");
+        router.replace("/profile");
+        return; // Exit early to avoid further processing
       } catch (error) {
         toast.error("Error processing Google sign-in");
       }
     }
 
+    // Handle errors
     const error = urlParams.get("error");
+    const message = urlParams.get("message");
+
     if (error) {
-      toast.error("Google sign-in failed. Please try again.");
+      // Show specific error message if available, otherwise generic message
+      if (message) {
+        toast.error(decodeURIComponent(message));
+      } else if (error === "account_exists") {
+        toast.error(
+          "Account already exists with email/password authentication. Please sign in with your email and password instead."
+        );
+      } else {
+        toast.error("Google sign-in failed. Please try again.");
+      }
+
+      // Clean up URL by removing all query parameters
+      router.replace("/signin", undefined);
+    }
+
+    const existingToken = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+
+    if (existingToken && storedUser) {
+      toast.info("Already logged in");
+      router.push("/profile");
     }
   }, [router]);
 
@@ -146,7 +170,7 @@ export default function SignupPage() {
     const state = JSON.stringify({ mode: "Inspector" });
     const encodedState = encodeURIComponent(state);
 
-    window.location.href = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/auth/google?state=${encodedState}`;
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google?state=${encodedState}`;
   };
   return (
     <motion.div

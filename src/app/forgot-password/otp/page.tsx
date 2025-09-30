@@ -53,7 +53,7 @@ export default function ForgotPasswordOtp() {
 
     setIsVerifying(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/auth/verify-reset-otp`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify-reset-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp: finalOTP })

@@ -97,7 +97,7 @@ export default function AdminPanel() {
       setAnalyticsLoading(true);
       setAnalyticsError(null);
 
-      const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_API_URL;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
       if (!baseUrl) {
         setAnalyticsError("API base URL is not configured.");
@@ -196,7 +196,7 @@ export default function AdminPanel() {
     setCompaniesLoading(true);
     setCompaniesError(null);
 
-    const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_API_URL;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
     if (!baseUrl) {
       setCompaniesError("API base URL is not configured.");
@@ -306,7 +306,7 @@ export default function AdminPanel() {
   );
 
   const fetchDocumentTypes = useCallback(async () => {
-    const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_API_URL;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
     if (!baseUrl) {
       setDocumentsError("API base URL is not configured.");
@@ -346,7 +346,7 @@ export default function AdminPanel() {
       setDocumentsLoading(true);
       setDocumentsError(null);
 
-      const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_API_URL;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
       if (!baseUrl) {
         setDocumentsError("API base URL is not configured.");
@@ -390,7 +390,7 @@ export default function AdminPanel() {
     setRolesLoading(true);
     setRolesError(null);
 
-    const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_API_URL;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
     if (!baseUrl) {
       setRolesError("API base URL is not configured.");
@@ -471,7 +471,7 @@ export default function AdminPanel() {
       setApplicationsLoading(true);
       setApplicationsError(null);
 
-      const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_API_URL;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
       if (!baseUrl) {
         setApplicationsError("API base URL is not configured.");
@@ -638,7 +638,7 @@ export default function AdminPanel() {
         return;
       }
 
-      const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_API_URL;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
       if (!baseUrl) {
         toast.error("API base URL is not configured.");
@@ -699,7 +699,7 @@ export default function AdminPanel() {
         return;
       }
 
-      const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_API_URL;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
       if (!baseUrl) {
         toast.error("API base URL is not configured.");

@@ -219,7 +219,7 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
   );
 
   const fetchProfiles = useCallback(async () => {
-    const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_API_URL;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
     if (!baseUrl) {
       setError("API base URL is not configured.");
@@ -258,7 +258,7 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
 
   // Delete inspector function
   const deleteInspector = useCallback(async (inspectorId: string) => {
-    const baseUrl = process.env.NEXT_PUBLIC_FIREBASE_API_URL;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     
     if (!baseUrl) {
       setError("API base URL is not configured.");
@@ -459,7 +459,7 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setIsUploadModalOpen(true)}
-          className="bg-[#76FF82] hover:bg-green-400 text-black font-medium px-6 py-3 rounded-full flex items-center gap-2 transition-colors"
+          className="bg-[#76FF82] hover:bg-green-400 cursor-pointer text-black font-medium px-6 py-3 rounded-full flex items-center gap-2 transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add More

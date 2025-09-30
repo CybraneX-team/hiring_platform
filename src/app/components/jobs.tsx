@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -12,9 +11,12 @@ import {
   Menu,
   X,
   Loader2,
+  LogOut,
 } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "../context/UserContext";
+import { handleLogout } from "../Helper/logout";
+import { useRouter } from "next/navigation";
 
 // Define interfaces for type safety
 interface JobListing {
@@ -48,6 +50,7 @@ const filterTabs = ["All", "Full-Time", "Part-Time", "Remote"];
 
 export default function JobComponent() {
   const [activeFilter, setActiveFilter] = useState("All");
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [token, setToken] = useState<string | null>(null);
@@ -68,7 +71,7 @@ export default function JobComponent() {
     }
   }, []);
 
-  const { user } = useUser();
+  const { user, setprofile, setuser } = useUser();
 
   // Function to format time ago
   const formatTimeAgo = (dateString: string) => {
@@ -147,11 +150,19 @@ export default function JobComponent() {
 
       switch (filter) {
         case "Full-Time":
-          return jobType.includes("full-time") || jobType.includes("fulltime") || jobType.includes("Full-time");
+          return (
+            jobType.includes("full-time") ||
+            jobType.includes("fulltime") ||
+            jobType.includes("Full-time")
+          );
         case "Part-Time":
-          return jobType.includes("part-time") || jobType.includes("parttime") || jobType.includes("Part-time");
+          return (
+            jobType.includes("part-time") ||
+            jobType.includes("parttime") ||
+            jobType.includes("Part-time")
+          );
         case "Remote":
-          return  jobType.includes("remote");
+          return jobType.includes("remote");
         default:
           return true;
       }
@@ -174,7 +185,7 @@ export default function JobComponent() {
         params.append("search", searchQuery.trim());
       }
 
-      const apiUrl = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/jobs?${params}`;
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/jobs?${params}`;
 
       const response = await fetch(apiUrl, {
         headers: {
@@ -329,6 +340,17 @@ export default function JobComponent() {
               </motion.div>
             </Link>
           </div>
+          {token && (
+            <button
+              className="cursor-pointer relative left-24 ml-2 p-2 text-gray-500 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
+              onClick={() =>
+                handleLogout(setToken, setuser, setprofile, router)
+              }
+              title="Logout"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          )}
 
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -427,7 +449,7 @@ export default function JobComponent() {
                 whileHover={{ y: -1 }}
                 onClick={() => handleFilterChange(tab)}
                 disabled={loading}
-                className={`px-6 py-1 text-xs mx-2 mb-2 font-medium rounded-full transition-all disabled:opacity-50 ${
+                className={`px-6 py-1 text-xs mx-2 mb-2  cursor-pointer font-medium rounded-full transition-all disabled:opacity-50 ${
                   activeFilter === tab
                     ? "bg-[#fff] text-[#32343A] hover:text-gray-700"
                     : " bg-[#EBEBEB] text-[#32343A]"
@@ -467,16 +489,16 @@ export default function JobComponent() {
               <p className="text-gray-600 text-lg mb-4">
                 {searchQuery
                   ? `No jobs found for "${searchQuery}"`
-                  : activeFilter !== "All" 
-                    ? `No ${activeFilter} jobs found`
-                    : "No jobs found"}
+                  : activeFilter !== "All"
+                  ? `No ${activeFilter} jobs found`
+                  : "No jobs found"}
               </p>
               <p className="text-gray-500 text-sm mb-4">
                 {searchQuery
                   ? "Try different keywords or check your spelling"
                   : activeFilter !== "All"
-                    ? "Try selecting a different filter or search for specific roles"
-                    : "Try adjusting your filters"}
+                  ? "Try selecting a different filter or search for specific roles"
+                  : "Try adjusting your filters"}
               </p>
               <div className="flex gap-3 justify-center">
                 {searchQuery && (

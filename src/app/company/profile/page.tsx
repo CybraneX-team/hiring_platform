@@ -8,6 +8,7 @@ import {
   X,
   Pencil,
   MapPin,
+  LogOut,
   ChevronDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/app/context/UserContext";
 // import { toast } from "react-toastify";
 import JobStatusDropdown from "@/app/components/JobStatusDropdown";
+import { handleLogout } from "@/app/Helper/logout";
 
 // OlaMaps integration
 let OlaMaps: any = null;
@@ -114,7 +116,6 @@ const OlaMapComponent = ({
           // Default location (Bengaluru)
           const defaultLocation = location || { lat: 12.9716, lng: 77.5946 };
 
-
           mapInstanceRef.current = olaMaps.init({
             style:
               "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
@@ -172,7 +173,6 @@ const OlaMapComponent = ({
 
   const geocodeAddress = async (address: string) => {
     if (!address.trim()) return;
-
 
     try {
       const response = await fetch(
@@ -240,7 +240,6 @@ const OlaMapComponent = ({
       return;
     }
 
-
     try {
       // Remove existing marker
       if (markerRef.current) {
@@ -281,7 +280,6 @@ const OlaMapComponent = ({
       `;
       markerElement.appendChild(innerDot);
 
-
       // Ensure we have the Marker constructor
       if (!olaMaps || !olaMaps.Marker) {
         console.error("OlaMaps Marker not available");
@@ -295,7 +293,6 @@ const OlaMapComponent = ({
       })
         .setLngLat([lng, lat])
         .addTo(mapInstanceRef.current);
-
 
       // Add popup if available
       if (olaMaps.Popup) {
@@ -313,7 +310,6 @@ const OlaMapComponent = ({
   };
 
   const reverseGeocode = async (lat: number, lng: number) => {
-
     try {
       const response = await fetch(
         `https://api.olamaps.io/places/v1/reverse-geocode?latlng=${lat},${lng}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
@@ -643,6 +639,8 @@ export default function ProfileTab() {
   const [hasLoadedApplications, setHasLoadedApplications] = useState(false);
   // Add this new state variable
   const [isLogoUploading, setIsLogoUploading] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+
   const [isLogoGettingRemoved, setisLogoGettingRemoved] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -686,6 +684,14 @@ export default function ProfileTab() {
     }
   }, [toast, formState, profile]);
 
+  useEffect(() => {
+    // Only runs on the client
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      setToken(storedToken);
+    }
+  }, []);
+
   const isProfileComplete = () => {
     return (
       formState.companyName &&
@@ -705,17 +711,18 @@ export default function ProfileTab() {
   const [profileError, setProfileError] = useState<any>(null);
 
   // Add this useEffect for authentication check
-  useEffect(() => {
-    if (!user) {
-      router.push("/profile");
-      return;
-    }
+  // useEffect(() => {
+  //   // if there is no valid token, force sign-in
+  //   if (!token) {
+  //     router.push("/signin");
+  //     return;
+  //   }
 
-    if (user.signedUpAs !== "Company") {
-      router.push("/profile");
-      return;
-    }
-  }, [user, router]);
+  //   // if user info exists but role is wrong, also sign-in
+  //   if (user && user.signedUpAs !== "Company") {
+  //     router.push("/signin");
+  //   }
+  // }, [token, user, router]);
 
   const fetchApplications = async () => {
     if (!user?.id) {
@@ -728,7 +735,7 @@ export default function ProfileTab() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/jobs/getAllJobsByCompany?companyId=${profile._id}`
+        `${process.env.NEXT_PUBLIC_API_URL}/jobs/getAllJobsByCompany?companyId=${profile._id}`
       );
 
       if (!response.ok) {
@@ -756,7 +763,7 @@ export default function ProfileTab() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/company/complete-profile`,
+        `${process.env.NEXT_PUBLIC_API_URL}/company/complete-profile`,
         {
           method: "POST",
           headers: {
@@ -879,7 +886,7 @@ export default function ProfileTab() {
 
       // Send to API
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/company/upload-logo`,
+        `${process.env.NEXT_PUBLIC_API_URL}/company/upload-logo`,
         {
           method: "POST",
           body: formData,
@@ -935,7 +942,7 @@ export default function ProfileTab() {
       setisLogoGettingRemoved(true);
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/company/remove-logo`,
+        `${process.env.NEXT_PUBLIC_API_URL}/company/remove-logo`,
         {
           method: "DELETE",
           headers: {
@@ -1070,7 +1077,7 @@ export default function ProfileTab() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/jobs/updateJobStatus`,
+        `${process.env.NEXT_PUBLIC_API_URL}/jobs/updateJobStatus`,
         {
           method: "PUT",
           headers: {
@@ -1150,7 +1157,7 @@ export default function ProfileTab() {
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={() => setIsLogoUploadOpen(true)}
-                      className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-5 sm:h-5 p-1 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
+                      className="absolute cursor-pointer -bottom-1 -right-1 w-5 h-5 sm:w-5 sm:h-5 p-1 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
                     >
                       <Pencil className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                     </motion.button>
@@ -1360,7 +1367,7 @@ export default function ProfileTab() {
                           <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="px-3 sm:px-4 py-1.5 sm:py-2 bg-[#76FF82] hover:bg-green-400 text-black text-xs sm:text-sm rounded-full transition-colors order-1 sm:order-2 self-start sm:self-auto"
+                            className="px-3 cursor-pointer sm:px-4 py-1.5 sm:py-2 bg-[#76FF82] hover:bg-green-400 text-black text-xs sm:text-sm rounded-full transition-colors order-1 sm:order-2 self-start sm:self-auto"
                           >
                             View Applications
                           </motion.button>
@@ -1386,18 +1393,34 @@ export default function ProfileTab() {
         transition={{ duration: 0.5 }}
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
-      <Link href="/" className="flex flex-col">
-        <span className={`md:text-2xl text-xl font-semibold transition-colors duration-300 ${
-          isScrolled ? "text-black " : "text-black"
-        }`}>
-          ProjectMATCH
-        </span>
-        <span className={`text-sm font-medium transition-colors duration-300 ${
-          isScrolled ? "text-black" : "text-black"
-        }`}>
-          by <span className="text-[#69a34b] text-md font-bold">compscope</span>
-        </span>
-      </Link>
+        <Link href="/" className="flex flex-col">
+          <span
+            className={`md:text-2xl text-xl font-semibold transition-colors duration-300 ${
+              isScrolled ? "text-black " : "text-black"
+            }`}
+          >
+            ProjectMATCH
+          </span>
+          <span
+            className={`text-sm font-medium transition-colors duration-300 ${
+              isScrolled ? "text-black" : "text-black"
+            }`}
+          >
+            by{" "}
+            <span className="text-[#69a34b] text-md font-bold">compscope</span>
+          </span>
+        </Link>
+        {user && (
+          <button
+            className="cursor-pointer fixed top-4 sm:top-8 right-4 sm:right-8 z-50 p-2 text-gray-500 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
+            onClick={() => {
+              handleLogout(setToken, setuser, setprofile, router);
+            }}
+            title="Logout"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+        )}
       </motion.div>
 
       <div className="pt-16 sm:pt-24 pb-8 sm:pb-16">
@@ -1406,7 +1429,7 @@ export default function ProfileTab() {
           <motion.button
             variants={itemVariants}
             onClick={() => router.back()}
-            className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-200 rounded-full text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors mb-6 sm:mb-10"
+            className="flex cursor-pointer  items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-200 rounded-full text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors mb-6 sm:mb-10"
           >
             <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
             Back
@@ -1448,7 +1471,6 @@ export default function ProfileTab() {
             </div>
 
             <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-8">
-              {renderStars()}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -1479,7 +1501,7 @@ export default function ProfileTab() {
                   onClick={() => setActiveTab(tab.id)}
                   whileHover={{ y: -2 }}
                   whileTap={{ y: 0 }}
-                  className={`px-3 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-medium transition-colors relative whitespace-nowrap flex-shrink-0 mx-5 ${
+                  className={`px-3 cursor-pointer sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-medium transition-colors relative whitespace-nowrap flex-shrink-0 mx-5 ${
                     activeTab === tab.id
                       ? "text-blue-600"
                       : "text-gray-500 hover:text-gray-700"

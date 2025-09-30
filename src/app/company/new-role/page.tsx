@@ -795,7 +795,7 @@ export default function PostRole() {
       };
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/jobs`,
+        `${process.env.NEXT_PUBLIC_API_URL}/jobs`,
         {
           method: "POST",
           headers: {
@@ -838,7 +838,7 @@ export default function PostRole() {
       setIsAnalyzing(true);
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/jobs/ai-assist`,
+        `${process.env.NEXT_PUBLIC_API_URL}/jobs/ai-assist`,
         {
           method: "POST",
           headers: {

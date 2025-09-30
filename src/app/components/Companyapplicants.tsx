@@ -2,43 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowLeft, MapPin, Clock, CheckCircle } from "lucide-react";
-
-// const CircularProgress = ({ percentage }: { percentage: number }) => {
-//   const radius = 20;
-//   const circumference = 2 * Math.PI * radius;
-//   const strokeDasharray = circumference;
-//   const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-//   return (
-//     <div className="relative w-12 h-12">
-//       <svg className="w-12 h-12 transform rotate-360" viewBox="0 0 44 44">
-//         <circle
-//           cx="22"
-//           cy="22"
-//           r={radius}
-//           stroke="#E5E7EB"
-//           strokeWidth="3"
-//           fill="none"
-//         />
-//         <circle
-//           cx="22"
-//           cy="22"
-//           r={radius}
-//           stroke="#76FF82"
-//           strokeWidth="3"
-//           fill="none"
-//           strokeDasharray={strokeDasharray}
-//           strokeDashoffset={strokeDashoffset}
-//           strokeLinecap="round"
-//           className="transition-all duration-300 ease-in-out"
-//         />
-//       </svg>
-//       <div className="absolute inset-0 flex items-center justify-center">
-//         <span className="text-black font-semibold text-sm">{percentage}%</span>
-//       </div>
-//     </div>
-//   );
-// };
+import { WorkExperienceCard } from "./WorkExperienceCard";
 
 interface CompanyApplicantsProps {
   itemId: any; // The selected profile data
@@ -47,15 +11,11 @@ interface CompanyApplicantsProps {
 
 export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsProps) {
   const applicant = itemId; // The actual profile data passed from parent
+  console.log("applicant", applicant);
 
   // Generate avatar initials from name
   const getInitials = (name: string) => {
     return name?.split(" ").map(n => n[0]).join("").toUpperCase() || "N/A";
-  };
-
-  // Calculate match percentage (you can implement your own logic)
-  const getMatchPercentage = () => {
-    return Math.floor(Math.random() * 30) + 70; // Random between 70-100 for now
   };
 
   // Check if user is available based on openToRoles
@@ -73,7 +33,7 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
             onClick={onBack}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
+            className=" cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
@@ -104,8 +64,6 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
                 </p>
               </div>
             </div>
-
-            {/* <CircularProgress percentage={getMatchPercentage()} /> */}
           </div>
 
           {/* Status Indicators */}
@@ -198,22 +156,15 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
           {/* Experience Section */}
           {applicant?.WorkExperience && applicant.WorkExperience.length > 0 && (
             <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">
                 Work Experience
               </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {applicant.WorkExperience.map((exp: any, index: number) => (
-                  <div key={index} className="bg-[#F5F5F5] rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-900 mb-1">
-                      {exp.title}
-                    </h4>
-                    <p className="text-sm text-gray-600 mb-3">{exp.company}</p>
-                    <div className="space-y-2">
-                      <p className="text-sm text-gray-700 leading-relaxed">
-                        {exp.description}
-                      </p>
-                    </div>
-                  </div>
+              <div className="space-y-4">
+                {applicant.WorkExperience.map((experience: any, index: number) => (
+                  <WorkExperienceCard 
+                    key={index} 
+                    experience={experience} 
+                  />
                 ))}
               </div>
             </div>
@@ -228,20 +179,24 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
                 </h3>
                 <div className="space-y-4">
                   {applicant.education.map((edu: any, index: number) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full bg-[#76FF82] flex-shrink-0"></div>
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {edu.Degree || "Degree Not Specified"}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {edu.institure || "Institution Not Specified"}
-                        </p>
-                        {edu.Graduation && (
-                          <p className="text-xs text-gray-500">
-                            Graduated: {new Date(edu.Graduation).getFullYear()}
+                    <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="flex items-start gap-3">
+                        <div className="w-3 h-3 rounded-full bg-blue-500 flex-shrink-0 mt-2"></div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-900 mb-1">
+                            {edu.Degree || "Degree Not Specified"}
                           </p>
-                        )}
+                          <p className="text-sm text-gray-700 mb-1">
+                            {edu.institure || "Institution Not Specified"}
+                          </p>
+                          {(edu.period || edu.Graduation) && (
+                            <div className="flex items-center gap-2">
+                              <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
+                                {edu.period || (edu.Graduation && new Date(edu.Graduation).getFullYear())}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -255,47 +210,80 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Bio
                 </h3>
-                <p className="text-gray-700">{applicant.bio}</p>
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <p className="text-gray-700 leading-relaxed">{applicant.bio}</p>
+                </div>
               </div>
             )}
           </div>
 
           {/* Contact Section */}
-          <div>
+          <div className="border-t border-gray-200 pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Contact
+              Contact Information
             </h3>
-            <div className="space-y-2">
-              {applicant?.user?.email && (
-                <p className="text-gray-700">
-                  <span className="font-medium">Email:</span>{" "}
-                  {applicant.user.email}
-                </p>
-              )}
-              {applicant?.linkdin && (
-                <p className="text-gray-700">
-                  <span className="font-medium">LinkedIn:</span>{" "}
-                  <a href={applicant.linkdin} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                    {applicant.linkdin}
-                  </a>
-                </p>
-              )}
-              {applicant?.website && (
-                <p className="text-gray-700">
-                  <span className="font-medium">Website:</span>{" "}
-                  <a href={applicant.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                    {applicant.website}
-                  </a>
-                </p>
-              )}
-              {applicant?.resumeUrl && (
-                <p className="text-gray-700">
-                  <span className="font-medium">Resume:</span>{" "}
-                  <a href={applicant.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                    View Resume
-                  </a>
-                </p>
-              )}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {applicant?.user?.email && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-700 min-w-[80px]">Email:</span>
+                    <a href={`mailto:${applicant.user.email}`} className="text-blue-600 hover:underline">
+                      {applicant.user.email}
+                    </a>
+                  </div>
+                )}
+                
+                {applicant?.phoneNumber && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-700 min-w-[80px]">Phone:</span>
+                    <a href={`tel:${applicant.phoneNumber}`} className="text-blue-600 hover:underline">
+                      {applicant.phoneNumber}
+                    </a>
+                  </div>
+                )}
+                
+                {applicant?.linkdin && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-700 min-w-[80px]">LinkedIn:</span>
+                    <a 
+                      href={applicant.linkdin} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-blue-600 hover:underline truncate"
+                    >
+                      View Profile
+                    </a>
+                  </div>
+                )}
+                
+                {applicant?.website && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-700 min-w-[80px]">Website:</span>
+                    <a 
+                      href={applicant.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-blue-600 hover:underline truncate"
+                    >
+                      Visit Site
+                    </a>
+                  </div>
+                )}
+                
+                {applicant?.resumeUrl && (
+                  <div className="flex items-center gap-2 md:col-span-2">
+                    <span className="font-medium text-gray-700 min-w-[80px]">Resume:</span>
+                    <a 
+                      href={applicant.resumeUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="inline-flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded-full text-sm font-medium transition-colors"
+                    >
+                      📄 Download Resume
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </motion.div>

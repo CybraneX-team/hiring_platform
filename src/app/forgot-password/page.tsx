@@ -22,7 +22,7 @@ export default function ForgotPassword() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/auth/forgot-password`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
@@ -115,7 +115,7 @@ export default function ForgotPassword() {
 
           <motion.button
             type="submit"
-            className="w-full h-12 rounded-lg text-black font-medium transition-opacity hover:opacity-90"
+            className="w-full h-12 cursor-pointer rounded-lg text-black font-medium transition-opacity hover:opacity-90"
             style={{ backgroundColor: "#76FF82" }}
             variants={buttonVariants}
             initial="initial"
@@ -129,8 +129,8 @@ export default function ForgotPassword() {
 
         <motion.div className="text-center mt-6" variants={itemVariants}>
           <button
-            onClick={() => router.push("/login")}
-            className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
+            onClick={() => router.push("/signin")}
+            className="text-sm cursor-pointer text-gray-600 hover:text-gray-800 transition-colors"
           >
             Back to Login
           </button>

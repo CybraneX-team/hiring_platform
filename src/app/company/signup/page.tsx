@@ -3,7 +3,7 @@
 import type React from "react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/app/components/ui/Input";
 import { Label } from "@/app/components/ui/label";
 import Link from "next/link";
@@ -31,6 +31,7 @@ export default function SignupPage() {
 
   const { setUserCreds, setmode } = useUser();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     organizationEmail: "",
@@ -43,7 +44,9 @@ export default function SignupPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
-
+  const togglePasswordVisibility = () => {
+    setShowPassword((prev) => !prev);
+  };
   useEffect(() => {
     if (shouldNavigate) {
       router.push("/otp");
@@ -55,7 +58,7 @@ export default function SignupPage() {
     try {
       setLoading(true);
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/company/create`,
+        `${process.env.NEXT_PUBLIC_API_URL}/company/create`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -150,7 +153,7 @@ export default function SignupPage() {
     const state = JSON.stringify({ mode: "Company" });
     const encodedState = encodeURIComponent(state);
 
-    window.location.href = `${process.env.NEXT_PUBLIC_FIREBASE_API_URL}/auth/google?state=${encodedState}`;
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google?state=${encodedState}`;
   };
 
   return (
@@ -263,15 +266,27 @@ export default function SignupPage() {
             >
               Password
             </Label>
-            <motion.div variants={inputVariants} whileFocus="focus">
+            <motion.div
+              className="relative"
+              variants={inputVariants}
+              whileFocus="focus"
+            >
               <Input
                 id="password"
                 value={formData.password}
                 onChange={handleChange}
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
-                className="h-12 bg-white border-gray-200 rounded-lg focus:!ring-black focus:!border-black focus:!outline-none focus:!ring-[1px]"
+                className="h-12 bg-white border-gray-200 rounded-lg focus:!ring-black focus:!border-black focus:!outline-none focus:!ring-[1px] pr-12"
               />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </motion.div>
           </motion.div>
 

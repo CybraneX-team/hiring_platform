@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useUser } from "../context/UserContext";
 import { useRouter } from "next/navigation";
+import { handleLogout } from "../Helper/logout";
 
 export default function Header() {
   const [token, setToken] = useState<string | null>(null);
@@ -35,27 +36,6 @@ export default function Header() {
 
   const { user, setuser, setprofile } = useUser();
   
-  const handleLogout = () => {
-    // Clear token
-    setToken(null);
-
-    // Clear user context data
-    setuser(null);
-    setprofile(null);
-
-    // Clear all localStorage items
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("profile");
-    localStorage.removeItem("profileData");
-
-    // Optional: Clear any other session data
-    sessionStorage.clear();
-
-    // Redirect to signin
-    router.push("/signin");
-  };
-
   return (
     <nav
       className={`flex items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 pt-1 fixed w-full transition-colors duration-300 z-50
@@ -96,8 +76,10 @@ export default function Header() {
         
         {token && (
           <button
-            className="bg-[#D2FFD6] text-black px-3 py-1.5 sm:px-4 sm:py-2 md:px-6 md:py-2.5 rounded-xl font-medium hover:bg-[#c5f2ca] transition-colors text-xs sm:text-sm md:text-base"
-            onClick={handleLogout}
+            className="bg-[#D2FFD6] cursor-pointer text-black px-3 py-1.5 sm:px-4 sm:py-2 md:px-6 md:py-2.5 rounded-xl font-medium hover:bg-[#c5f2ca] transition-colors text-xs sm:text-sm md:text-base"
+            onClick={()=>{
+              handleLogout(setToken ,setuser, setprofile, router)
+            }}
           >
             Logout
           </button>
