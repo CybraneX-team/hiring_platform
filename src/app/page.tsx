@@ -17,21 +17,51 @@ import BackedSection from "./components/Backed";
 export default function Home() {
   return (
     <div className="min-h-screen bg-white ">
-      {/* <Header /> */}
+
+      {/* Hero Section */}
       <HeroSection />
+
+      {/* Stats Section */}
+      <StatsSection />
+
+      {/* Who we Serve along with our industry coverage */}
       <OverviewSection />
-      <FeaturesMarquee />
-      {/* <AboutSection /> */}
-      {/* <StatsSection /> */}
-      <BenefitsSection />
-      <SolutionsSection />
+
+      {/* Define • Match • Deliver */}
       <ImpactSection />
+
+      {/* Why Choose ProjectMATCH? */}
+      <FeaturesMarquee />
+
+      {/* Globe Section */}
+      <BenefitsSection />
+
+      {/* Our Empowerment (sectors) */}
+      <SolutionsSection />
+
+      {/* Core disciplines section (9 grid cards section) */}
       <DarkImpactSection />
-      <WorksSection />
+
+      {/* Backed Section */}
       <BackedSection />
-      <TestimonialsSection />
+
+      {/* Newsletter Section */}
       <CTASection />
+
+      {/* Footer */}
       <Footer />
+
+
+      {/* Unused Sections */}
+
+      {/* How it works section */}
+      {/* <WorksSection /> */}
+
+      {/* About Section */}
+      {/* <AboutSection /> */}
+
+      {/* Testimonials Section */}
+      {/* <TestimonialsSection /> */}
     </div>
   );
 }

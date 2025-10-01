@@ -18,7 +18,7 @@ export default function ImpactSection() {
             {/* Left copy */}
             <div className="px-4 sm:px-6 md:px-10 py-8 sm:py-10 md:py-14">
               <div className="max-w-3xl">
-                <p className="text-[10px] sm:text-[11px] md:text-xs uppercase tracking-[0.18em] text-[#163A33]/70 mb-2 sm:mb-3">How it works</p>
+                <p className="text-[10px] sm:text-[11px] md:text-lg uppercase tracking-[0.18em] text-[#163A33]/70 mb-2 sm:mb-3">How it works</p>
                 <p className="tracking-wide font-bold text-[#163A33] mb-3 sm:mb-4 mt-1 text-lg sm:text-xl md:text-5xl">
                   Define • Match • Deliver
                 </p>

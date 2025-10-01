@@ -45,7 +45,7 @@ export default function Header() {
   
   return (
     <nav
-      className={`flex items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 pt-1 fixed w-full transition-colors duration-300 z-50
+      className={`flex items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 pt-1 w-full transition-colors duration-300 z-50
         ${isScrolled ? "bg-white pt-1" : "bg-transparent"}
       `}
     >
@@ -55,7 +55,7 @@ export default function Header() {
           alt="ProjectMATCH by Compscope"
           width={200}
           height={80}
-          className="h-16 sm:h-16 md:h-16 lg:h-16 xl:h-24 w-auto"
+          className="h-16 sm:h-16 md:h-16 lg:h-16 xl:h-28 w-auto"
           priority
         />
         <div className={`leading-tight ${isScrolled ? "text-[#163A33]" : "text-white"}`}>

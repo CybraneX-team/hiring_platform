@@ -62,15 +62,20 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 sm:gap-10 md:gap-12">
           <div className="sm:col-span-2 md:col-span-1">
             <button onClick={scrollToTop} className="mb-3 sm:mb-4 block cursor-pointer">
-              <Image
-                src="/logo.png"
-                alt="ProjectMATCH by Compscope"
-                width={140}
-                height={50}
-                className="h-16 sm:h-20 md:h-24 w-auto"
-                priority
-              />
-              <p className={`text-xs mb-2 sm:text-xs md:text-sm text-gray-600 font-black -mt-1`}> <span className="text-[#000] font-bold">by Compscope</span></p>
+              <div className="flex items-center gap-1 -mt-5 -ml-5">
+                <Image
+                  src="/logo.png"
+                  alt="ProjectMATCH by Compscope"
+                  width={200}
+                  height={80}
+                  className="h-16 sm:h-20 md:h-24 w-auto"
+                  priority
+                />
+                <div className="leading-tight text-[#163A33]">
+                  <div className="text-xs sm:text-sm md:text-base lg:text-lg font-black">ProjectMATCH</div>
+                  <div className="text-[10px] sm:text-xs md:text-sm text-gray-600"><span className="text-[#3EA442] font-bold">by Compscope</span></div>
+                </div>
+              </div>
             </button>
             <p className="text-gray-600 text-xs sm:text-sm mb-4 sm:mb-5 leading-relaxed">
               Connecting talent to the projects — securely and efficiently.
@@ -164,7 +169,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-8 sm:mt-10 md:mt-12 pt-6 sm:pt-7 md:pt-8 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-          <p className="text-[10px] sm:text-xs text-gray-600">© 2025 Compscope. All rights reserved.</p>
+          <p className="text-[10px] sm:text-xs text-gray-600">© 2025 Compscope Non Metallics. All rights reserved.</p>
           <div className="flex items-center gap-3 sm:gap-4 text-[10px] sm:text-xs">
             <Link href="/privacy" className="text-gray-600 hover:text-[#17181D]">Privacy</Link>
             <span className="text-gray-300">|</span>

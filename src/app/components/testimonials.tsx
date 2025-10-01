@@ -130,30 +130,6 @@ export default function TestimonialsSection() {
             </motion.div>
           ))}
         </div>
-
-        {/* Stats Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
-          className="mt-16 bg-[#163A33] rounded-2xl p-8 text-center"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <div className="text-3xl md:text-4xl font-bold text-[#9ff64f] mb-2">500+</div>
-              <div className="text-white/80 text-sm">Happy Clients</div>
-            </div>
-            <div>
-              <div className="text-3xl md:text-4xl font-bold text-[#9ff64f] mb-2">1000+</div>
-              <div className="text-white/80 text-sm">Successful Matches</div>
-            </div>
-            <div>
-              <div className="text-3xl md:text-4xl font-bold text-[#9ff64f] mb-2">98%</div>
-              <div className="text-white/80 text-sm">Satisfaction Rate</div>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </section>
   );

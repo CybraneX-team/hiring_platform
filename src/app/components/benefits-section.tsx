@@ -54,7 +54,7 @@ export default function BenefitsSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-10 lg:gap-12 xl:gap-16 items-start">
           {/* Left: headline and CTA */}
           <div>
-            <p className="text-xs sm:text-sm text-gray-500 mb-2">COMPSCOPE</p>
+            {/* <p className="text-xs sm:text-sm text-gray-500 mb-2">COMPSCOPE</p> */}
             <motion.h2
               className="text-2xl sm:text-3xl md:text-4xl font-semibold leading-tight tracking-tight text-[#163A33]"
               initial={{ opacity: 0, y: 12 }}
@@ -62,7 +62,7 @@ export default function BenefitsSection() {
               viewport={{ once: true, amount: 0.3 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
             >
-              Exceptional Projects and Talent in energy and Infra Sector at one place
+              Exceptional Projects and Talent in Energy and Infra Sector at one place
             </motion.h2>
             <p className="mt-3 text-sm sm:text-base md:text-base text-gray-600 md:max-w-xl leading-relaxed">
               Access verified experts or high-value projects in oil, gas, green energy, and heavy infrastructure — instantly, securely, and intelligently powered by AI.
