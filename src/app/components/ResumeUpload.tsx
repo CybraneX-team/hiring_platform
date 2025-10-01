@@ -104,7 +104,7 @@ export default function ResumeUpload({ userId, onUploadComplete, onClose }: Resu
       formData.append('userId', userId || (user ? user.id : ""));
         try {
           const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/profile/resume`,
+            `${process.env.NEXT_PUBLIC_API_URL}/profile/inspector-profile/resume`,
             {
               method: "POST",
               body: formData,
@@ -191,7 +191,7 @@ export default function ResumeUpload({ userId, onUploadComplete, onClose }: Resu
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={isProcessing}
-          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-full transition-colors"
+          className="cursor-pointer px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-full transition-colors"
         >
           {isProcessing ? (
             <>

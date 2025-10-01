@@ -207,7 +207,7 @@ export default function FileUploadModal({
                 </p>
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-6 py-2 bg-[#76FF82] hover:bg-green-400 text-black font-medium rounded-full transition-colors"
+                  className="cursor-pointer px-6 py-2 bg-[#76FF82] hover:bg-green-400 text-black font-medium rounded-full transition-colors"
                 >
                   Choose Files
                 </button>
