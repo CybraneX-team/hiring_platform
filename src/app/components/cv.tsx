@@ -238,7 +238,7 @@ export default function ApplicationDetailView() {
       const pageHeight = pdf.internal.pageSize.getHeight();
 
       const imgWidth = pageWidth;
-      const imgHeight = (rect.height * imgWidth) / rect.width;
+      const imgHeight = (rect.height * imgWidth) / rect.width - 40; // Reduce height by 50mm
 
       let heightLeft = imgHeight;
       let position = 0;
