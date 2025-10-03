@@ -7,6 +7,10 @@ export default function ImpactSection() {
   return (
     <section className="bg-white py-8 sm:py-12 md:py-16">
       <div className="max-w-[100rem] mx-auto px-4 sm:px-6 md:px-6">
+        {/* Section heading outside the box */}
+        <div className="mb-6 sm:mb-8 md:mb-10 text-center">
+          <h2 className="text-[#163A33] font-bold tracking-tight text-xl sm:text-2xl md:text-6xl">How it works</h2>
+        </div>
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -18,14 +22,13 @@ export default function ImpactSection() {
             {/* Left copy */}
             <div className="px-4 sm:px-6 md:px-10 py-8 sm:py-10 md:py-14">
               <div className="max-w-3xl">
-                <p className="text-[10px] sm:text-[11px] md:text-lg uppercase tracking-[0.18em] text-[#163A33]/70 mb-2 sm:mb-3">How it works</p>
-                <p className="tracking-wide font-bold text-[#163A33] mb-3 sm:mb-4 mt-1 text-lg sm:text-xl md:text-5xl">
+                <p className="tracking-wide font-bold text-[#163A33] mb-5 sm:mb-4 mt-1 text-lg sm:text-xl md:text-3xl">
                   Define • Match • Deliver
                 </p>
                 <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed mb-6 sm:mb-8 md:mb-10">
-                  Define your project scope, timeline, and budget. Our AI Talent Match instantly connects you with verified professionals. Collaborate with clear milestones and complete payments securely — from requisition to closeout.
+                  Start by defining your project’s scope, timeline, and budget in just a few clicks. Our AI Talent Match instantly connects you with verified professionals who fit your requirements. Review expert profiles, check credentials, and select the best match for your needs. Collaborate seamlessly with built-in tools for communication, document sharing, and milestone tracking. Manage contracts and payments securely, ensuring transparency and peace of mind from project kickoff to closeout. Experience a streamlined process that saves you time and delivers results.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3 mt-8 sm:mt-12 md:mt-40">
+                <div className="flex flex-col sm:flex-row gap-3 mt-8 sm:mt-12 md:mt-20">
                   <Link href="/signup" className="inline-flex">
                     <motion.button
                       whileHover={{ y: -1 }}

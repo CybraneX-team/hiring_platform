@@ -5,13 +5,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useUser } from "../context/UserContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { handleLogout } from "../Helper/logout";
 
 export default function Header() {
   const [token, setToken] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+  const isHome = pathname === "/";
   
   useEffect(() => {
     // Only runs on the client
@@ -45,21 +47,19 @@ export default function Header() {
   
   return (
     <nav
-      className={`flex items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 pt-1 w-full transition-colors duration-300 z-50
-        ${isScrolled ? "bg-white pt-1" : "bg-transparent"}
-      `}
+      className={`relative z-[200] flex items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 pt-1 w-full transition-colors duration-300 bg-transparent`}
     >
       <Link href="/" prefetch className="flex items-center gap-1">
         <Image
-          src={isScrolled ? "/logo.png" : "/logo.png"}
+          src={isHome ? "/logo.png" : "/black_logo.png"}
           alt="ProjectMATCH by Compscope"
           width={200}
           height={80}
           className="h-16 sm:h-16 md:h-16 lg:h-16 xl:h-28 w-auto"
           priority
         />
-        <div className={`leading-tight ${isScrolled ? "text-[#163A33]" : "text-white"}`}>
-          <div className="text-xs sm:text-sm md:text-base lg:text-lg font-black">
+        <div className={`leading-tight ${isHome ? "text-white" : "text-black"}`}>
+          <div className="text-xs sm:text-sm md:text-base lg:text-2xl font-black">
             ProjectMATCH
           </div>
           <div className="text-[10px] sm:text-xs md:text-sm text-gray-600">
@@ -70,10 +70,11 @@ export default function Header() {
 
       <div className="cursor-pointer flex items-center gap-2 sm:gap-3 md:gap-4">
         {!token && (
-          <Link href="/signin">
-            <button className="cursor-pointer bg-[#3EA442] text-white px-3 py-1.5 sm:px-4 sm:py-2 md:px-6 md:py-2.5 rounded-lg font-medium hover:bg-[#69a34b] transition-colors text-xs sm:text-sm md:text-base">
-              Login
-            </button>
+          <Link
+            href="/signin"
+            className="inline-block pointer-events-auto cursor-pointer bg-[#3EA442] text-white px-3 py-1.5 sm:px-4 sm:py-2 md:px-6 md:py-2.5 rounded-lg font-medium hover:bg-[#69a34b] transition-colors text-xs sm:text-sm md:text-base"
+          >
+            Login
           </Link>
         )}
 

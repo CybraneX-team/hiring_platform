@@ -83,36 +83,45 @@ export default function SignupPage() {
     }
   }, [router]);
 
+  const [isVerifying, setIsVerifying] = useState(false);
   async function verifyAccount() {
-    const req = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: userCreds.name,
-          email: userCreds.email,
-          password: userCreds.password,
-        }),
+    if (isVerifying) return;
+    try {
+      setIsVerifying(true);
+      const req = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: userCreds.name,
+            email: userCreds.email,
+            password: userCreds.password,
+          }),
+        }
+      );
+      const response = await req.json();
+      if (response.message === "User already exists") {
+        toast.info("User already exists");
+        return;
       }
-    );
-    const response = await req.json();
-    if (response.message === "User already exists") {
-      toast.info("User already exists");
-      return;
-    }
-    if (response.message === "All fields are required") {
-      toast.info("All fields are required");
-      return;
-    }
+      if (response.message === "All fields are required") {
+        toast.info("All fields are required");
+        return;
+      }
 
-    if (req.ok) {
-      toast.success(response.message);
-      localStorage.setItem("pendingCreds", JSON.stringify(userCreds));
-      setmode("register");
-      router.push("/otp");
+      if (req.ok) {
+        toast.success(response.message);
+        localStorage.setItem("pendingCreds", JSON.stringify(userCreds));
+        setmode("register");
+        router.push("/otp");
+      }
+    } catch (err) {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsVerifying(false);
     }
   }
 
@@ -179,17 +188,25 @@ export default function SignupPage() {
       animate="visible"
       variants={containerVariants}
     >
-      <div className="container mx-auto px-6 py-8">
+      <div className="mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-4">
         <motion.div className="mb-16" variants={itemVariants}>
-          <Link href="/" className="flex items-center">
+          <Link href="/" className="flex items-center gap-1">
             <Image
-              src="/logo.png"
+              src="/black_logo.png"
               alt="ProjectMATCH by Compscope"
               width={200}
               height={80}
-              className="h-8 md:h-24 w-auto"
+              className="h-16 sm:h-16 md:h-16 lg:h-16 xl:h-28 w-auto"
               priority
             />
+            <div className={`leading-tight text-black`}>
+              <div className="text-xs sm:text-sm md:text-base lg:text-2xl font-black">
+                ProjectMATCH
+              </div>
+              <div className="text-[10px] sm:text-xs md:text-sm text-gray-600">
+                <span className="text-[#3EA442] font-bold">by Compscope</span>
+              </div>
+            </div>
           </Link>
         </motion.div>
 
@@ -308,16 +325,18 @@ export default function SignupPage() {
 
           {/* Verify Button */}
           <motion.button
-            className="w-full h-12 rounded-lg text-black font-medium transition-opacity hover:opacity-90 cursor-pointer"
+            className="w-full h-12 rounded-lg text-black font-medium transition-opacity hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             style={{ backgroundColor: "#76FF82" }}
             variants={buttonVariants}
             initial="initial"
             whileHover="hover"
             whileTap="tap"
             onClick={verifyAccount}
+            disabled={isVerifying}
+            aria-busy={isVerifying}
           >
             <motion.span initial={{ opacity: 1 }} whileHover={{ opacity: 0.9 }}>
-              Verify your account
+              {isVerifying ? "Verifying…" : "Verify your account"}
             </motion.span>
           </motion.button>
 

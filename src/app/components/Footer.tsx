@@ -22,7 +22,7 @@ export default function Footer() {
             <button onClick={scrollToTop} className="mb-3 sm:mb-4 block cursor-pointer">
               <div className="flex items-center gap-1 -mt-5 -ml-5">
                 <Image
-                  src="/logo.png"
+                  src="/black_logo.png"
                   alt="ProjectMATCH by Compscope"
                   width={200}
                   height={80}
@@ -30,8 +30,8 @@ export default function Footer() {
                   priority
                 />
                 <div className="leading-tight text-[#163A33]">
-                  <div className="text-xs sm:text-sm md:text-base lg:text-lg font-black">ProjectMATCH</div>
-                  <div className="text-[10px] sm:text-xs md:text-sm text-gray-600"><span className="text-[#3EA442] font-bold">by Compscope</span></div>
+                  <div className="text-xs sm:text-sm md:text-base lg:text-2xl font-black">ProjectMATCH</div>
+                  <div className="text-[10px] sm:text-xs md:text-sm text-gray-600"><span className="text-[#3EA442] -ml-16 font-bold">by Compscope</span></div>
                 </div>
               </div>
             </button>
@@ -52,9 +52,9 @@ export default function Footer() {
               <h3 className="font-semibold mb-3 sm:mb-4 text-[#17181D] text-sm sm:text-base">Quick Links</h3>
               <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
                 <li>
-                  <span className="text-gray-400 cursor-not-allowed">
-                    News & Blogs <span className="text-[10px] sm:text-xs">(coming soon)</span>
-                  </span>
+                  <Link href="/news" className="text-gray-600 hover:text-[#17181D] transition-colors">
+                    News & Blogs
+                  </Link>
                 </li>
                 <li>
                   <Link href="/support" className="text-gray-600 hover:text-[#17181D] transition-colors">

@@ -17,6 +17,7 @@ export default function LoginPage() {
 
   const [usePhone, setUsePhone] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const {
     loginCreds,
@@ -93,27 +94,27 @@ export default function LoginPage() {
   };
 
   const login = async () => {
-    const makeReq = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: loginCreds.email,
-          password: loginCreds.password,
-        }),
+    if (isLoggingIn) return;
+    try {
+      setIsLoggingIn(true);
+      const makeReq = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: loginCreds.email,
+            password: loginCreds.password,
+          }),
+        }
+      );
+      const response = await makeReq.json();
+      if (!makeReq.ok) {
+        toast.info(response?.message || "Login failed");
+        return;
       }
-    );
-    if (makeReq.ok == false) {
-      const response = await makeReq.json();
-      toast.info(response.message);
-      return;
-    }
-
-    if (makeReq.ok) {
-      const response = await makeReq.json();
       setuser(response.user);
       setprofile(response.profile);
       setUserCreds({
@@ -129,6 +130,10 @@ export default function LoginPage() {
       }else{
         router.push("/profile");
       }
+    } catch (err) {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -176,17 +181,25 @@ export default function LoginPage() {
       animate="visible"
       variants={containerVariants}
     >
-      <div className="container mx-auto px-6 py-8">
+      <div className="mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-4">
         <motion.div className="mb-16" variants={itemVariants}>
-          <Link href="/" className="flex items-center">
+          <Link href="/" className="flex items-center gap-1">
             <Image
-              src="/logo.png"
+              src="/black_logo.png"
               alt="ProjectMATCH by Compscope"
               width={200}
               height={80}
-              className="h-8 md:h-24 w-auto"
+              className="h-16 sm:h-16 md:h-16 lg:h-16 xl:h-28 w-auto"
               priority
             />
+            <div className={`leading-tight text-black`}>
+              <div className="text-xs sm:text-sm md:text-base lg:text-2xl font-black">
+                ProjectMATCH
+              </div>
+              <div className="text-[10px] sm:text-xs md:text-sm text-gray-600">
+                <span className="text-[#3EA442] font-bold">by Compscope</span>
+              </div>
+            </div>
           </Link>
         </motion.div>
 
@@ -271,15 +284,17 @@ export default function LoginPage() {
 
           {/* Login Button */}
           <motion.button
-            className="w-full h-12 rounded-lg text-black font-medium hover:cursor-pointer transition-opacity hover:opacity-90"
+            className="cursor-pointer w-full h-12 rounded-lg text-black font-medium transition-opacity hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
             style={{ backgroundColor: "#76FF82" }}
             variants={buttonVariants}
             initial="initial"
             whileHover="hover"
             whileTap="tap"
             onClick={login}
+            disabled={isLoggingIn}
+            aria-busy={isLoggingIn}
           >
-            Log In
+            {isLoggingIn ? "Logging in…" : "Log In"}
           </motion.button>
 
           {/* Divider */}

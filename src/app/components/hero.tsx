@@ -77,12 +77,12 @@ export default function HeroSection() {
               className="flex gap-3 flex-wrap"
             >
               <Link href="/company/signup">
-                <button className="bg-[#3EA442] hover:bg-[#6ef07a] text-white rounded-md font-semibold px-6 md:px-8 py-2.5 text-xs md:text-sm transition-colors">
+                <button className="cursor-pointer bg-[#3EA442] hover:bg-[#6ef07a] text-white rounded-md font-semibold px-6 md:px-8 py-2.5 text-xs md:text-sm transition-colors">
                   Hire an Engineer
                 </button>
               </Link>
               <Link href="/signup">
-                <button className="bg-white/10 hover:bg-white/20 text-white rounded-md px-6 md:px-8 py-2.5 text-xs md:text-sm font-semibold backdrop-blur-sm ring-1 ring-white/20">
+                <button className="cursor-pointer bg-white/10 hover:bg-white/20 text-white rounded-md px-6 md:px-8 py-2.5 text-xs md:text-sm font-semibold backdrop-blur-sm ring-1 ring-white/20">
                   Find a Job
                 </button>
               </Link>
