@@ -69,7 +69,7 @@ export default function BenefitsSection() {
             </p>
 
             {/* How it works (stacked vertically to utilize left empty space) */}
-            <div className="mt-6 sm:mt-8 md:mt-10 lg:mt-[19rem] flex flex-col gap-3 sm:gap-4 text-[#163A33]">
+            <div className="mt-6 sm:mt-8 md:mt-10 lg:mt-[9rem] flex flex-col gap-5 sm:gap-4 text-[#163A33]">
               <div className="rounded-xl ring-1 ring-gray-200 bg-white p-4 sm:p-5 md:p-6 shadow-sm">
                 <p className="text-sm font-semibold mb-1">1) Define your project</p>
                 <p className="text-sm text-gray-600">Share scope, timeline, and budget.</p>
