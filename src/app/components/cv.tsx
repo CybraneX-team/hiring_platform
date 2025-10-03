@@ -254,29 +254,36 @@ export default function ApplicationDetailView() {
       }
 
       // Add clickable links to PDF [web:125][web:126]
-      if (applicantDetail?.resumeUrl) {
-        // Add resume link (positioned at bottom of first page)
-        pdf.setPage(1);
-        pdf.link(20, pageHeight - 30, 60, 10, {
-          url: applicantDetail.resumeUrl
-        });
-        pdf.text("Resume Link", 20, pageHeight - 25);
-      }
+      // if (applicantDetail?.resumeUrl) {
+      //   // Add resume link (positioned at bottom of first page)
+      //   pdf.setPage(1);
+      //   pdf.link(20, pageHeight - 30, 60, 10, {
+      //     url: applicantDetail.resumeUrl
+      //   });
+      //   pdf.text("Resume Link", 20, pageHeight - 25);
+      // }
 
-      // Add certificate links
-      if (applicantDetail?.certifications?.length > 0) {
-        let linkY = pageHeight - 50;
-        applicantDetail.certifications.forEach((cert : any, index : any) => {
-          if (cert.fileUrl && linkY > 20) {
-            pdf.setPage(1);
-            pdf.link(20, linkY, 80, 10, {
-              url: cert.fileUrl
-            });
-            pdf.text(`${cert.name} Certificate`, 20, linkY + 5);
-            linkY -= 15;
-          }
-        });
-      }
+      // // Add certificate links
+      // if (applicantDetail?.certifications?.length > 0) {
+      //   let linkY = pageHeight - 50;
+      //   applicantDetail.certifications.forEach((cert : any, index : any) => {
+      //     if (cert.fileUrl && linkY > 20) {
+      //       pdf.setPage(1);
+      //       pdf.link(20, linkY, 80, 10, {
+      //         url: cert.fileUrl
+      //       });
+      //       pdf.text(`${cert.name} Certificate`, 20, linkY + 5);
+      //       linkY -= 15;
+      //     }
+      //   });
+      // }
+
+      // Add footer to the last page
+      const totalPages = pdf.getNumberOfPages();
+      pdf.setPage(totalPages);
+      pdf.setFontSize(10);
+      pdf.setTextColor(128, 128, 128); // Gray color
+      pdf.text("Made With ProjectMATCH by Compscope", 20, pageHeight - 10);
 
       pdf.save(`${applicantDetail?.name?.replace(/\s+/g, "-") || "CV"}-CV.pdf`);
     } finally {

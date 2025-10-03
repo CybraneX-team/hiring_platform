@@ -48,6 +48,7 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
   const [showDownloadModal, setShowDownloadModal] = useState(false)
   const [downloadStartDate, setDownloadStartDate] = useState("")
   const [downloadEndDate, setDownloadEndDate] = useState("")
+  const [companyName, setCompanyName] = useState("")
 
   // API-related functions
   const fetchAttendanceData = useCallback(async () => {
@@ -151,6 +152,10 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
     return logs
   }
 
+  const isSelectedDatePresent = (): boolean => {
+    return attendanceData.presentDays.includes(selectedDate)
+  }
+
   const markAsPresent = async () => {
     if (!profileId || !selectedDate) return
 
@@ -162,6 +167,26 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
       await fetchAttendanceData() // Refresh data
     } catch (err: any) {
       setError(err.message || "Failed to mark as present")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const unmarkAsPresent = async () => {
+    if (!profileId || !selectedDate) return
+
+    const dateStr = getSelectedDateISOString()
+
+    try {
+      setIsSaving(true)
+      // Set status to 'none' and clear all logs to delete all records for this date
+      await attendanceAPI.updateAttendance(profileId, dateStr, { 
+        status: 'none', 
+        logs: [] 
+      })
+      await fetchAttendanceData() // Refresh data
+    } catch (err: any) {
+      setError(err.message || "Failed to unmark as present")
     } finally {
       setIsSaving(false)
     }
@@ -363,12 +388,18 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
     
     setDownloadStartDate(startOfMonth.toISOString().split('T')[0])
     setDownloadEndDate(endOfMonth.toISOString().split('T')[0])
+    setCompanyName("")
     setShowDownloadModal(true)
   }
 
   const downloadAttendanceData = async () => {
     if (!downloadStartDate || !downloadEndDate) {
       setError("Please select both start and end dates")
+      return
+    }
+
+    if (!companyName.trim()) {
+      setError("Please enter company name")
       return
     }
 
@@ -387,13 +418,17 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
       // Create new PDF document
       const doc = new jsPDF()
 
-      // Add title
+      // Add company name as title to the center of page
       doc.setFontSize(16)
-      doc.text("Attendance Report", 20, 20)
+      doc.text(companyName.trim(), 20, 20)
+
+      // Add subtitle
+      doc.setFontSize(14)
+      doc.text("Attendance Report", 20, 35)
 
       // Add date range
       doc.setFontSize(12)
-      doc.text(`Date Range: ${downloadStartDate} to ${downloadEndDate}`, 20, 35)
+      doc.text(`Date Range: ${downloadStartDate} to ${downloadEndDate}`, 20, 50)
 
       // Prepare table data
       const tableData: any[] = []
@@ -419,7 +454,7 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
       autoTable(doc, {
         head: [["Date", "Attendance Status", "Time", "Activity"]],
         body: tableData,
-        startY: 50,
+        startY: 65,
         theme: "grid",
         styles: {
           fontSize: 10,
@@ -441,8 +476,19 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
         },
       })
 
-      // Generate filename with date range
-      const filename = `Attendance_${downloadStartDate}_to_${downloadEndDate}.pdf`
+      // Add footer to every page
+      const totalPages = doc.getNumberOfPages()
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i)
+        doc.setFontSize(10)
+        doc.setTextColor(128, 128, 128) // Gray color
+        const pageHeight = doc.internal.pageSize.height
+        doc.text("Made With ProjectMATCH by Compscope", 20, pageHeight - 10)
+      }
+
+      // Generate filename with company name
+      const sanitizedCompanyName = companyName.trim().replace(/[^a-zA-Z0-9]/g, '_')
+      const filename = `${sanitizedCompanyName}_Attendance_${downloadStartDate}_to_${downloadEndDate}.pdf`
 
       // Download the PDF file
       doc.save(filename)
@@ -521,14 +567,25 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
               <Download className="w-4 h-4" />
               Download
             </button>
-            <button
-              onClick={markAsPresent}
-              disabled={isSaving}
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors flex items-center space-x-2"
-            >
-              {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-              <span>Mark as Present</span>
-            </button>
+            {isSelectedDatePresent() ? (
+              <button
+                onClick={unmarkAsPresent}
+                disabled={isSaving}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors flex items-center space-x-2"
+              >
+                {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>Unmark as Present</span>
+              </button>
+            ) : (
+              <button
+                onClick={markAsPresent}
+                disabled={isSaving}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors flex items-center space-x-2"
+              >
+                {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>Mark as Present</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -765,6 +822,17 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
 
             <div className="p-6 space-y-4">
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+                <input
+                  type="text"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="Enter company name"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
                 <input
                   type="date"
@@ -785,7 +853,7 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
                 />
               </div>
 
-              {error && downloadStartDate && downloadEndDate && (
+              {error && (downloadStartDate && downloadEndDate || companyName) && (
                 <div className="bg-red-50 border-l-4 border-red-400 p-3">
                   <div className="flex">
                     <AlertCircle className="w-5 h-5 text-red-400 mr-2 flex-shrink-0" />
@@ -800,6 +868,7 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
                 onClick={() => {
                   setShowDownloadModal(false)
                   setError(null)
+                  setCompanyName("")
                 }}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
               >
@@ -807,7 +876,7 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
               </button>
               <button
                 onClick={downloadAttendanceData}
-                disabled={isSaving || !downloadStartDate || !downloadEndDate}
+                disabled={isSaving || !downloadStartDate || !downloadEndDate || !companyName.trim()}
                 className="px-4 py-2 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-medium rounded-lg transition-colors flex items-center space-x-2"
               >
                 {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
