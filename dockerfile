@@ -11,12 +11,21 @@ RUN npm ci
 FROM base AS builder
 WORKDIR /app
 
+# Accept build arguments for Next.js public env vars
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_OLA_MAPS_API_KEY
+
+# Set as environment variables for Next.js build
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_OLA_MAPS_API_KEY=$NEXT_PUBLIC_OLA_MAPS_API_KEY
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Create next.config.js with proper syntax
 RUN echo 'const nextConfig = { output: "standalone" }; module.exports = nextConfig;' > next.config.js
 
+# Build Next.js with env vars
 RUN npm run build
 
 # Production stage

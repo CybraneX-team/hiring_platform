@@ -28,6 +28,9 @@ jobs:
           context: .
           file: ./dockerfile
           push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_OLA_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_OLA_MAPS_API_KEY }}
           tags: |
             cybranex/compscope-frontend:${{ github.run_number }}
             cybranex/compscope-frontend:latest
@@ -43,10 +46,6 @@ jobs:
             cd /home/ubuntu/compscope
             
             mkdir -p frontend
-            
-            cat > frontend/.env << 'EOF'
-            ${{ secrets.FRONTEND_ENV_CONTENT }}
-            EOF
             
             docker pull cybranex/compscope-frontend:latest
             
