@@ -1,0 +1,79 @@
+name: Build and Deploy Frontend
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout frontend code
+        uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/compscope-frontend:${{ github.run_number }}
+            ${{ secrets.DOCKER_USERNAME }}/compscope-frontend:latest
+      
+      - name: Deploy frontend to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd /home/ubuntu/compscope
+            
+            # Ensure frontend directory exists
+            mkdir -p frontend
+            
+            # Create frontend .env file
+            cat > frontend/.env << 'EOF'
+            ${{ secrets.FRONTEND_ENV_CONTENT }}
+            EOF
+            
+            # Pull latest frontend image
+            docker pull ${{ secrets.DOCKER_USERNAME }}/compscope-frontend:latest
+            
+            # Restart only frontend container
+            docker-compose up -d --no-deps frontend
+            
+            # Reload nginx
+            docker exec nginx nginx -s reload || true
+            
+            # Clean up old images
+            docker image prune -af
+            
+            # Show frontend logs
+            docker logs frontend --tail 50
+            
+            echo "✅ Frontend deployment completed!"
+      
+      - name: Trigger deployment repo update
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.PAT_TOKEN }}
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: 'YOUR_USERNAME',
+              repo: 'compscope-deployment',
+              event_type: 'frontend-deployed'
+            });
