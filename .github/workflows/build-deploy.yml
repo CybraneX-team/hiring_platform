@@ -29,8 +29,8 @@ jobs:
           file: ./dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/compscope-frontend:${{ github.run_number }}
-            ${{ secrets.DOCKER_USERNAME }}/compscope-frontend:latest
+            cybranex/compscope-frontend:${{ github.run_number }}
+            cybranex/compscope-frontend:latest
       
       - name: Deploy frontend to EC2
         uses: appleboy/ssh-action@master
@@ -42,38 +42,20 @@ jobs:
           script: |
             cd /home/ubuntu/compscope
             
-            # Ensure frontend directory exists
             mkdir -p frontend
             
-            # Create frontend .env file
             cat > frontend/.env << 'EOF'
             ${{ secrets.FRONTEND_ENV_CONTENT }}
             EOF
             
-            # Pull latest frontend image
-            docker pull ${{ secrets.DOCKER_USERNAME }}/compscope-frontend:latest
+            docker pull cybranex/compscope-frontend:latest
             
-            # Restart only frontend container
             docker-compose up -d --no-deps frontend
             
-            # Reload nginx
             docker exec nginx nginx -s reload || true
             
-            # Clean up old images
             docker image prune -af
             
-            # Show frontend logs
             docker logs frontend --tail 50
             
             echo "✅ Frontend deployment completed!"
-      
-      - name: Trigger deployment repo update
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.PAT_TOKEN }}
-          script: |
-            await github.rest.repos.createDispatchEvent({
-              owner: 'YOUR_USERNAME',
-              repo: 'compscope-deployment',
-              event_type: 'frontend-deployed'
-            });
