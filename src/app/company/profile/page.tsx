@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import ResumeManager from "../../components/Company/ResumeManager";
+import TruncatedText from "../../components/TruncatedText";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/app/context/UserContext";
 // import { toast } from "react-toastify";
@@ -1656,12 +1657,13 @@ export default function ProfileTab() {
                         </div>
 
                         {job.description && (
-                          <p className="text-xs text-gray-600 line-clamp-2 mb-2">
-                            {job.description
-                              .replace(/\n/g, " ")
-                              .substring(0, 100)}
-                            {job.description.length > 100 ? "..." : ""}
-                          </p>
+                          <div className="mb-2">
+                            <TruncatedText 
+                              text={job.description.replace(/\n/g, " ")} 
+                              maxWords={50}
+                              className="text-xs text-gray-600"
+                            />
+                          </div>
                         )}
                       </div>
 

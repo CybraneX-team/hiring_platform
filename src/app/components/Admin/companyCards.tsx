@@ -38,8 +38,6 @@ export default function CompanyCard({
   };
   
   const displayLocation = getLastFourParts(locationLabel);
-  const industryLabel =
-    company.industry?.trim() || "Industry information unavailable";
   const applicationsCount = Number.isFinite(company.totalApplications)
     ? company.totalApplications
     : 0;
@@ -65,16 +63,8 @@ export default function CompanyCard({
         transition={{ duration: 0.5, delay: index * 0.1 }}
         whileHover={{ y: -2, boxShadow: "0 8px 25px rgba(0,0,0,0.1)" }}
         onClick={() => onSelect(company)}
-        className="bg-white rounded-xl p-4 sm:p-6 cursor-pointer relative"
+        className="bg-white rounded-xl p-4 sm:p-6 cursor-pointer relative group"
       >
-        {/* Delete button - minimal addition */}
-        <button
-          onClick={handleDelete}
-          className="absolute top-2 right-2 p-1 text-red-500 hover:text-red-700 z-10"
-          title="Delete Company"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
 
         <div className="flex items-start justify-between mb-4">
           <motion.div
@@ -100,15 +90,16 @@ export default function CompanyCard({
           </div>
         </div>
 
-        <h3 className="text-base sm:text-lg font-medium text-black mb-2 line-clamp-2">
-          {companyName}
-        </h3>
-        <p className="text-sm text-gray-500 mb-4">{industryLabel}</p>
+        <div className="h-12 sm:h-14 mb-4 flex items-center">
+          <h3 className="text-base sm:text-lg font-medium text-black line-clamp-2 leading-tight">
+            {companyName}
+          </h3>
+        </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-gray-400 mb-4 gap-2">
           <div className="flex items-center space-x-1">
             <MapPin className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">{locationLabel}</span>
+            <span className="truncate" title={locationLabel}>{displayLocation}</span>
           </div>
           <div className="flex items-center space-x-1">
             <Users className="w-3 h-3 flex-shrink-0" />
@@ -116,21 +107,33 @@ export default function CompanyCard({
           </div>
         </div>
 
-        <motion.button
-          whileHover={{
-            scale: 1.02,
-            boxShadow: "0 4px 12px rgba(118, 255, 130, 0.3)",
-          }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full bg-[#76FF82] text-black font-medium py-2 sm:py-3 rounded-full text-sm"
-        >
-          View Roles
-        </motion.button>
+        <div className="flex gap-2">
+          <motion.button
+            whileHover={{
+              scale: 1.02,
+              boxShadow: "0 4px 12px rgba(118, 255, 130, 0.3)",
+            }}
+            whileTap={{ scale: 0.98 }}
+            className="flex-1 bg-[#76FF82] text-black font-medium py-2 sm:py-3 rounded-full text-sm"
+          >
+            View Roles
+          </motion.button>
+          
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleDelete}
+            className="w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors duration-200 flex items-center justify-center cursor-pointer"
+            title="Delete Company"
+          >
+            <Trash2 className="w-4 h-4" />
+          </motion.button>
+        </div>
       </motion.div>
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
             <h3 className="text-lg font-medium mb-4">Delete Company</h3>
             <p className="text-sm text-gray-600 mb-6">

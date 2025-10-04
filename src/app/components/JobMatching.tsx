@@ -16,6 +16,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import apiClient from "../utils/api";
+import TruncatedText from "./TruncatedText";
 
 interface JobMatch {
   job: {
@@ -401,9 +402,11 @@ export default function JobMatching({ resumeId, userId }: JobMatchingProps) {
                       {/* Job Description */}
                       <div>
                         <h4 className="font-medium text-gray-900 mb-2">Job Description</h4>
-                        <p className="text-gray-600 text-sm leading-relaxed">
-                          {match.job.description}
-                        </p>
+                        <TruncatedText 
+                          text={match.job.description}
+                          maxWords={50}
+                          className="text-gray-600 text-sm leading-relaxed"
+                        />
                       </div>
 
                       {/* Skill Analysis */}

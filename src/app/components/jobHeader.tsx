@@ -29,7 +29,7 @@ function JobHeader() {
           className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-4"
         >
           <div className="flex items-center w-full">
-            <Link href="/" className="flex items-center gap-1">
+          <Link href="/" className="flex items-center gap-1">
               <Image
                 src="/black_logo.png"
                 alt="ProjectMATCH by Compscope"
@@ -48,7 +48,7 @@ function JobHeader() {
               </div>
             </Link>
 
-            <div className="hidden md:flex flex-1 max-w-sm mx-10">
+            {/* <div className="hidden md:flex flex-1 max-w-sm mx-10">
               <div className="relative w-full">
                 <input
                   type="text"
@@ -65,11 +65,11 @@ function JobHeader() {
                   <Search className="w-4 h-4 text-black" />
                 </motion.button>
               </div>
-            </div>
+            </div> */}
 
 
             {/* User icons - positioned to the far right */}
-            <div className="flex items-center space-x-3 ml-auto bg-white rounded-full">
+            {/* <div className="flex items-center space-x-3 ml-auto bg-white rounded-full">
               <Link href="/notifications">
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -86,7 +86,7 @@ function JobHeader() {
                   R
                 </motion.div>
               </Link>
-            </div>
+            </div> */}
 
             {/* Hamburger menu */}
             <motion.button

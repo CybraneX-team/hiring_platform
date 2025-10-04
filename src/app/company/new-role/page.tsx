@@ -7,6 +7,8 @@ import JobHeader from "@/app/components/jobHeader";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/app/context/UserContext";
 import { toast } from "react-toastify";
+import Link from "next/link";
+import Image from "next/image";
 
 // Ola Maps types
 interface OlaMapsPlace {
@@ -795,7 +797,7 @@ export default function PostRole() {
   const [workEndDate, setWorkEndDate] = useState("");
 
   const [workLocation, setWorkLocation] = useState("");
-  const [jobType, setJobType] = useState("Full-time"); 
+  const [jobType, setJobType] = useState("Short Term"); 
 
   const [locationSearchQuery, setLocationSearchQuery] = useState("");
   const [locationSuggestions, setLocationSuggestions] = useState<
@@ -1268,6 +1270,30 @@ export default function PostRole() {
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
       <JobHeader />
+      
+      {/* Logo positioned like in header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="absolute top-4 sm:top-8 left-4 sm:left-8 z-10"
+      >
+        <Link href="/" className="flex items-center gap-1">
+          <Image
+            src="/black_logo.png"
+            alt="ProjectMATCH by Compscope"
+            width={200}
+            height={80}
+            className="h-16 sm:h-16 md:h-16 lg:h-16 xl:h-28 w-auto"
+            priority
+          />
+          <div className="leading-tight text-[#163A33]">
+            <div className="text-xs sm:text-sm md:text-base lg:text-2xl font-black">ProjectMATCH</div>
+            <div className="text-[10px] sm:text-xs md:text-sm text-gray-600"><span className="text-[#3EA442] font-bold">by Compscope</span></div>
+          </div>
+        </Link>
+      </motion.div>
+
       <div className="max-w-5xl md:mx-auto p-8 -mx-5">
         {/* Back Button */}
         <motion.button
@@ -1378,8 +1404,8 @@ export default function PostRole() {
               <label className="text-sm font-medium text-gray-700">
                 Job Type
               </label>
-              <div className="flex bg-gray-100 rounded-lg p-1 w-fit">
-                {["Full-time", "Part-time", "Remote"].map((type) => (
+              <div className="cursor-pointer flex bg-gray-100 rounded-lg p-1 w-fit">
+                {["Short Term", "Long Term", ].map((type) => (
                   <button
                     key={type}
                     onClick={() => setJobType(type)}

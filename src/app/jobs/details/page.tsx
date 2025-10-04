@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { motion, type Variants, AnimatePresence } from "framer-motion";
 import JobHeader from "@/app/components/jobHeader";
+import TruncatedText from "@/app/components/TruncatedText";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useUser } from "@/app/context/UserContext";
@@ -895,9 +896,6 @@ function JobListingContent() {
                     <h1 className="text-xl font-semibold text-[#1F2937] mb-2">
                       {job.title}
                     </h1>
-                    <p className="text-sm text-[#6B7280] leading-relaxed mb-8">
-                      {job.companyDescription}
-                    </p>
                     <div className="text-sm text-[#6B7280] mt-auto">
                       @{job.company.companyName.toLowerCase()}
                     </div>
@@ -915,7 +913,29 @@ function JobListingContent() {
                     </div>
                   </div>
                 </div>
+                
               </div>
+              {/* Apply Button - Top Right */}
+            <div className="flex justify-end mt-5">
+              <CustomButton
+                className="font-semibold px-14 py-3 focus:outline-none cursor-pointer"
+                disabled={!job.isActive || isApplying || hasApplied}
+                onClick={handleApplyClick} // This opens the modal
+              >
+                {isApplying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Applying...
+                  </>
+                ) : hasApplied ? (
+                  "Applied ✓"
+                ) : !job.isActive ? (
+                  "Position Closed"
+                ) : (
+                  "Apply"
+                )}
+              </CustomButton>
+            </div>
             </motion.div>
 
             {/* Right Card - Job Details */}
@@ -961,36 +981,34 @@ function JobListingContent() {
             className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:p-8"
             variants={itemVariants}
           >
-            {/* Apply Button - Top Right */}
-            <div className="flex justify-end mb-6">
-              <CustomButton
-                className="font-semibold px-14 py-3 focus:outline-none cursor-pointer"
-                disabled={!job.isActive || isApplying || hasApplied}
-                onClick={handleApplyClick} // This opens the modal
-              >
-                {isApplying ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Applying...
-                  </>
-                ) : hasApplied ? (
-                  "Applied ✓"
-                ) : !job.isActive ? (
-                  "Position Closed"
-                ) : (
-                  "Apply"
-                )}
-              </CustomButton>
-            </div>
+            
 
             <div className="space-y-8">
               {/* Job Description */}
-              <div className="-mt-12">
+              <div className="">
                 <h2 className="text-lg font-semibold text-[#1F2937] mb-3">
                   Job description
                 </h2>
                 <div className="space-y-4 text-sm text-[#4B5563] leading-relaxed max-w-4xl">
-                  <p>{job.description}</p>
+                  <TruncatedText 
+                    text={job.description} 
+                    maxWords={50}
+                    className="text-sm text-[#4B5563] leading-relaxed"
+                  />
+                </div>
+              </div>
+
+              {/* About Company */}
+              <div>
+                <h2 className="text-lg font-semibold text-[#1F2937] mb-3">
+                  About Company
+                </h2>
+                <div className="space-y-4 text-sm text-[#4B5563] leading-relaxed max-w-4xl">
+                  <TruncatedText 
+                    text={job.companyDescription} 
+                    maxWords={50}
+                    className="text-sm text-[#4B5563] leading-relaxed"
+                  />
                 </div>
               </div>
 

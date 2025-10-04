@@ -47,7 +47,7 @@ interface ApiResponse {
   };
 }
 
-const filterTabs = ["All", "Full-Time", "Part-Time", "Remote"];
+const filterTabs = ["All", "Short Term", "Long Term"];
 
 export default function JobComponent() {
   const [activeFilter, setActiveFilter] = useState("All");
@@ -90,6 +90,14 @@ export default function JobComponent() {
 
     const diffInWeeks = Math.floor(diffInDays / 7);
     return `${diffInWeeks} weeks ago`;
+  };
+
+  // Function to get last 4 comma-separated parts of location
+  const getLastFourParts = (location: string) => {
+    if (!location || location === "Location unavailable") return location;
+    const parts = location.split(',').map(part => part.trim()).filter(part => part.length > 0);
+    if (parts.length <= 4) return location;
+    return parts.slice(-4).join(', ');
   };
 
   // Function to format salary
@@ -593,7 +601,7 @@ export default function JobComponent() {
                         <div className="flex items-center space-x-4 text-xs text-gray-400">
                           <div className="flex items-center space-x-1">
                             <MapPin className="w-3 h-3" />
-                            <span>{job.location}</span>
+                            <span title={job.location}>{getLastFourParts(job.location)}</span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <Clock className="w-3 h-3" />
