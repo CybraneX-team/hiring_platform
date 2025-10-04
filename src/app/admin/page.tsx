@@ -602,6 +602,52 @@ export default function AdminPanel() {
     setDocumentsError(null);
   }, []);
 
+  const handleCompanyDelete = useCallback(async (companyId: string) => {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const deleteUrl = `${baseUrl}/company/delete/${companyId}`;
+      console.log('Attempting to delete company:', { companyId, baseUrl, deleteUrl });
+      
+      const response = await fetch(deleteUrl, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('Delete response:', result);
+
+      // Remove the company from the local state
+      setCompaniesData(prev => prev.filter(company => company.id !== companyId));
+      
+      // If the deleted company was selected, reset the selection
+      if (selectedCompany?.id === companyId) {
+        setSelectedCompany(null);
+        setCurrentView("companies");
+        setSelectedRole(null);
+        setRolesData([]);
+        setApplicationsData([]);
+        setSelectedApplicant(null);
+        setSelectedApplicantId(null);
+        setSubmittedDocs([]);
+        setSelectedDocs([]);
+        setDocumentsError(null);
+      }
+
+      toast.success('Company deleted successfully');
+    } catch (error) {
+      console.error('Error deleting company:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete company. Please try again.';
+      toast.error(errorMessage);
+    }
+  }, [selectedCompany]);
+
   const handleRoleSelect = useCallback((role: Role) => {
     setSelectedRole(role);
     setCurrentView("applications");
@@ -1162,6 +1208,7 @@ export default function AdminPanel() {
               <CompaniesView
                 companies={filteredCompanies}
                 onCompanySelect={handleCompanySelect}
+                onCompanyDelete={handleCompanyDelete}
               />
             )}
           </div>

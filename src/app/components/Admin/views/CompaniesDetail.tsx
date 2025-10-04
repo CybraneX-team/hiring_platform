@@ -6,11 +6,13 @@ import CompanyCard from "../companyCards";
 interface CompaniesViewProps {
   companies: Company[];
   onCompanySelect: (company: Company) => void;
+  onCompanyDelete: (companyId: string) => void;
 }
 
 export default function CompaniesView({
   companies,
   onCompanySelect,
+  onCompanyDelete,
 }: CompaniesViewProps) {
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -35,6 +37,7 @@ export default function CompaniesView({
               company={company}
               index={index}
               onSelect={onCompanySelect}
+              onDelete={onCompanyDelete}
             />
           ))}
         </div>

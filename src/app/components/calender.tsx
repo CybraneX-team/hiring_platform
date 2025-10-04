@@ -417,18 +417,45 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
 
       // Create new PDF document
       const doc = new jsPDF()
+      const pageWidth = doc.internal.pageSize.getWidth()
+      const pageHeight = doc.internal.pageSize.getHeight()
 
-      // Add company name as title to the center of page
-      doc.setFontSize(16)
-      doc.text(companyName.trim(), 20, 20)
+      // Add professional header with background
+      doc.setFillColor(41, 128, 185) // Professional blue background
+      doc.rect(0, 0, pageWidth, 45, 'F')
 
-      // Add subtitle
+      // Company name - centered and prominent
+      doc.setTextColor(255, 255, 255) // White text
+      doc.setFontSize(22)
+      doc.setFont('helvetica', 'bold')
+      const companyNameWidth = doc.getTextWidth(companyName.trim())
+      doc.text(companyName.trim(), (pageWidth - companyNameWidth) / 2, 20)
+
+      // Subtitle - centered
       doc.setFontSize(14)
-      doc.text("Attendance Report", 20, 35)
+      doc.setFont('helvetica', 'normal')
+      const subtitleText = "ATTENDANCE REPORT"
+      const subtitleWidth = doc.getTextWidth(subtitleText)
+      doc.text(subtitleText, (pageWidth - subtitleWidth) / 2, 35)
 
-      // Add date range
-      doc.setFontSize(12)
-      doc.text(`Date Range: ${downloadStartDate} to ${downloadEndDate}`, 20, 50)
+      // Reset text color for body content
+      doc.setTextColor(0, 0, 0)
+
+      // Report details section with better formatting
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'normal')
+      
+      // Date range in a styled box
+      const startY = 55
+      doc.setFillColor(248, 249, 250) // Light gray background
+      doc.rect(15, startY, pageWidth - 30, 20, 'F')
+      doc.setDrawColor(200, 200, 200)
+      doc.rect(15, startY, pageWidth - 30, 20, 'S')
+      
+      doc.setFont('helvetica', 'bold')
+      doc.text('Report Period:', 20, startY + 8)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`${downloadStartDate} to ${downloadEndDate}`, 20, startY + 15)
 
       // Prepare table data
       const tableData: any[] = []
@@ -451,39 +478,75 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
         tableData.push(["No records", "No data", "No logs", "No records found for selected date range"])
       }
 
+      // Professional table styling
       autoTable(doc, {
         head: [["Date", "Attendance Status", "Time", "Activity"]],
         body: tableData,
-        startY: 65,
-        theme: "grid",
+        startY: 85,
+        theme: "striped",
         styles: {
           fontSize: 10,
-          cellPadding: 5,
+          cellPadding: 8,
+          font: 'helvetica',
+          lineColor: [200, 200, 200],
+          lineWidth: 0.5,
         },
         headStyles: {
-          fillColor: [66, 139, 202],
-          textColor: 255,
+          fillColor: [52, 73, 94], // Professional dark blue-gray
+          textColor: [255, 255, 255],
           fontStyle: "bold",
+          fontSize: 11,
+          halign: 'center',
+          valign: 'middle',
+        },
+        bodyStyles: {
+          textColor: [44, 62, 80], // Dark gray text
+          valign: 'middle',
         },
         alternateRowStyles: {
-          fillColor: [245, 245, 245],
+          fillColor: [248, 249, 250], // Very light gray
         },
         columnStyles: {
-          0: { cellWidth: 30 },
-          1: { cellWidth: 40 },
-          2: { cellWidth: 30 },
-          3: { cellWidth: 80 },
+          0: { 
+            cellWidth: 35, 
+            halign: 'center',
+            fontStyle: 'bold',
+          },
+          1: { 
+            cellWidth: 45,
+            halign: 'center',
+            fontStyle: 'bold',
+          },
+          2: { 
+            cellWidth: 30,
+            halign: 'center',
+            fontStyle: 'bold',
+          },
+          3: { 
+            cellWidth: 70,
+            halign: 'left',
+          },
         },
+        margin: { left: 15, right: 15 },
       })
+
+
 
       // Add footer to every page
       const totalPages = doc.getNumberOfPages()
+      const currentDate = new Date()
+      const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}/${currentDate.getFullYear()}`
+      
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i)
-        doc.setFontSize(10)
-        doc.setTextColor(128, 128, 128) // Gray color
-        const pageHeight = doc.internal.pageSize.height
-        doc.text("Made With ProjectMATCH by Compscope", 20, pageHeight - 10)
+        
+        // Footer text
+        doc.setFontSize(9)
+        doc.setTextColor(100, 100, 100)
+        doc.setFont('helvetica', 'normal')
+        const footerText = `Extracted from ProjectMATCH, COMPSCOPE Nonmetallics | www.compscope.in | Generated on: ${formattedDate}`
+        const footerWidth = doc.getTextWidth(footerText)
+        doc.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10)
       }
 
       // Generate filename with company name
