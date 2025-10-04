@@ -2,6 +2,8 @@
 
 import type React from "react";
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { Input } from "@/app/components/ui/Input";
 import { Label } from "@/app/components/ui/label";
@@ -212,9 +214,26 @@ export default function Otp() {
         animate="visible"
         variants={containerVariants}
       >
-        <div className="container mx-auto px-6 py-8">
+        <div className="mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-4">
           <motion.div className="mb-16" variants={itemVariants}>
-            <h1 className="text-lg font-medium text-gray-900">Logo</h1>
+            <Link href="/" className="flex items-center gap-1">
+              <Image
+                src="/black_logo.png"
+                alt="ProjectMATCH by Compscope"
+                width={200}
+                height={80}
+                className="h-16 sm:h-16 md:h-16 lg:h-16 xl:h-28 w-auto"
+                priority
+              />
+              <div className={`leading-tight text-black`}>
+                <div className="text-xs sm:text-sm md:text-base lg:text-2xl font-black">
+                  ProjectMATCH
+                </div>
+                <div className="text-[10px] sm:text-xs md:text-sm text-gray-600">
+                  <span className="text-[#3EA442] font-bold">by Compscope</span>
+                </div>
+              </div>
+            </Link>
           </motion.div>
 
           <motion.div variants={itemVariants}>

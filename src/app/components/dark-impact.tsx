@@ -48,12 +48,12 @@ export default function DarkImpactSection() {
   ];
 
   return (
-    <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-[#17181D] text-white relative overflow-hidden">
+    <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-[#17181D] text-white relative overflow-hidden mt-16">
       <div className="absolute inset-0 opacity-10">
         <div className="w-full h-full bg-gradient-to-br from-teal-600 to-teal-900"></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 md:px-6">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 md:px-6 mt-10">
         <div className="text-center mb-8 sm:mb-10 md:mb-12 lg:mb-16">
           <p className="text-[10px] sm:text-[11px] md:text-xs uppercase tracking-[0.18em] text-white/70 mb-2 sm:mb-3">Core field disciplines</p>
           <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-5xl font-semibold leading-tight max-w-4xl mx-auto">

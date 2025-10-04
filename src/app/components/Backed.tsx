@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 export default function BackedSection() {
   return (
-    <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white text-black">
+    <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white text-black mt-10 mb-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-6">
         {/* Section heading */}
         <div className="text-center mb-8 sm:mb-10 md:mb-12">
@@ -18,7 +18,7 @@ export default function BackedSection() {
                 ProjectMATCH is backed by deep field experience and credibility
               </h3>
               
-              <blockquote className="text-xs sm:text-sm md:text-base text-gray-700 leading-relaxed md:max-w-xl mt-4 sm:mt-5">
+              <blockquote className="text-justify text-xs sm:text-sm md:text-base text-gray-700 leading-relaxed md:max-w-xl mt-4 sm:mt-5">
                 "ProjectMATCH is an ambitious initiative by Compscope, created to redefine how energy professionals and organizations connect, collaborate, and execute projects with precision and excellence. Leveraging decades of expertise in hydrocarbon industrial projects, inspection, and advanced energy solutions, Compscope ensures that every connection on ProjectMATCH is backed by trust, technical depth, and verified credibility."
               </blockquote>
 

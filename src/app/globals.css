@@ -129,4 +129,13 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Justify paragraphs inside common card/box containers */
+  .bg-white p,
+  .bg-[#F5F5F5] p,
+  .ring-1 p,
+  .border p,
+  .rounded-lg p,
+  .rounded-xl p {
+    @apply text-justify;
+  }
 }

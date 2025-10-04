@@ -34,8 +34,7 @@ const benefits = [
 
 export default function BenefitsSection() {
   return (
-    <section className="relative min-h-screen bg-white py-8 sm:py-12 md:py-16 lg:py-20 xl:py-24 overflow-hidden">
-      {/* World map background */}
+    <section className="relative min-h-screen bg-white py-8 sm:py-12 md:py-16 lg:py-20 xl:py-24 overflow-hidden -mt-16">
       <div className="pointer-events-none absolute inset-0 z-0">
         <WorldMap
           className="opacity-60"

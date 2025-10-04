@@ -33,6 +33,19 @@ const initializeOlaMaps = async () => {
       olaMaps = new OlaMaps({
         apiKey: process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY || "",
       });
+
+      // Ensure Marker and Popup constructors are available
+      if (!olaMaps.Marker) {
+        olaMaps.Marker = (module as any).Marker || (OlaMaps as any).Marker;
+      }
+      if (!olaMaps.Popup) {
+        olaMaps.Popup = (module as any).Popup || (OlaMaps as any).Popup;
+      }
+
+      // console.log("OlaMaps initialized successfully with constructors:", {
+      //   hasMarker: !!olaMaps.Marker,
+      //   hasPopup: !!olaMaps.Popup,
+      // });
     } catch (error) {
       console.error("Failed to initialize OlaMaps:", error);
     }
@@ -66,23 +79,86 @@ const OlaMapComponent = ({
 
       if (mapRef.current && olaMaps && !mapInstanceRef.current) {
         try {
-          // Default location (Bengaluru)
-          const defaultLocation = location || { lat: 12.9716, lng: 77.5946 };
+          let mapCenter = { lat: 12.9716, lng: 77.5946 };
 
+          if (location) {
+            // Check if location has valid coordinates
+            if (
+              typeof location.lat === "number" &&
+              typeof location.lng === "number" &&
+              !isNaN(location.lat) &&
+              !isNaN(location.lng) &&
+              isFinite(location.lat) &&
+              isFinite(location.lng)
+            ) {
+              mapCenter = { lat: location.lat, lng: location.lng };
+            } else {
+              console.warn("Invalid location coordinates provided:", location);
+              setDebugInfo(
+                "Invalid location coordinates, using default location"
+              );
+            }
+          }
 
-          mapInstanceRef.current = olaMaps.init({
-            style:
-              "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
-            container: mapRef.current,
-            center: [defaultLocation.lng, defaultLocation.lat],
-            zoom: 12,
-          });
+          // Use 2D-only style to avoid 3D layer errors
+          try {
+            // Try default light style first
+            mapInstanceRef.current = olaMaps.init({
+              style:
+                "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
+              container: mapRef.current,
+              center: [mapCenter.lng, mapCenter.lat],
+              zoom: 12,
+              pitch: 0,
+              bearing: 0,
+              maxPitch: 0, // Force 2D mode
+            });
+          } catch (styleError) {
+            console.warn(
+              "Failed to load default style, trying satellite style:",
+              styleError
+            );
+            try {
+              // Try satellite style as fallback
+              mapInstanceRef.current = olaMaps.init({
+                style:
+                  "https://api.olamaps.io/tiles/vector/v1/styles/satellite/style.json",
+                container: mapRef.current,
+                center: [mapCenter.lng, mapCenter.lat],
+                zoom: 12,
+                pitch: 0,
+                bearing: 0,
+                maxPitch: 0,
+              });
+            } catch (satelliteError) {
+              console.warn(
+                "Failed to load satellite style, using minimal config:",
+                satelliteError
+              );
+              // Final fallback with minimal configuration
+              mapInstanceRef.current = olaMaps.init({
+                container: mapRef.current,
+                center: [mapCenter.lng, mapCenter.lat],
+                zoom: 12,
+                pitch: 0,
+                bearing: 0,
+                maxPitch: 0,
+              });
+            }
+          }
 
           mapInstanceRef.current.on("load", () => {
             setIsMapLoaded(true);
+            setDebugInfo("");
 
-            // Add marker if location exists
-            if (location) {
+            // Add marker if valid location exists
+            if (
+              location &&
+              typeof location.lat === "number" &&
+              typeof location.lng === "number" &&
+              !isNaN(location.lat) &&
+              !isNaN(location.lng)
+            ) {
               addMarker(
                 location.lat,
                 location.lng,
@@ -94,16 +170,31 @@ const OlaMapComponent = ({
           // Add click event listener
           mapInstanceRef.current.on("click", (e: any) => {
             const { lat, lng } = e.lngLat;
-
             reverseGeocode(lat, lng);
           });
 
-          // Add error handling
+          // Add error handling with 3D model error filtering
           mapInstanceRef.current.on("error", (e: any) => {
+            // Suppress 3D model layer errors as they're expected when using 2D mode
+            if (
+              e.error &&
+              e.error.message &&
+              (e.error.message.includes("3d_model") ||
+                (e.error.message.includes("Source layer") &&
+                  e.error.message.includes("does not exist")))
+            ) {
+              console.warn(
+                "Suppressing 3D model layer error (expected in 2D mode):",
+                e.error.message
+              );
+              return;
+            }
             console.error("Map error:", e);
+            setDebugInfo("Map loading error");
           });
         } catch (error) {
           console.error("Error initializing map:", error);
+          setDebugInfo("Failed to initialize map");
         }
       }
     };
@@ -117,6 +208,34 @@ const OlaMapComponent = ({
       }
     };
   }, []);
+
+  // Handle location updates separately
+  useEffect(() => {
+    if (
+      mapInstanceRef.current &&
+      location &&
+      typeof location.lat === "number" &&
+      typeof location.lng === "number" &&
+      !isNaN(location.lat) &&
+      !isNaN(location.lng)
+    ) {
+      // Fly to new location
+      mapInstanceRef.current.flyTo({
+        center: [location.lng, location.lat],
+        zoom: 15,
+        duration: 1000,
+      });
+
+      // Add marker
+      setTimeout(() => {
+        addMarker(
+          location.lat,
+          location.lng,
+          location.address || "Selected Location"
+        );
+      }, 200);
+    }
+  }, [location]);
 
   // Handle search when searchQuery changes
   useEffect(() => {
@@ -193,10 +312,27 @@ const OlaMapComponent = ({
   const addMarker = (lat: number, lng: number, title: string) => {
     if (!mapInstanceRef.current) {
       console.error("Cannot add marker: map not initialized");
-
       return;
     }
 
+    if (!isMapLoaded) {
+      console.warn("Map not fully loaded, delaying marker creation");
+      setTimeout(() => addMarker(lat, lng, title), 500);
+      return;
+    }
+
+    // Validate coordinates
+    if (
+      typeof lat !== "number" ||
+      typeof lng !== "number" ||
+      isNaN(lat) ||
+      isNaN(lng) ||
+      !isFinite(lat) ||
+      !isFinite(lng)
+    ) {
+      console.error("Invalid coordinates for marker:", lat, lng);
+      return;
+    }
 
     try {
       // Remove existing marker
@@ -205,44 +341,36 @@ const OlaMapComponent = ({
         markerRef.current = null;
       }
 
-      // Validate coordinates
-      if (isNaN(lat) || isNaN(lng)) {
-        console.error("Invalid coordinates:", lat, lng);
+      // Create custom location pin marker element
+      const markerElement = document.createElement("div");
+      markerElement.className = "custom-marker";
+      markerElement.innerHTML = `
+        <svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 0C7.163 0 0 7.163 0 16C0 24.837 16 40 16 40S32 24.837 32 16C32 7.163 24.837 0 16 0Z" fill="#3b82f6"/>
+          <path d="M16 2C23.732 2 30 8.268 30 16C30 22.5 16 36.5 16 36.5S2 22.5 2 16C2 8.268 8.268 2 16 2Z" fill="#ffffff" stroke="#3b82f6" stroke-width="0.5"/>
+          <circle cx="16" cy="16" r="6" fill="#3b82f6"/>
+          <circle cx="16" cy="16" r="3" fill="#ffffff"/>
+        </svg>
+      `;
+      markerElement.style.cssText = `
+        width: 32px; 
+        height: 40px; 
+        cursor: pointer;
+        z-index: 100;
+        position: relative;
+        filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+        transform: translate(-50%, -100%);
+      `;
+
+      // Wait for OlaMaps to be fully available
+      if (!olaMaps) {
+        console.error("OlaMaps not initialized");
         return;
       }
 
-      // Create marker element
-      const markerElement = document.createElement("div");
-      markerElement.className = "custom-marker";
-      markerElement.style.cssText = `
-        width: 30px; 
-        height: 30px; 
-        background-color: #3b82f6; 
-        border: 3px solid white; 
-        border-radius: 50%; 
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 1000;
-        position: relative;
-      `;
-
-      const innerDot = document.createElement("div");
-      innerDot.style.cssText = `
-        width: 12px; 
-        height: 12px; 
-        background-color: white; 
-        border-radius: 50%;
-      `;
-      markerElement.appendChild(innerDot);
-
-
-      // Ensure we have the Marker constructor
-      if (!olaMaps || !olaMaps.Marker) {
-        console.error("OlaMaps Marker not available");
-
+      // Import and check for Marker constructor
+      if (!olaMaps.Marker) {
+        console.error("OlaMaps.Marker constructor not available");
         return;
       }
 
@@ -253,19 +381,22 @@ const OlaMapComponent = ({
         .setLngLat([lng, lat])
         .addTo(mapInstanceRef.current);
 
-
-      // Add popup if available
+      // Add info window/popup
       if (olaMaps.Popup) {
         const popup = new olaMaps.Popup({
           offset: 25,
+          closeButton: true,
+          closeOnClick: false,
         }).setHTML(
-          `<div style="padding: 8px; font-size: 14px; font-weight: 500;">${title}</div>`
+          `<div style="padding: 8px; font-size: 14px; font-weight: 500; color: #333;">${title}</div>`
         );
 
         markerRef.current.setPopup(popup);
       }
     } catch (error) {
       console.error("Error adding marker:", error);
+      console.error("OlaMaps object:", olaMaps);
+      setDebugInfo("Error adding marker");
     }
   };
 
@@ -377,13 +508,13 @@ const OlaMapComponent = ({
         </div>
       )}
 
-      <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex gap-1 sm:gap-2">
+      <div className="absolute top-1 sm:top-1 right-1 sm:right-1 flex gap-1 sm:gap-2">
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={autoDetectLocation}
           disabled={isDetecting}
-          className="px-2 sm:px-3 py-1 bg-gray-800 text-white text-xs rounded-full border border-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+          className="cursor-pointer px-2 sm:px-3 py-1 bg-gray-800 text-white text-xs rounded-full border border-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center gap-1"
         >
           {isDetecting ? (
             <>
@@ -397,10 +528,6 @@ const OlaMapComponent = ({
             </>
           )}
         </motion.button>
-
-        <div className="px-2 sm:px-3 py-1 bg-gray-700 text-white text-xs rounded-full">
-          Click to pin
-        </div>
       </div>
     </div>
   );
@@ -424,6 +551,119 @@ const LocationInputWithSearch = ({
 }) => {
   const [searchTrigger, setSearchTrigger] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState<OlaMapsPlace[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAutoDetected, setIsAutoDetected] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Debounced search for suggestions
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (value.trim() && value.length > 2) {
+        searchSuggestions(value);
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [value]);
+
+  // Only trigger suggestions when user is actively typing (not from auto-detect)
+  useEffect(() => {
+    if (value.trim() && value.length > 2 && !isAutoDetected) {
+      setShowSuggestions(true);
+    }
+  }, [value, isAutoDetected]);
+
+  const searchSuggestions = async (query: string) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(
+        `https://api.olamaps.io/places/v1/autocomplete?input=${encodeURIComponent(
+          query
+        )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`,
+        { signal: abortControllerRef.current.signal }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Ola Maps API response:", data);
+        // Handle different response structures from Ola Maps API
+        const predictions = data.predictions || data.suggestions || data.results || [];
+        console.log("Processed predictions:", predictions);
+        
+        if (predictions.length > 0) {
+          setSuggestions(predictions);
+          setShowSuggestions(true);
+          setSelectedIndex(-1);
+        } else {
+          console.log("No predictions found, hiding suggestions");
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+      }
+    } catch (error: any) {
+      if (error.name !== "AbortError") {
+        console.error("Error fetching suggestions:", error);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: any) => {
+    setShowSuggestions(false);
+    setSelectedIndex(-1);
+    
+    // Handle different response structures
+    const address = suggestion.formatted_address || suggestion.description || suggestion.place_name || suggestion.name;
+    const lat = suggestion.geometry?.location?.lat || suggestion.lat;
+    const lng = suggestion.geometry?.location?.lng || suggestion.lng;
+    
+    onChange(address);
+    onLocationSelect({
+      lat: lat,
+      lng: lng,
+      address: address,
+    });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setSelectedIndex((prev) =>
+          prev < suggestions.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
+          handleSuggestionClick(suggestions[selectedIndex]);
+        }
+        break;
+      case "Escape":
+        setShowSuggestions(false);
+        setSelectedIndex(-1);
+        break;
+    }
+  };
 
   const handleSearch = async () => {
     if (!value.trim()) return;
@@ -437,6 +677,19 @@ const LocationInputWithSearch = ({
     }, 2000);
   };
 
+  // Update input value when location is auto-detected (but don't show suggestions)
+  useEffect(() => {
+    if (selectedLocation && selectedLocation.address) {
+      // Set flag to indicate this is from auto-detect
+      setIsAutoDetected(true);
+      // Update the input value with the detected address
+      onChange(selectedLocation.address);
+      // Don't show suggestions dropdown for auto-detected locations
+      setShowSuggestions(false);
+    }
+  }, [selectedLocation, onChange]);
+
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -446,24 +699,70 @@ const LocationInputWithSearch = ({
 
   return (
     <div className="space-y-3 sm:space-y-4">
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Enter address or click auto-detect to select location..."
-          className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs text-black sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleSearch}
-          disabled={!value.trim() || isSearching}
-          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
-        >
-          {isSearching ? "Searching..." : "Search"}
-        </motion.button>
+      <div className="relative">
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => {
+                // Clear auto-detect flag when user types
+                if (isAutoDetected) {
+                  setIsAutoDetected(false);
+                }
+                onChange(e.target.value);
+              }}
+              onKeyDown={handleKeyDown}
+              onKeyPress={handleKeyPress}
+              onFocus={() => {
+                if (suggestions.length > 0) setShowSuggestions(true);
+              }}
+              onBlur={() => {
+                // Delay hiding to allow clicks on suggestions
+                setTimeout(() => setShowSuggestions(false), 200);
+              }}
+              placeholder="Enter address or click auto-detect to select location..."
+              className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs text-black sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {isLoading && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              </div>
+            )}
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleSearch}
+            disabled={!value.trim() || isSearching}
+            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
+          >
+            {isSearching ? "Searching..." : "Search"}
+          </motion.button>
+        </div>
+
+        {/* Suggestions dropdown */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-56 overflow-auto">
+            {suggestions.map((suggestion, index) => (
+              <div
+                key={suggestion.place_id}
+                className={`px-4 py-3 cursor-pointer text-sm hover:bg-gray-50 ${
+                  index === selectedIndex ? "bg-blue-50" : ""
+                }`}
+                onClick={() => handleSuggestionClick(suggestion)}
+                onMouseEnter={() => setSelectedIndex(index)}
+              >
+                <div className="font-medium text-gray-900">
+                  {(suggestion as any).name || (suggestion as any).description || (suggestion as any).place_name || "Location"}
+                </div>
+                <div className="text-gray-500 text-xs">
+                  {(suggestion as any).formatted_address || (suggestion as any).description || (suggestion as any).place_name || "Address not available"}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <OlaMapComponent
