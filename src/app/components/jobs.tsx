@@ -14,6 +14,7 @@ import {
   LogOut,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useUser } from "../context/UserContext";
 import { handleLogout } from "../Helper/logout";
 import { useRouter } from "next/navigation";
@@ -281,15 +282,27 @@ export default function JobComponent() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="px-4 sm:px-8 py-4"
+        className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-4"
       >
-        <div className="flex items-center max-w-7xl mx-auto">
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="text-xl font-semibold text-black"
-          >
-            Compscope
-          </motion.div>
+        <div className="flex items-center w-full">
+          <Link href="/" className="flex items-center gap-1">
+            <Image
+              src="/black_logo.png"
+              alt="ProjectMATCH by Compscope"
+              width={200}
+              height={80}
+              className="h-16 sm:h-16 md:h-16 lg:h-16 xl:h-28 w-auto"
+              priority
+            />
+            <div className={`leading-tight text-black`}>
+              <div className="text-xs sm:text-sm md:text-base lg:text-2xl font-black">
+                ProjectMATCH
+              </div>
+              <div className="text-[10px] sm:text-xs md:text-sm text-gray-600">
+                <span className="text-[#3EA442] font-bold">by Compscope</span>
+              </div>
+            </div>
+          </Link>
 
           <div className="hidden md:flex flex-1 max-w-sm mx-10">
             <form onSubmit={handleSearchSubmit} className="relative w-full">

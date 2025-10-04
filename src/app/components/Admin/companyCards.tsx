@@ -28,6 +28,16 @@ export default function CompanyCard({
   const displayLogo =
     company.logo || companyName.trim().charAt(0).toUpperCase() || "C";
   const locationLabel = company.location?.trim() || "Location unavailable";
+  
+  // Function to get last 4 comma-separated parts of address
+  const getLastFourParts = (address: string) => {
+    if (!address || address === "Location unavailable") return address;
+    const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
+    if (parts.length <= 4) return address;
+    return parts.slice(-4).join(', ');
+  };
+  
+  const displayLocation = getLastFourParts(locationLabel);
   const industryLabel =
     company.industry?.trim() || "Industry information unavailable";
   const applicationsCount = Number.isFinite(company.totalApplications)

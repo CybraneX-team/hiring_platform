@@ -391,7 +391,7 @@ const OlaMapComponent = ({
         width: 32px; 
         height: 40px; 
         cursor: pointer;
-        z-index: 1000;
+        z-index: 100;
         position: relative;
         filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
         transform: translate(-50%, -100%);
@@ -575,13 +575,13 @@ const OlaMapComponent = ({
         </div>
       )}
 
-      <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 flex gap-1 sm:gap-2">
+      <div className="absolute top-1 sm:top-1 right-1 sm:right-1 flex gap-1 sm:gap-2">
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={autoDetectLocation}
           disabled={isDetecting}
-          className="px-2 sm:px-3 py-1 bg-gray-800 text-white text-xs rounded-full border border-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+          className="cursor-pointer px-2 sm:px-3 py-1 bg-gray-800 text-white text-xs rounded-full border border-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center gap-1"
         >
           {isDetecting ? (
             <>
@@ -776,7 +776,7 @@ const LocationInputWithSearch = ({
             ref={inputRef}
           />
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-56 overflow-auto">
+            <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-56 overflow-auto">
               {suggestions.map((s, idx) => {
                 const address =
                   s.description || s.formatted_address || s.name || "";
@@ -2731,7 +2731,7 @@ export default function ProfileTab() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={openProfileEditModal}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full transition-colors"
+                  className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full transition-colors"
                 >
                   Add Profile Information
                 </motion.button>
@@ -3331,15 +3331,23 @@ export default function ProfileTab() {
         transition={{ duration: 0.5 }}
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
-        <Link href="/" className="flex flex-col">
+        <Link href="/" className="flex items-center gap-1">
           <Image
-            src="/logo.png"
+            src="/black_logo.png"
             alt="ProjectMATCH by Compscope"
             width={200}
             height={80}
-            className="h-8 md:h-24 w-auto"
+            className="h-16 sm:h-16 md:h-16 lg:h-16 xl:h-28 w-auto"
             priority
           />
+          <div className={`leading-tight text-black`}>
+            <div className="text-xs sm:text-sm md:text-base lg:text-2xl font-black">
+              ProjectMATCH
+            </div>
+            <div className="text-[10px] sm:text-xs md:text-sm text-gray-600">
+              <span className="text-[#3EA442] font-bold">by Compscope</span>
+            </div>
+          </div>
         </Link>
       </motion.div>
       {/* Document Upload Modal */}
@@ -3533,7 +3541,7 @@ export default function ProfileTab() {
                       openProfileEditModal();
                     }
                   }}
-                  className="rounded-full px-4 sm:px-6 py-1.5 sm:py-2 border border-[#12372B] text-gray-700 bg-transparent hover:bg-gray-50 transition-colors text-sm sm:text-base whitespace-nowrap"
+                  className="cursor-pointer rounded-full px-4 sm:px-6 py-1.5 sm:py-2 border border-[#12372B] text-gray-700 bg-transparent hover:bg-gray-50 transition-colors text-sm sm:text-base whitespace-nowrap"
                 >
                   {isProfileComplete() ? "Edit Profile" : "Add Profile"}
                 </motion.button>

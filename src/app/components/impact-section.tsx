@@ -25,7 +25,7 @@ export default function ImpactSection() {
                 <p className="tracking-wide font-bold text-[#163A33] mb-5 sm:mb-4 mt-1 text-lg sm:text-xl md:text-3xl">
                   Define • Match • Deliver
                 </p>
-                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed mb-6 sm:mb-8 md:mb-10">
+                <p className="text-justify text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed mb-6 sm:mb-8 md:mb-10">
                   Start by defining your project’s scope, timeline, and budget in just a few clicks. Our AI Talent Match instantly connects you with verified professionals who fit your requirements. Review expert profiles, check credentials, and select the best match for your needs. Collaborate seamlessly with built-in tools for communication, document sharing, and milestone tracking. Manage contracts and payments securely, ensuring transparency and peace of mind from project kickoff to closeout. Experience a streamlined process that saves you time and delivers results.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 mt-8 sm:mt-12 md:mt-20">
