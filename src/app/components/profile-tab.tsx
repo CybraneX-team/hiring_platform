@@ -3232,7 +3232,7 @@ export default function ProfileTab() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="w-full"
           >
-            <CalendarSection profileId={profile?._id} />
+            <CalendarSection profileId={profile?._id} userId={user?.id} />
           </motion.div>
         );
 

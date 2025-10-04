@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Pencil, ChevronLeft, ChevronRight, Calendar, Plus, Trash2, Download, Loader2, AlertCircle } from "lucide-react"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
-import { attendanceAPI, AttendanceRecord, AttendanceLog, AttendanceStatus } from "../utils/attendance-api"
+import { attendanceAPI, AttendanceRecord, AttendanceLog, AttendanceStatus, HiredCompany } from "../utils/attendance-api"
 
 declare module "jspdf" {
   interface jsPDF {
@@ -14,9 +14,10 @@ declare module "jspdf" {
 
 interface CalendarSectionProps {
   profileId?: string;
+  userId?: string;
 }
 
-const CalendarSection = ({ profileId }: CalendarSectionProps) => {
+const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(new Date().getDate())
   const [showDatePicker, setShowDatePicker] = useState(false)
@@ -49,6 +50,13 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
   const [downloadStartDate, setDownloadStartDate] = useState("")
   const [downloadEndDate, setDownloadEndDate] = useState("")
   const [companyName, setCompanyName] = useState("")
+  const [projectName, setProjectName] = useState("")
+
+  // Hired companies state
+  const [hiredCompanies, setHiredCompanies] = useState<HiredCompany[]>([])
+  const [companiesLoading, setCompaniesLoading] = useState(false)
+  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false)
+  const [isManualCompanyInput, setIsManualCompanyInput] = useState(false)
 
   // API-related functions
   const fetchAttendanceData = useCallback(async () => {
@@ -111,12 +119,59 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
     }
   }, [profileId, currentDate])
 
+  // Fetch hired companies when component mounts
+  const fetchHiredCompanies = useCallback(async () => {
+    if (!userId) return
+    
+    setCompaniesLoading(true)
+    try {
+      const response = await attendanceAPI.getHiredCompanies(userId)
+      setHiredCompanies(response.data)
+      
+      // If user has hired companies, auto-select the first one
+      if (response.data.length > 0 && !companyName) {
+        setCompanyName(response.data[0].company.name)
+      }
+    } catch (err: any) {
+      console.error('Error fetching hired companies:', err)
+      // Don't show error - user might not have any hired positions yet
+    } finally {
+      setCompaniesLoading(false)
+    }
+  }, [userId, companyName])
+
   // Load attendance data when component mounts or date changes
   useEffect(() => {
     if (profileId) {
       fetchAttendanceData()
     }
   }, [fetchAttendanceData, profileId])
+
+  // Load hired companies when component mounts
+  useEffect(() => {
+    if (userId) {
+      fetchHiredCompanies()
+    }
+  }, [fetchHiredCompanies, userId])
+
+  // Click outside handler for company dropdown
+  const companyDropdownRef = useRef<HTMLDivElement>(null)
+  
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target as Node)) {
+        setShowCompanyDropdown(false)
+      }
+    }
+
+    if (showCompanyDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showCompanyDropdown])
 
   const getCurrentDateKey = () => {
     return `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${String(selectedDate).padStart(2, '0')}`
@@ -381,6 +436,19 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
     }
   }
 
+  // Company selection handlers
+  const handleCompanySelect = (company: HiredCompany) => {
+    setCompanyName(company.company.name)
+    setShowCompanyDropdown(false)
+    setIsManualCompanyInput(false)
+  }
+
+  const handleManualCompanyInput = () => {
+    setIsManualCompanyInput(true)
+    setShowCompanyDropdown(false)
+    setCompanyName("")
+  }
+
   const openDownloadModal = () => {
     // Set default date range to current monthly view
     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
@@ -388,7 +456,12 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
     
     setDownloadStartDate(startOfMonth.toISOString().split('T')[0])
     setDownloadEndDate(endOfMonth.toISOString().split('T')[0])
-    setCompanyName("")
+    
+    // Don't reset company name - keep the selected company
+    if (!companyName && hiredCompanies.length > 0) {
+      setCompanyName(hiredCompanies[0].company.name)
+    }
+    
     setShowDownloadModal(true)
   }
 
@@ -400,6 +473,11 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
 
     if (!companyName.trim()) {
       setError("Please enter company name")
+      return
+    }
+
+    if (!projectName.trim()) {
+      setError("Please enter project name")
       return
     }
 
@@ -420,42 +498,124 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
       const pageWidth = doc.internal.pageSize.getWidth()
       const pageHeight = doc.internal.pageSize.getHeight()
 
-      // Add professional header with background
-      doc.setFillColor(41, 128, 185) // Professional blue background
-      doc.rect(0, 0, pageWidth, 45, 'F')
+      // Find the selected company's logo from hired companies
+      const selectedCompany = hiredCompanies.find(company => 
+        company.company.name === companyName.trim()
+      )
+      const companyLogo = selectedCompany?.company.logo
 
-      // Company name - centered and prominent
-      doc.setTextColor(255, 255, 255) // White text
-      doc.setFontSize(22)
+      // Header with blue background bar
+      doc.setFillColor(0, 82, 180) // Blue color matching the image
+      doc.rect(0, 0, pageWidth, 30, 'F')
+
+      // Add company logo in top-left corner if available
+      if (companyLogo) {
+        try {
+          // Create an image element to load the logo
+          const img = new Image()
+          img.crossOrigin = 'anonymous'
+          
+          await new Promise<void>((resolve) => {
+            img.onload = () => {
+              try {
+                // Create canvas to convert image to base64
+                const canvas = document.createElement('canvas')
+                const ctx = canvas.getContext('2d')
+                
+                // Set canvas size for logo (20x20 pixels for nice fit)
+                const logoSize = 20
+                canvas.width = logoSize
+                canvas.height = logoSize
+                
+                if (ctx) {
+                  // Fill with white background for transparency
+                  ctx.fillStyle = 'white'
+                  ctx.fillRect(0, 0, logoSize, logoSize)
+                  
+                  // Draw the image scaled to fit
+                  ctx.drawImage(img, 0, 0, logoSize, logoSize)
+                  
+                  // Convert to base64
+                  const base64Image = canvas.toDataURL('image/PNG')
+                  
+                  // Add logo to PDF (positioned in top-left corner with white background)
+                  doc.addImage(base64Image, 'PNG', 6, 5, 20, 20)
+                }
+                resolve()
+              } catch (error) {
+                console.warn('Error processing company logo:', error)
+                resolve()
+              }
+            }
+            
+            img.onerror = () => {
+              console.warn('Failed to load company logo')
+              resolve()
+            }
+            
+            // Add timeout to prevent hanging
+            setTimeout(() => {
+              console.warn('Logo loading timeout')
+              resolve()
+            }, 5000)
+            
+            img.src = companyLogo
+          })
+        } catch (error) {
+          console.warn('Error adding company logo to PDF:', error)
+        }
+      } else if (selectedCompany) {
+        // If no logo but we have company info, add company initial in a circle
+        try {
+          const companyInitial = selectedCompany.company.name.charAt(0).toUpperCase()
+          
+          // Draw circle background
+          doc.setFillColor(59, 130, 246) // Blue background
+          doc.circle(16, 15, 10, 'F')
+          
+          // Add company initial
+          doc.setTextColor(255, 255, 255) // White text
+          doc.setFontSize(12)
+          doc.setFont('helvetica', 'bold')
+          doc.text(companyInitial, 13, 18)
+        } catch (error) {
+          console.warn('Error adding company initial:', error)
+        }
+      }
+
+      // "COMPSCOPE" in green, centered
+      doc.setTextColor(0, 255, 0) // Green color
+      doc.setFontSize(28)
       doc.setFont('helvetica', 'bold')
-      const companyNameWidth = doc.getTextWidth(companyName.trim())
-      doc.text(companyName.trim(), (pageWidth - companyNameWidth) / 2, 20)
+      const compscopeText = "ProjectMATCH by Compscope "
+      const compscopeWidth = doc.getTextWidth(compscopeText)
+      doc.text(compscopeText, (pageWidth - compscopeWidth) / 2, 20)
 
-      // Subtitle - centered
-      doc.setFontSize(14)
-      doc.setFont('helvetica', 'normal')
-      const subtitleText = "ATTENDANCE REPORT"
-      const subtitleWidth = doc.getTextWidth(subtitleText)
-      doc.text(subtitleText, (pageWidth - subtitleWidth) / 2, 35)
+      // "Work Report" in white below COMPSCOPE
+      doc.setTextColor(255, 255, 255) // White
+      doc.setFontSize(16)
+      const workReportText = "Work Report"
+      const workReportWidth = doc.getTextWidth(workReportText)
+      doc.text(workReportText, (pageWidth - workReportWidth) / 2, 28)
 
-      // Reset text color for body content
+      // Reset text color for body
       doc.setTextColor(0, 0, 0)
-
-      // Report details section with better formatting
       doc.setFontSize(11)
-      doc.setFont('helvetica', 'normal')
-      
-      // Date range in a styled box
-      const startY = 55
-      doc.setFillColor(248, 249, 250) // Light gray background
-      doc.rect(15, startY, pageWidth - 30, 20, 'F')
-      doc.setDrawColor(200, 200, 200)
-      doc.rect(15, startY, pageWidth - 30, 20, 'S')
-      
       doc.setFont('helvetica', 'bold')
-      doc.text('Report Period:', 20, startY + 8)
+
+      const startY = 40
+
+      // Vendor Name
+      doc.text(`Vendor Name - ${companyName.trim()}`, 20, startY)
+
+      // Project Name
+      doc.text(`Project Name - ${projectName.trim()}`, 20, startY + 8)
+
+      // Report Period
       doc.setFont('helvetica', 'normal')
-      doc.text(`${downloadStartDate} to ${downloadEndDate}`, 20, startY + 15)
+      const formattedStartDate = new Date(downloadStartDate).toLocaleDateString('en-GB')
+      const formattedEndDate = new Date(downloadEndDate).toLocaleDateString('en-GB')
+      doc.text(`Report Period - ${formattedStartDate} to ${formattedEndDate}`, 20, startY + 16)
 
       // Prepare table data
       const tableData: any[] = []
@@ -464,68 +624,61 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
         filteredRecords.forEach(record => {
           const recordDate = new Date(record.date)
           const formattedDate = recordDate.toISOString().split('T')[0]
-          const attendanceStatus = record.status || "Not Marked"
+          const attendanceStatus = record.status === 'present' ? 'Present' : 
+                                 record.status === 'absent' ? 'Absent' : 'Not Marked'
 
           if (record.logs && record.logs.length > 0) {
             record.logs.forEach((log: AttendanceLog) => {
-              tableData.push([formattedDate, attendanceStatus, log.time, log.activity])
+              tableData.push([
+                formattedDate, 
+                log.activity, 
+                attendanceStatus,
+                log.time
+              ])
             })
           } else {
-            tableData.push([formattedDate, attendanceStatus, "No logs", "No activities recorded"])
+            tableData.push([
+              formattedDate, 
+              "No activities recorded", 
+              attendanceStatus,
+              "-"
+            ])
           }
         })
       } else {
-        tableData.push(["No records", "No data", "No logs", "No records found for selected date range"])
+        tableData.push(["No records", "No records found", "", ""])
       }
 
       // Professional table styling
       autoTable(doc, {
-        head: [["Date", "Attendance Status", "Time", "Activity"]],
+        head: [["Date", "Activity", "Attendance (Present / Absent)", "Timing of Work"]],
         body: tableData,
-        startY: 85,
-        theme: "striped",
+        startY: 68, // Adjusted for new header height with project name
+        theme: "grid", // Changed to grid to match image
         styles: {
-          fontSize: 10,
-          cellPadding: 8,
+          fontSize: 9,
+          cellPadding: 5,
           font: 'helvetica',
-          lineColor: [200, 200, 200],
+          lineColor: [0, 0, 0],
           lineWidth: 0.5,
         },
         headStyles: {
-          fillColor: [52, 73, 94], // Professional dark blue-gray
-          textColor: [255, 255, 255],
+          fillColor: [255, 255, 255], // White background
+          textColor: [0, 0, 0], // Black text
           fontStyle: "bold",
-          fontSize: 11,
+          fontSize: 10,
           halign: 'center',
           valign: 'middle',
         },
         bodyStyles: {
-          textColor: [44, 62, 80], // Dark gray text
+          textColor: [0, 0, 0],
           valign: 'middle',
         },
-        alternateRowStyles: {
-          fillColor: [248, 249, 250], // Very light gray
-        },
         columnStyles: {
-          0: { 
-            cellWidth: 35, 
-            halign: 'center',
-            fontStyle: 'bold',
-          },
-          1: { 
-            cellWidth: 45,
-            halign: 'center',
-            fontStyle: 'bold',
-          },
-          2: { 
-            cellWidth: 30,
-            halign: 'center',
-            fontStyle: 'bold',
-          },
-          3: { 
-            cellWidth: 70,
-            halign: 'left',
-          },
+          0: { cellWidth: 35, halign: 'center' }, // Date
+          1: { cellWidth: 60, halign: 'left' },   // Activity
+          2: { cellWidth: 45, halign: 'center' }, // Attendance
+          3: { cellWidth: 35, halign: 'center' }, // Timing
         },
         margin: { left: 15, right: 15 },
       })
@@ -886,11 +1039,113 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+                {isManualCompanyInput ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="Enter company name manually"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsManualCompanyInput(false)
+                        setCompanyName(hiredCompanies.length > 0 ? hiredCompanies[0].company.name : "")
+                      }}
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      ← Back to hired companies
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative" ref={companyDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left flex items-center justify-between bg-white"
+                    >
+                      <span className={companyName ? "text-gray-900" : "text-gray-500"}>
+                        {companyName || "Select a company or enter manually"}
+                      </span>
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {showCompanyDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {companiesLoading ? (
+                          <div className="p-3 text-center text-gray-500">Loading hired companies...</div>
+                        ) : hiredCompanies.length > 0 ? (
+                          <>
+                            {hiredCompanies.map((company, index) => (
+                              <button
+                                key={company.applicationId}
+                                type="button"
+                                onClick={() => handleCompanySelect(company)}
+                                className="w-full p-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 flex items-center space-x-3"
+                              >
+                                <div className="flex-shrink-0">
+                                  {company.company.logo ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img 
+                                      src={company.company.logo} 
+                                      alt={`${company.company.name} logo`}
+                                      className="w-8 h-8 rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                      <span className="text-blue-600 font-medium text-sm">
+                                        {company.company.name.charAt(0).toUpperCase()}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-900 truncate">
+                                    {company.company.name}
+                                  </p>
+                                  <p className="text-xs text-gray-500 truncate">
+                                    Hired for: {company.jobTitle}
+                                  </p>
+                                </div>
+                              </button>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={handleManualCompanyInput}
+                              className="w-full p-3 text-left hover:bg-gray-50 border-t border-gray-200 text-blue-600 font-medium"
+                            >
+                              + Enter company name manually
+                            </button>
+                          </>
+                        ) : (
+                          <div className="p-3">
+                            <p className="text-sm text-gray-500 mb-2">No hired positions found</p>
+                            <button
+                              type="button"
+                              onClick={handleManualCompanyInput}
+                              className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                            >
+                              Enter company name manually
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
                 <input
                   type="text"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="Enter company name"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  placeholder="Enter project name"
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
@@ -916,7 +1171,7 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
                 />
               </div>
 
-              {error && (downloadStartDate && downloadEndDate || companyName) && (
+              {error && (downloadStartDate && downloadEndDate || companyName || projectName) && (
                 <div className="bg-red-50 border-l-4 border-red-400 p-3">
                   <div className="flex">
                     <AlertCircle className="w-5 h-5 text-red-400 mr-2 flex-shrink-0" />
@@ -932,6 +1187,7 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
                   setShowDownloadModal(false)
                   setError(null)
                   setCompanyName("")
+                  setProjectName("")
                 }}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
               >
@@ -939,7 +1195,7 @@ const CalendarSection = ({ profileId }: CalendarSectionProps) => {
               </button>
               <button
                 onClick={downloadAttendanceData}
-                disabled={isSaving || !downloadStartDate || !downloadEndDate || !companyName.trim()}
+                disabled={isSaving || !downloadStartDate || !downloadEndDate || !companyName.trim() || !projectName.trim()}
                 className="px-4 py-2 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-medium rounded-lg transition-colors flex items-center space-x-2"
               >
                 {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}

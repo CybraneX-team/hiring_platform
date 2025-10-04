@@ -3,7 +3,7 @@
 import type React from "react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowRight, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Input } from "@/app/components/ui/Input";
 import { Label } from "@/app/components/ui/label";
 import Link from "next/link";
@@ -40,10 +40,111 @@ export default function SignupPage() {
     password: "",
   });
   const [shouldNavigate, setShouldNavigate] = useState(false);
+  
+  // GSTIN Validation States
+  const [gstinValidation, setGstinValidation] = useState({
+    isValidating: false,
+    isValid: false,
+    hasBeenValidated: false,
+    error: "",
+    companyDetails: null as {
+      tradeName?: string;
+      state?: string;
+      registrationType?: string;
+    } | null,
+  });
+
+  // GSTIN Format Validation
+  const validateGSTINFormat = (gstin: string): boolean => {
+    const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+    return gstinRegex.test(gstin);
+  };
+
+  // GSTIN Verification Function
+  const handleGSTINValidation = async (gstin: string) => {
+    if (!gstin.trim()) {
+      setGstinValidation({
+        isValidating: false,
+        isValid: false,
+        hasBeenValidated: false,
+        error: "",
+        companyDetails: null,
+      });
+      return;
+    }
+
+    // Format validation first
+    if (!validateGSTINFormat(gstin)) {
+      setGstinValidation({
+        isValidating: false,
+        isValid: false,
+        hasBeenValidated: true,
+        error: "Invalid GSTIN format. Please enter a valid 15-character GSTIN.",
+        companyDetails: null,
+      });
+      return;
+    }
+
+    setGstinValidation(prev => ({ ...prev, isValidating: true, error: "" }));
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/company/verify-gstin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gstin }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setGstinValidation({
+          isValidating: false,
+          isValid: true,
+          hasBeenValidated: true,
+          error: "",
+          companyDetails: {
+            tradeName: data.tradeName,
+            state: data.state,
+            registrationType: data.registrationType,
+          },
+        });
+      } else {
+        setGstinValidation({
+          isValidating: false,
+          isValid: false,
+          hasBeenValidated: true,
+          error: data.message || "GSTIN verification failed",
+          companyDetails: null,
+        });
+      }
+    } catch (error) {
+      setGstinValidation({
+        isValidating: false,
+        isValid: false,
+        hasBeenValidated: true,
+        error: "Unable to verify GSTIN. Please check your connection and try again.",
+        companyDetails: null,
+      });
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value });
+    const { id, value } = e.target;
+    setFormData({ ...formData, [id]: value });
+
+    // Real-time GSTIN validation with debounce
+    if (id === "gstNumber") {
+      setGstinValidation(prev => ({ ...prev, hasBeenValidated: false }));
+      
+      // Debounce validation to avoid too many API calls
+      const timeoutId = setTimeout(() => {
+        handleGSTINValidation(value);
+      }, 1000);
+
+      return () => clearTimeout(timeoutId);
+    }
   };
+
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev);
   };
@@ -55,6 +156,23 @@ export default function SignupPage() {
   }, [shouldNavigate, router]);
 
   const handleSignup = async () => {
+    // Validate form fields
+    if (!formData.fullName || !formData.organizationEmail || !formData.companyName || !formData.gstNumber || !formData.password) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // Check GSTIN validation status
+    if (!gstinValidation.isValid) {
+      if (!gstinValidation.hasBeenValidated) {
+        toast.error("Please wait for GSTIN verification to complete");
+        return;
+      } else {
+        toast.error("Please provide a valid GSTIN before proceeding");
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       const res = await fetch(
@@ -72,7 +190,31 @@ export default function SignupPage() {
 
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data.message || "Failed to send OTP");
+      if (!res.ok) {
+        // Handle specific error types from backend
+        switch (data.error) {
+          case "INVALID_GSTIN_FORMAT":
+            toast.error("Invalid GSTIN format. Please check your GSTIN number.");
+            break;
+          case "GSTIN_VERIFICATION_FAILED":
+            toast.error("GSTIN verification failed. Please ensure your GSTIN is valid and active.");
+            break;
+          case "COMPANY_ALREADY_EXISTS":
+            toast.error("A company with this name or GSTIN already exists.");
+            break;
+          case "USER_ALREADY_EXISTS":
+            toast.error("An account with this email already exists.");
+            break;
+          default:
+            toast.error(data.message || "Failed to send OTP");
+        }
+        return;
+      }
+
+      // Success - show GSTIN verification details if available
+      if (data.gstinDetails) {
+        toast.success(`GSTIN verified for ${data.gstinDetails.tradeName || 'your company'}`);
+      }
 
       // Store signup data in session/localStorage to use later in OTP verification
       localStorage.setItem("signupData", JSON.stringify(formData));
@@ -88,7 +230,8 @@ export default function SignupPage() {
       router.push("/otp"); // go to OTP page
       setShouldNavigate(true);
     } catch (err: any) {
-      toast.info(err.message);
+      console.error("Signup error:", err);
+      toast.error("Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -259,15 +402,75 @@ export default function SignupPage() {
             >
               Organization GST Number
             </Label>
-            <motion.div variants={inputVariants} whileFocus="focus">
+            <motion.div 
+              className="relative" 
+              variants={inputVariants} 
+              whileFocus="focus"
+            >
               <Input
                 id="gstNumber"
                 onChange={handleChange}
                 value={formData.gstNumber}
                 placeholder="22AAAAA0000A1Z5"
-                className="h-12 bg-white border-gray-200 rounded-lg focus:!ring-black focus:!border-black focus:!outline-none focus:!ring-[1px]"
+                className={`h-12 bg-white border-gray-200 rounded-lg focus:!ring-black focus:!border-black focus:!outline-none focus:!ring-[1px] pr-12 ${
+                  gstinValidation.hasBeenValidated 
+                    ? gstinValidation.isValid 
+                      ? "border-green-500" 
+                      : "border-red-500"
+                    : ""
+                }`}
               />
+              {/* Validation Status Icon */}
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                {gstinValidation.isValidating ? (
+                  <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
+                ) : gstinValidation.hasBeenValidated ? (
+                  gstinValidation.isValid ? (
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-red-500" />
+                  )
+                ) : null}
+              </div>
             </motion.div>
+            
+            {/* Validation Messages */}
+            <AnimatePresence>
+              {gstinValidation.error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="text-sm text-red-600"
+                >
+                  {gstinValidation.error}
+                </motion.div>
+              )}
+              
+              {gstinValidation.isValid && gstinValidation.companyDetails && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="p-3 bg-green-50 border border-green-200 rounded-lg"
+                >
+                  <div className="flex items-center text-sm text-green-800">
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <span className="font-medium">GSTIN Verified Successfully</span>
+                  </div>
+                  {gstinValidation.companyDetails.tradeName && (
+                    <div className="mt-2 text-sm text-green-700">
+                      <strong>Trade Name:</strong> {gstinValidation.companyDetails.tradeName}
+                    </div>
+                  )}
+                  {gstinValidation.companyDetails.state && (
+                    <div className="text-sm text-green-700">
+                      <strong>State:</strong> {gstinValidation.companyDetails.state}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
 
           {/* Password */}
@@ -304,13 +507,22 @@ export default function SignupPage() {
 
           {/* Submit Button */}
           <motion.button
-            className="w-full h-12 rounded-lg text-black font-medium transition-opacity hover:opacity-90 cursor-pointer"
-            style={{ backgroundColor: "#76FF82" }}
+            disabled={loading || !gstinValidation.isValid || gstinValidation.isValidating}
+            className={`w-full h-12 rounded-lg font-medium transition-all duration-200 ${
+              loading || !gstinValidation.isValid || gstinValidation.isValidating
+                ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                : "text-black hover:opacity-90 cursor-pointer"
+            }`}
+            style={{ 
+              backgroundColor: loading || !gstinValidation.isValid || gstinValidation.isValidating 
+                ? "#D1D5DB" 
+                : "#76FF82" 
+            }}
             onClick={handleSignup}
             variants={buttonVariants}
             initial="initial"
-            whileHover="hover"
-            whileTap="tap"
+            whileHover={loading || !gstinValidation.isValid || gstinValidation.isValidating ? "initial" : "hover"}
+            whileTap={loading || !gstinValidation.isValid || gstinValidation.isValidating ? "initial" : "tap"}
           >
             <motion.span initial={{ opacity: 1 }} whileHover={{ opacity: 0.9 }}>
               {loading ? "Sending OTP..." : "Verify your account"}

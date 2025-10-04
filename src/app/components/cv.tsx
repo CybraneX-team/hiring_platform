@@ -278,12 +278,22 @@ export default function ApplicationDetailView() {
       //   });
       // }
 
-      // Add footer to the last page
+      // Add footer to every page (matching attendance PDF footer)
       const totalPages = pdf.getNumberOfPages();
-      pdf.setPage(totalPages);
-      pdf.setFontSize(10);
-      pdf.setTextColor(128, 128, 128); // Gray color
-      pdf.text("Made With ProjectMATCH by Compscope", 20, pageHeight - 10);
+      const currentDate = new Date();
+      const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}/${currentDate.getFullYear()}`;
+      
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        
+        // Footer text (matching attendance PDF footer)
+        pdf.setFontSize(9);
+        pdf.setTextColor(100, 100, 100); // Gray color
+        pdf.setFont('helvetica', 'normal');
+        const footerText = `Extracted from ProjectMATCH, COMPSCOPE Nonmetallics | www.compscope.in | Generated on: ${formattedDate}`;
+        const footerWidth = pdf.getTextWidth(footerText);
+        pdf.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10);
+      }
 
       pdf.save(`${applicantDetail?.name?.replace(/\s+/g, "-") || "CV"}-CV.pdf`);
     } finally {

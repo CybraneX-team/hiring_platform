@@ -48,6 +48,29 @@ export interface UpdateAttendanceResponse {
   data: AttendanceRecord;
 }
 
+// Types for hired companies (for attendance system)
+export interface HiredCompany {
+  applicationId: string;
+  jobTitle: string;
+  company: {
+    id: string | null;
+    name: string;
+    logo: string | null;
+    email: string | null;
+    orgSize: string | null;
+    location: string | null;
+  };
+  hiredDate: string;
+  appliedDate: string;
+}
+
+export interface HiredCompaniesResponse {
+  success: boolean;
+  data: HiredCompany[];
+  count: number;
+  message?: string;
+}
+
 // API functions
 export const attendanceAPI = {
   /**
@@ -137,6 +160,21 @@ export const attendanceAPI = {
     logs: AttendanceLog[]
   ): Promise<UpdateAttendanceResponse> => {
     return attendanceAPI.updateAttendance(profileId, date, { status, logs });
+  },
+
+  /**
+   * Get companies where user has been hired (for attendance system)
+   */
+  getHiredCompanies: async (userId: string): Promise<HiredCompaniesResponse> => {
+    try {
+      const response = await apiClient.get(`/application/user/${userId}/hired-companies`);
+      return response.data as HiredCompaniesResponse;
+    } catch (error: any) {
+      console.error('❌ Error fetching hired companies:', error);
+      throw new Error(
+        error.response?.data?.message || 'Failed to fetch hired companies'
+      );
+    }
   }
 };
 
