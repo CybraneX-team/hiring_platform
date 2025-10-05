@@ -40,7 +40,7 @@ export default function TruncatedText({
 
   // Determine truncation method and limits
   const useWordLimit = maxWords !== undefined;
-  const wordCount = getWordCount(text);
+  const wordCount = parseInt(getWordCount(text) as string);
   const shouldTruncate = useWordLimit ? wordCount > maxWords : text.length > maxLength;
 
   if (!text || !shouldTruncate) {
