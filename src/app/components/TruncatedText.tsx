@@ -23,24 +23,26 @@ export default function TruncatedText({
   readLessText = "Read less"
 }: TruncatedTextProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   // Helper function to get word count
   const getWordCount = (text: string) => {
-    return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+    if (text)
+      return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+    else return "";
   };
-  
+
   // Helper function to truncate by words
   const truncateByWords = (text: string, maxWords: number) => {
     const words = text.trim().split(/\s+/);
     if (words.length <= maxWords) return text;
     return words.slice(0, maxWords).join(' ');
   };
-  
+
   // Determine truncation method and limits
   const useWordLimit = maxWords !== undefined;
   const wordCount = getWordCount(text);
   const shouldTruncate = useWordLimit ? wordCount > maxWords : text.length > maxLength;
-  
+
   if (!text || !shouldTruncate) {
     return <span className={className}>{text}</span>;
   }
@@ -54,7 +56,7 @@ export default function TruncatedText({
         {isExpanded ? text : truncatedText}
         {!isExpanded && text.length > maxLength && "..."}
       </span>
-      
+
       {shouldShowButton && (
         <motion.button
           whileHover={{ scale: 1.02 }}

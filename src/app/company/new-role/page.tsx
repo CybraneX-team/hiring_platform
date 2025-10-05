@@ -807,6 +807,7 @@ export default function PostRole() {
   const [selectedLocation, setSelectedLocation] = useState<{
     lat: number;
     lng: number;
+    address?: string;
   } | null>(null);
 
   // Ola Maps related states
@@ -1093,6 +1094,7 @@ export default function PostRole() {
         description: aboutJob,
         customQuestions, // This line should already exist
         locationCoordinates: selectedLocation,
+        fatIncluded: fatAdded,
       };
 
       const response = await fetch(
@@ -1856,6 +1858,7 @@ export default function PostRole() {
                     setSelectedLocation({
                       lat: location.lat,
                       lng: location.lng,
+                      address: location.address,
                     });
                     setWorkLocation(location.address);
                     setLocationSearchQuery(location.address);
