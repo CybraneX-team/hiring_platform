@@ -11,6 +11,8 @@ import {
   FileText,
 } from "lucide-react";
 import type { Application, Role, DocumentType } from "../../../types";
+import ApplicationDetailView from "../../cv";
+import Companyapplicants from "../../Companyapplicants";
 
 interface ApplicantDetailsViewProps {
   selectedApplicant: Application;
@@ -40,7 +42,7 @@ export default function ApplicantDetailsView({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="bg-white rounded-xl p-4 sm:p-6">
+      <div className="bg-white rounded-xl p-4 sm:p-6 max-w-7xl">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
           <div className="flex items-center">
             <motion.div
@@ -169,6 +171,13 @@ export default function ApplicantDetailsView({
           </div>
         </div>
       )}
+      <div className="">
+      <Companyapplicants
+        itemId={selectedApplicant.id}
+        onBack={() => {/* implement back navigation here */}}
+      />
+      </div>
     </div>
+  
   );
 }

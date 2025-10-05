@@ -3,6 +3,7 @@
 import type { Application, Role } from "../../../types";
 import ApplicationCard from "../applicationCard";
 
+
 interface ApplicationsViewProps {
   selectedRole: Role;
   applications: Application[];

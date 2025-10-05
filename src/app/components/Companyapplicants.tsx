@@ -22,13 +22,13 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
   const isAvailable = applicant?.openToRoles && applicant.openToRoles.length > 0;
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] p-4 sm:p-6 lg:p-8">
-      <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">
+    <div className="min-h-screen bg-[#F5F5F5] p-4 sm:p-6 md:p-0">
+      {/* <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">
         Compscope
-      </h1>
-      <div className="max-w-6xl mx-auto mt-12">
+      </h1> */}
+      <div className="max-w-7xl mx-auto mt-12">
         {/* Header */}
-        <div className="mb-10">
+        {/* <div className="mb-10">
           <motion.button
             onClick={onBack}
             whileHover={{ scale: 1.02 }}
@@ -38,7 +38,7 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
             <ArrowLeft className="w-4 h-4" />
             Back
           </motion.button>
-        </div>
+        </div> */}
 
         {/* Main Content Card */}
         <motion.div

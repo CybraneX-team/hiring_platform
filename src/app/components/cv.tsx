@@ -240,6 +240,11 @@ export default function ApplicationDetailView() {
       const imgWidth = pageWidth;
       const imgHeight = (rect.height * imgWidth) / rect.width - 40; // Reduce height by 50mm
 
+      const bottomPadding = 15; // 15mm padding at bottom
+const topPadding = 10; // 10mm padding at top of new pages
+const effectivePageHeight = pageHeight - bottomPadding;
+
+
       let heightLeft = imgHeight;
       let position = 0;
 
@@ -253,47 +258,21 @@ export default function ApplicationDetailView() {
         heightLeft -= pageHeight;
       }
 
-      // Add clickable links to PDF [web:125][web:126]
-      // if (applicantDetail?.resumeUrl) {
-      //   // Add resume link (positioned at bottom of first page)
-      //   pdf.setPage(1);
-      //   pdf.link(20, pageHeight - 30, 60, 10, {
-      //     url: applicantDetail.resumeUrl
-      //   });
-      //   pdf.text("Resume Link", 20, pageHeight - 25);
-      // }
-
-      // // Add certificate links
-      // if (applicantDetail?.certifications?.length > 0) {
-      //   let linkY = pageHeight - 50;
-      //   applicantDetail.certifications.forEach((cert : any, index : any) => {
-      //     if (cert.fileUrl && linkY > 20) {
-      //       pdf.setPage(1);
-      //       pdf.link(20, linkY, 80, 10, {
-      //         url: cert.fileUrl
-      //       });
-      //       pdf.text(`${cert.name} Certificate`, 20, linkY + 5);
-      //       linkY -= 15;
-      //     }
-      //   });
-      // }
-
-      // Add footer to every page (matching attendance PDF footer)
+      // Add footer only to the last page
       const totalPages = pdf.getNumberOfPages();
       const currentDate = new Date();
       const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}/${currentDate.getFullYear()}`;
       
-      for (let i = 1; i <= totalPages; i++) {
-        pdf.setPage(i);
-        
-        // Footer text (matching attendance PDF footer)
-        pdf.setFontSize(9);
-        pdf.setTextColor(100, 100, 100); // Gray color
-        pdf.setFont('helvetica', 'normal');
-        const footerText = `Extracted from ProjectMATCH, COMPSCOPE Nonmetallics | www.compscope.in | Generated on: ${formattedDate}`;
-        const footerWidth = pdf.getTextWidth(footerText);
-        pdf.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10);
-      }
+      // Set to last page only
+      pdf.setPage(totalPages);
+      
+      // Footer text
+      pdf.setFontSize(9);
+      pdf.setTextColor(100, 100, 100); // Gray color
+      pdf.setFont('helvetica', 'normal');
+      const footerText = `Extracted from ProjectMATCH, COMPSCOPE Nonmetallics | www.compscope.in | Generated on: ${formattedDate}`;
+      const footerWidth = pdf.getTextWidth(footerText);
+      pdf.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10);
 
       pdf.save(`${applicantDetail?.name?.replace(/\s+/g, "-") || "CV"}-CV.pdf`);
     } finally {

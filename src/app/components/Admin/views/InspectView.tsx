@@ -409,7 +409,7 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
   }, [combinedFilteredItems]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
+    <div className="w-full max-w-7xl mx-auto">
       {/* Filter Section and Add More Button */}
       <div className="mb-6 flex items-center justify-between">
         <div className="relative inline-block">
