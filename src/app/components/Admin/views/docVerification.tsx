@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { FileText, Eye, Download, CheckCircle, XCircle } from "lucide-react";
 import type { Application, SubmittedDocument } from "../../../types";
 
+
 interface DocumentVerificationViewProps {
   selectedApplicant: Application;
   submittedDocs: SubmittedDocument[];

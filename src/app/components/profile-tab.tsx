@@ -3331,13 +3331,13 @@ export default function ProfileTab() {
         transition={{ duration: 0.5 }}
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
-        <Link href="/" className="flex items-center gap-1">
+        <Link href="/" className="flex items-center gap-1 -mt-10">
           <Image
             src="/black_logo.png"
             alt="ProjectMATCH by Compscope"
             width={200}
             height={80}
-            className="h-16 sm:h-16 md:h-16 lg:h-16 xl:h-28 w-auto"
+            className="h-16 sm:h-16 md:h-16 lg:h-16 xl:h-28 w-auto "
             priority
           />
           <div className={`leading-tight text-black`}>
