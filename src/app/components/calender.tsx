@@ -346,6 +346,12 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
   const openUpdateModal = () => {
+    // Check if the person is marked as present for the selected date
+    if (!isSelectedDatePresent()) {
+      setError("You must mark yourself as present first before logging daily activities")
+      return
+    }
+    
     // Clear any previous editing state
     setEditingRecords([])
     setError(null)
@@ -583,39 +589,49 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
         }
       }
 
-      // "COMPSCOPE" in green, centered
+      // "COMPSCOPE" in green, centered vertically in blue section
       doc.setTextColor(0, 255, 0) // Green color
       doc.setFontSize(28)
       doc.setFont('helvetica', 'bold')
       const compscopeText = "ProjectMATCH by Compscope "
       const compscopeWidth = doc.getTextWidth(compscopeText)
-      doc.text(compscopeText, (pageWidth - compscopeWidth) / 2, 20)
+      doc.text(compscopeText, (pageWidth - compscopeWidth) / 2, 16)
 
-      // "Work Report" in white below COMPSCOPE
+      // "Work Report" in white below COMPSCOPE, centered in blue section
       doc.setTextColor(255, 255, 255) // White
       doc.setFontSize(16)
       const workReportText = "Work Report"
       const workReportWidth = doc.getTextWidth(workReportText)
-      doc.text(workReportText, (pageWidth - workReportWidth) / 2, 28)
+      doc.text(workReportText, (pageWidth - workReportWidth) / 2, 24)
 
       // Reset text color for body
       doc.setTextColor(0, 0, 0)
       doc.setFontSize(11)
-      doc.setFont('helvetica', 'bold')
 
       const startY = 40
 
-      // Vendor Name
-      doc.text(`Vendor Name - ${companyName.trim()}`, 20, startY)
+      // Define consistent x-coordinate for all values
+      const valueStartX = 65
+      
+      // Vendor Name - Bold heading, normal value
+      doc.setFont('helvetica', 'bold')
+      doc.text('Vendor Name -', 20, startY)
+      doc.setFont('helvetica', 'normal')
+      doc.text(companyName.trim(), valueStartX, startY)
 
-      // Project Name
-      doc.text(`Project Name - ${projectName.trim()}`, 20, startY + 8)
+      // Project Name - Bold heading, normal value
+      doc.setFont('helvetica', 'bold')
+      doc.text('Project Name -', 20, startY + 8)
+      doc.setFont('helvetica', 'normal')
+      doc.text(projectName.trim(), valueStartX, startY + 8)
 
-      // Report Period
+      // Report Period - Bold heading, normal value
+      doc.setFont('helvetica', 'bold')
+      doc.text('Report Period -', 20, startY + 16)
       doc.setFont('helvetica', 'normal')
       const formattedStartDate = new Date(downloadStartDate).toLocaleDateString('en-GB')
       const formattedEndDate = new Date(downloadEndDate).toLocaleDateString('en-GB')
-      doc.text(`Report Period - ${formattedStartDate} to ${formattedEndDate}`, 20, startY + 16)
+      doc.text(`${formattedStartDate} to ${formattedEndDate}`, valueStartX, startY + 16)
 
       // Prepare table data
       const tableData: any[] = []
@@ -623,30 +639,42 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
       if (filteredRecords.length > 0) {
         filteredRecords.forEach(record => {
           const recordDate = new Date(record.date)
-          const formattedDate = recordDate.toISOString().split('T')[0]
+          const formattedDate = recordDate.toLocaleDateString('en-GB') // dd/mm/yyyy format
           const attendanceStatus = record.status === 'present' ? 'Present' : 
                                  record.status === 'absent' ? 'Absent' : 'Not Marked'
 
-          if (record.logs && record.logs.length > 0) {
-            record.logs.forEach((log: AttendanceLog) => {
-              tableData.push([
-                formattedDate, 
-                log.activity, 
-                attendanceStatus,
-                log.time
-              ])
-            })
-          } else {
-            tableData.push([
-              formattedDate, 
-              "No activities recorded", 
-              attendanceStatus,
-              "-"
-            ])
+          // Only include records that have attendance status (present/absent) OR have activity logs
+          const hasAttendanceStatus = record.status === 'present' || record.status === 'absent'
+          const hasActivities = record.logs && record.logs.length > 0
+
+          if (hasAttendanceStatus || hasActivities) {
+            if (record.logs && record.logs.length > 0) {
+              record.logs.forEach((log: AttendanceLog) => {
+                tableData.push([
+                  formattedDate, 
+                  log.activity, 
+                  attendanceStatus,
+                  log.time
+                ])
+              })
+            } else {
+              // Only add "No activities recorded" row if person was marked present/absent
+              if (hasAttendanceStatus) {
+                tableData.push([
+                  formattedDate, 
+                  "No activities recorded", 
+                  attendanceStatus,
+                  "-"
+                ])
+              }
+            }
           }
         })
-      } else {
-        tableData.push(["No records", "No records found", "", ""])
+      }
+      
+      // If no valid records found, add a message
+      if (tableData.length === 0) {
+        tableData.push(["No records", "No records found for the selected period", "", ""])
       }
 
       // Professional table styling
@@ -685,8 +713,28 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
 
 
 
-      // Add footer to every page
+      // Add signature sections to the last page only
       const totalPages = doc.getNumberOfPages()
+      const lastPage = totalPages
+      
+      doc.setPage(lastPage)
+      
+      // Add signature sections above footer on last page
+      const signatureY = pageHeight - 40 // Position above footer
+      
+      // Surveyor Sign & Seal (left side)
+      doc.setFontSize(10)
+      doc.setTextColor(0, 0, 0)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Surveyor Sign & Seal', 20, signatureY)
+      doc.setFont('helvetica', 'normal')
+      doc.text('Surveyor Name -', 20, signatureY + 8)
+      
+      // Client / Mail Sign & Seal (right side)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Client / Mail Sign & Seal', pageWidth - 80, signatureY)
+      
+      // Add footer to every page
       const currentDate = new Date()
       const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}/${currentDate.getFullYear()}`
       
@@ -857,7 +905,13 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
                 </span>
                 <button
                   onClick={openUpdateModal}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                  disabled={!isSelectedDatePresent()}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    isSelectedDatePresent() 
+                      ? 'bg-gray-200 hover:bg-gray-300 text-gray-700' 
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  }`}
+                  title={!isSelectedDatePresent() ? "Mark yourself as present first to log activities" : ""}
                 >
                   <Pencil className="w-4 h-4" />
                   Update Record

@@ -108,6 +108,9 @@ export default function SignupPage() {
             registrationType: data.registrationType,
           },
         });
+        
+        // Auto-populate company name with trade name from GSTIN (or keep it blank if no trade name)
+        setFormData(prev => ({ ...prev, companyName: data.tradeName || "" }));
       } else {
         setGstinValidation({
           isValidating: false,
@@ -134,6 +137,8 @@ export default function SignupPage() {
 
     // Real-time GSTIN validation with debounce
     if (id === "gstNumber") {
+      // Clear organization name when GSTIN changes (will be repopulated if verification succeeds)
+      setFormData(prev => ({ ...prev, [id]: value, companyName: "" }));
       setGstinValidation(prev => ({ ...prev, hasBeenValidated: false }));
       
       // Debounce validation to avoid too many API calls
@@ -336,65 +341,7 @@ export default function SignupPage() {
             </p>
           </motion.div>
 
-          {/* Full Name */}
-          <motion.div className="space-y-2" variants={itemVariants}>
-            <Label
-              htmlFor="fullName"
-              className="text-sm font-medium text-gray-700"
-            >
-              Full Name
-            </Label>
-            <motion.div variants={inputVariants} whileFocus="focus">
-              <Input
-                id="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                placeholder="John Doe"
-                className="h-12 bg-white border-gray-200 rounded-lg focus:!ring-black focus:!border-black focus:!outline-none focus:!ring-[1px]"
-              />
-            </motion.div>
-          </motion.div>
-
-          {/* Organization Email */}
-          <motion.div className="space-y-2" variants={itemVariants}>
-            <Label
-              htmlFor="organizationEmail"
-              className="text-sm font-medium text-gray-700"
-            >
-              Organization Email
-            </Label>
-            <motion.div variants={inputVariants} whileFocus="focus">
-              <Input
-                id="organizationEmail"
-                value={formData.organizationEmail}
-                onChange={handleChange}
-                type="email"
-                placeholder="you@organization.com"
-                className="h-12 bg-white border-gray-200 rounded-lg focus:!ring-black focus:!border-black focus:!outline-none focus:!ring-[1px]"
-              />
-            </motion.div>
-          </motion.div>
-
-          {/* Organization Name */}
-          <motion.div className="space-y-2" variants={itemVariants}>
-            <Label
-              htmlFor="companyName"
-              className="text-sm font-medium text-gray-700"
-            >
-              Organization Name
-            </Label>
-            <motion.div variants={inputVariants} whileFocus="focus">
-              <Input
-                id="companyName"
-                value={formData.companyName}
-                onChange={handleChange}
-                placeholder="Your Organization"
-                className="h-12 bg-white border-gray-200 rounded-lg focus:!ring-black focus:!border-black focus:!outline-none focus:!ring-[1px]"
-              />
-            </motion.div>
-          </motion.div>
-
-          {/* GST Number */}
+          {/* GST Number - Now First Field */}
           <motion.div className="space-y-2" variants={itemVariants}>
             <Label
               htmlFor="gstNumber"
@@ -446,31 +393,68 @@ export default function SignupPage() {
                   {gstinValidation.error}
                 </motion.div>
               )}
-              
-              {gstinValidation.isValid && gstinValidation.companyDetails && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="p-3 bg-green-50 border border-green-200 rounded-lg"
-                >
-                  <div className="flex items-center text-sm text-green-800">
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    <span className="font-medium">GSTIN Verified Successfully</span>
-                  </div>
-                  {gstinValidation.companyDetails.tradeName && (
-                    <div className="mt-2 text-sm text-green-700">
-                      <strong>Trade Name:</strong> {gstinValidation.companyDetails.tradeName}
-                    </div>
-                  )}
-                  {gstinValidation.companyDetails.state && (
-                    <div className="text-sm text-green-700">
-                      <strong>State:</strong> {gstinValidation.companyDetails.state}
-                    </div>
-                  )}
-                </motion.div>
-              )}
             </AnimatePresence>
+          </motion.div>
+
+          {/* Organization Name - Auto-populated from GSTIN */}
+          <motion.div className="space-y-2" variants={itemVariants}>
+            <Label
+              htmlFor="companyName"
+              className="text-sm font-medium text-gray-700"
+            >
+              Organization Name
+            </Label>
+            <motion.div variants={inputVariants} whileFocus="focus">
+              <Input
+                id="companyName"
+                value={formData.companyName}
+                onChange={handleChange}
+                placeholder="Your Organization"
+                className="h-12 bg-white border-gray-200 rounded-lg focus:!ring-black focus:!border-black focus:!outline-none focus:!ring-[1px]"
+              />
+            </motion.div>
+            {gstinValidation.isValid && gstinValidation.companyDetails?.tradeName && formData.companyName === gstinValidation.companyDetails.tradeName && (
+              <p className="text-xs text-green-600">✓ Auto-populated from GSTIN verification</p>
+            )}
+          </motion.div>
+
+          {/* Full Name */}
+          <motion.div className="space-y-2" variants={itemVariants}>
+            <Label
+              htmlFor="fullName"
+              className="text-sm font-medium text-gray-700"
+            >
+              Full Name
+            </Label>
+            <motion.div variants={inputVariants} whileFocus="focus">
+              <Input
+                id="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                placeholder="John Doe"
+                className="h-12 bg-white border-gray-200 rounded-lg focus:!ring-black focus:!border-black focus:!outline-none focus:!ring-[1px]"
+              />
+            </motion.div>
+          </motion.div>
+
+          {/* Organization Email */}
+          <motion.div className="space-y-2" variants={itemVariants}>
+            <Label
+              htmlFor="organizationEmail"
+              className="text-sm font-medium text-gray-700"
+            >
+              Organization Email
+            </Label>
+            <motion.div variants={inputVariants} whileFocus="focus">
+              <Input
+                id="organizationEmail"
+                value={formData.organizationEmail}
+                onChange={handleChange}
+                type="email"
+                placeholder="you@organization.com"
+                className="h-12 bg-white border-gray-200 rounded-lg focus:!ring-black focus:!border-black focus:!outline-none focus:!ring-[1px]"
+              />
+            </motion.div>
           </motion.div>
 
           {/* Password */}
