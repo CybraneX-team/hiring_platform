@@ -15,20 +15,26 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import { Loader } from "lucide-react";
+import { useUser } from "./context/UserContext";
 
 export default function Home() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const { user } = useUser();
 
   useEffect(() => {
     let token = localStorage.getItem("token");
     if (token) {
-      router.replace("/jobs");
+      if (user && user.signedUpAs == "Company") {
+        router.push("/company/profile");
+      } else {
+        router.push("/jobs");
+      }
       return;
     }
 
     setReady(true);
-  }, []);
+  }, [user, router]);
 
   if (!ready) return <Loader className="animate-spin m-auto mt-20" />;
 
