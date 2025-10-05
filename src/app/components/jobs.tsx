@@ -158,17 +158,23 @@ export default function JobComponent() {
       const location = job.location?.toLowerCase() || "";
 
       switch (filter) {
-        case "Full-Time":
+        case "Long Term":
           return (
             jobType.includes("full-time") ||
             jobType.includes("fulltime") ||
-            jobType.includes("Full-time")
+            jobType.includes("Full-time") ||
+            jobType.includes("long-term") ||
+            jobType.includes("longterm") ||
+            jobType.includes("Long-term")
           );
-        case "Part-Time":
+        case "Short Term":
           return (
             jobType.includes("part-time") ||
             jobType.includes("parttime") ||
-            jobType.includes("Part-time")
+            jobType.includes("Part-time") ||
+            jobType.includes("shortterm") ||
+            jobType.includes("short-term") ||
+            jobType.includes("Short-term")
           );
         case "Remote":
           return jobType.includes("remote");
@@ -470,11 +476,10 @@ export default function JobComponent() {
                 whileHover={{ y: -1 }}
                 onClick={() => handleFilterChange(tab)}
                 disabled={loading}
-                className={`px-6 py-1 text-xs mx-2 mb-2  cursor-pointer font-medium rounded-full transition-all disabled:opacity-50 ${
-                  activeFilter === tab
-                    ? "bg-[#fff] text-[#32343A] hover:text-gray-700"
-                    : " bg-[#EBEBEB] text-[#32343A]"
-                }`}
+                className={`px-6 py-1 text-xs mx-2 mb-2  cursor-pointer font-medium rounded-full transition-all disabled:opacity-50 ${activeFilter === tab
+                  ? "bg-[#fff] text-[#32343A] hover:text-gray-700"
+                  : " bg-[#EBEBEB] text-[#32343A]"
+                  }`}
               >
                 {tab}
               </motion.button>
@@ -511,15 +516,15 @@ export default function JobComponent() {
                 {searchQuery
                   ? `No jobs found for "${searchQuery}"`
                   : activeFilter !== "All"
-                  ? `No ${activeFilter} jobs found`
-                  : "No jobs found"}
+                    ? `No ${activeFilter} jobs found`
+                    : "No jobs found"}
               </p>
               <p className="text-gray-500 text-sm mb-4">
                 {searchQuery
                   ? "Try different keywords or check your spelling"
                   : activeFilter !== "All"
-                  ? "Try selecting a different filter or search for specific roles"
-                  : "Try adjusting your filters"}
+                    ? "Try selecting a different filter or search for specific roles"
+                    : "Try adjusting your filters"}
               </p>
               <div className="flex gap-3 justify-center">
                 {searchQuery && (
@@ -659,11 +664,10 @@ export default function JobComponent() {
                           // For now, all filtered results are shown
                         }}
                         disabled={loading}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all disabled:opacity-50 ${
-                          pagination.current === page
-                            ? "bg-[#76FF82] text-black"
-                            : "bg-white text-gray-600 hover:bg-gray-50"
-                        }`}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all disabled:opacity-50 ${pagination.current === page
+                          ? "bg-[#76FF82] text-black"
+                          : "bg-white text-gray-600 hover:bg-gray-50"
+                          }`}
                       >
                         {page}
                       </motion.button>
