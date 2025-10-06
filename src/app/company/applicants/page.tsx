@@ -111,7 +111,7 @@ function ApplicationDetailContent() {
       setError(null);
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/application/${applicationId}`
+        `${process.env.NEXT_PUBLIC_API_URL}/profile/application/${applicationId}`
       );
 
       if (!response.ok) {
@@ -450,7 +450,7 @@ function ApplicationDetailContent() {
             </h3>
             <div className="space-y-3">
               {applicant.certifications &&
-              applicant.certifications.length > 0 ? (
+                applicant.certifications.length > 0 ? (
                 applicant.certifications.map((cert: any, index: number) => (
                   <div
                     key={index}
@@ -486,7 +486,7 @@ function ApplicationDetailContent() {
             </h3>
             <div className="space-y-8">
               {applicant.experience_details &&
-              applicant.experience_details.length > 0 ? (
+                applicant.experience_details.length > 0 ? (
                 applicant.experience_details.map((exp: any, index: number) => (
                   <div key={index} className="bg-[#F5F5F5] rounded-lg p-6">
                     <h4 className="font-semibold text-gray-900 mb-1">
