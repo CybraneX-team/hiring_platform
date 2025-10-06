@@ -791,6 +791,10 @@ export default function PostRole() {
   const [payRange, setPayRange] = useState("₹12,000-60,000");
   const [aboutJob, setAboutJob] = useState("");
   const [jobTittle, setjobTittle] = useState("");
+  const [experienceLevel, setExperienceLevel] = useState<
+    "Entry" | "Mid" | "Senior" | "Executive"
+  >("Entry");
+  const [experience, setExperience] = useState("");
 
   const [workStartDate, setWorkStartDate] = useState("");
   const [noOfOpenings, setnoOfOpenings] = useState(0);
@@ -1072,14 +1076,20 @@ export default function PostRole() {
       toast.error("no of opening cant be zero or in minus");
       return;
     }
+    if (!workLocation.trim() || !selectedLocation) {
+      toast.error("Please select a work location (use search or auto-detect)");
+      return;
+    }
     setIsPosting(true);
 
     try {
-      const jobData = {
+      const jobData: any = {
         company: `${user?.id}`,
         userId: `${user?.id}`,
         title: jobTittle,
         jobType,
+        experienceLevel,
+        experience,
         companyPerks,
         requiredSkillset,
         mandatoryCertificates,
@@ -1097,6 +1107,20 @@ export default function PostRole() {
         fatIncluded: fatAdded,
       };
 
+      // Also send normalized location object if backend expects it
+      if (selectedLocation) {
+        jobData.location = {
+          address: workLocation,
+          coordinates: {
+            longitude: selectedLocation.lng,
+            latitude: selectedLocation.lat,
+          },
+        };
+      }
+
+      // Debug: log payload before sending
+      console.log("Posting job payload:", jobData);
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/jobs`,
         {
@@ -1108,13 +1132,27 @@ export default function PostRole() {
         }
       );
 
-      const data = await response.json();
+      let data: any = null;
+      const rawText = await response.text();
+      try {
+        data = rawText ? JSON.parse(rawText) : null;
+      } catch (e) {
+        data = { message: rawText };
+      }
 
       if (response.ok) {
         toast.success("Job posted successfully!");
         router.push("/company/profile");
       } else {
-        toast.error(data.message || "Failed to post job");
+        console.error("Job post failed:", {
+          status: response.status,
+          statusText: response.statusText,
+          body: data,
+        });
+        toast.error(
+          (data && (data.error || data.message)) ||
+            `Failed to post job (HTTP ${response.status})`
+        );
       }
     } catch (error) {
       console.error("Error posting job:", error);
@@ -1220,6 +1258,17 @@ export default function PostRole() {
           setActivePayRange(data.payRangeType);
         }
 
+        // Populate experience fields if present
+        if (data.experienceLevel) {
+          const lvl = String(data.experienceLevel) as any;
+          if (["Entry", "Mid", "Senior", "Executive"].includes(lvl)) {
+            setExperienceLevel(lvl);
+          }
+        }
+        if (data.experience) {
+          setExperience(data.experience);
+        }
+
         // Set work duration dates - NEW FIX
         if (data.workStartDate) {
           setWorkStartDate(data.workStartDate);
@@ -1272,29 +1321,6 @@ export default function PostRole() {
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
       <JobHeader />
-      
-      {/* Logo positioned like in header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="absolute top-4 sm:top-8 left-4 sm:left-8 z-10"
-      >
-        <Link href="/" className="flex items-center gap-1">
-          <Image
-            src="/black_logo.png"
-            alt="ProjectMATCH by Compscope"
-            width={200}
-            height={80}
-            className="h-16 sm:h-16 md:h-16 lg:h-16 xl:h-28 w-auto"
-            priority
-          />
-          <div className="leading-tight text-[#163A33]">
-            <div className="text-xs sm:text-sm md:text-base lg:text-2xl font-black">ProjectMATCH</div>
-            <div className="text-[10px] sm:text-xs md:text-sm text-gray-600"><span className="text-[#3EA442] font-bold">by Compscope</span></div>
-          </div>
-        </Link>
-      </motion.div>
 
       <div className="max-w-5xl md:mx-auto p-8 -mx-5">
         {/* Back Button */}
@@ -1358,6 +1384,34 @@ export default function PostRole() {
           </div>
 
           <div className="space-y-8">
+            {/* Experience */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-gray-700">Experience Level</label>
+              <div className="flex bg-gray-100 rounded-lg p-1 w-fit">
+                {(["Entry", "Mid", "Senior", "Executive"] as const).map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => setExperienceLevel(level)}
+                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                      experienceLevel === level
+                        ? "bg-[#76FF82] text-black shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+              <label className="text-sm font-medium text-gray-700">Experience (optional)</label>
+              <input
+                type="text"
+                value={experience}
+                onChange={(e) => setExperience(e.target.value)}
+                placeholder="e.g., 3-5 years in supply chain, SAP preferred"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
             {/* Company Perks */}
             <div className="space-y-3">
               <label className="text-sm font-medium text-gray-700">
