@@ -100,43 +100,58 @@ export default function JobComponent() {
     return parts.slice(-4).join(', ');
   };
 
-  // Function to format salary
-  const formatSalary = (salaryRange: any) => {
-    if (!salaryRange) return { salary: "Negotiable", salaryType: "" };
+  const truncateText = (text: string, max: number = 30) => {
+    if (!text) return text;
+    return text.length > max ? `${text.slice(0, max)}...` : text;
+  };
 
-    const { min, max, currency = "₹" } = salaryRange;
+  // Function to format salary and type from API (no hardcoded per/year)
+  const formatSalary = (salaryRange: any, payRangeType?: string) => {
+    if (!salaryRange) return { salary: "Negotiable", salaryType: payRangeType || "" };
+
+    const { min, max, currency = "₹", period } = salaryRange;
+    const derivedType = period || payRangeType || "";
 
     if (min && max) {
       return {
         salary: `${currency}${min}-${max}`,
-        salaryType: "Per/Year",
+        salaryType: derivedType,
       };
     } else if (min) {
       return {
         salary: `${currency}${min}+`,
-        salaryType: "Per/Year",
+        salaryType: derivedType,
       };
     } else if (max) {
       return {
         salary: `Up to ${currency}${max}`,
-        salaryType: "Per/Year",
+        salaryType: derivedType,
       };
     }
 
-    return { salary: "Negotiable", salaryType: "" };
+    return { salary: "Negotiable", salaryType: derivedType };
+  };
+
+  // Normalize period text coming from API (e.g., "Per/Year" -> "Year", "per/monthly" -> "Monthly")
+  const normalizePeriod = (t?: string) => {
+    if (!t) return "";
+    const cleaned = String(t).replace(/^per\/?/i, "").replace(/^\//, "").trim();
+    // Capitalize first letter
+    return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
   };
 
   // Function to map API response to frontend format
   const mapJobData = (apiJobs: any[]): any => {
     return apiJobs.map((job: any) => {
-      const { salary, salaryType } = formatSalary(job.salaryRange);
-
+      const { salary, salaryType } = formatSalary(job.salaryRange, job.payRangeType);
+      // Only show period strictly from API-provided payRangeType
+      const period = normalizePeriod(job.payRangeType || "");
       return {
         id: job.id,
         title: job.title,
         company: job.company?.companyName || "",
         salary,
-        salaryType,
+        salaryType: period,
         description: job.description,
         location: job.location,
         timePosted: formatTimeAgo(job.postedDate),
@@ -216,7 +231,46 @@ export default function JobComponent() {
 
       const data: ApiResponse = await response.json();
 
-      const mappedJobs = mapJobData(data.jobs);
+      try {
+        // Log a lightweight snapshot to compare list payload period fields
+        // eslint-disable-next-line no-console
+        console.log("[JobsList] period snapshot", data.jobs.map((j: any) => ({
+          id: j.id,
+          title: j.title,
+          payRangeType: j.payRangeType,
+          salaryRangePeriod: j.salaryRange?.period,
+        })));
+      } catch {}
+
+      let mappedJobs = mapJobData(data.jobs);
+
+      // If payRangeType is missing in list payload, fetch details for only those jobs to enrich period
+      const jobsMissingPeriod = data.jobs.filter((j: any) => !j?.payRangeType && !j?.salaryRange?.period);
+      if (jobsMissingPeriod.length > 0) {
+        try {
+          const periodResults = await Promise.all(
+            jobsMissingPeriod.map(async (j: any) => {
+              try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/jobs/${j.id}`, { headers: { 'Content-Type': 'application/json' } });
+                if (!res.ok) return null;
+                const jd = await res.json();
+                return { id: j.id, period: jd?.payRangeType || jd?.salaryRange?.period || '' };
+              } catch {
+                return null;
+              }
+            })
+          );
+          const override: Record<string, string> = {};
+          periodResults.forEach((r) => { if (r?.id && r?.period) override[r.id] = r.period; });
+          if (Object.keys(override).length) {
+            mappedJobs = mappedJobs.map((m: any) => ({
+              ...m,
+              salaryType: normalizePeriod(override[m.id] || m.salaryType),
+            }));
+          }
+        } catch {}
+      }
+
       setAllJobs(mappedJobs);
 
       // Apply current filter to the fetched jobs
@@ -606,7 +660,7 @@ export default function JobComponent() {
                         <div className="flex items-center space-x-4 text-xs text-gray-400">
                           <div className="flex items-center space-x-1">
                             <MapPin className="w-3 h-3" />
-                            <span title={job.location}>{getLastFourParts(job.location)}</span>
+                            <span title={getLastFourParts(job.location)}>{truncateText(getLastFourParts(job.location), 30)}</span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <Clock className="w-3 h-3" />
@@ -622,9 +676,9 @@ export default function JobComponent() {
                           <div className="text-2xl font-bold text-black">
                             {job.salary}
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {job.salaryType}
-                          </div>
+                          {job.salaryType && (
+                            <div className="text-sm font-normal text-gray-500">{job.salaryType}</div>
+                          )}
                         </div>
                       </div>
                       <Link href={`/jobs/details?id=${job.id}`}>
