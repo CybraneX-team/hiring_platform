@@ -242,39 +242,47 @@ export default function ApplicationDetailView() {
       const imgWidth = pageWidth;
       const imgHeight = (rect.height * imgWidth) / rect.width - 40; // Reduce height by 50mm
 
-      const bottomPadding = 15; // 15mm padding at bottom
-const topPadding = 10; // 10mm padding at top of new pages
-const effectivePageHeight = pageHeight - bottomPadding;
+      const bottomPadding = 20; // 20mm padding at bottom for footer
+      const topPadding = 10; // 10mm padding at top of new pages
+      const effectivePageHeight = pageHeight - bottomPadding;
 
+      // Prepare footer text
+      const currentDate = new Date();
+      const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}/${currentDate.getFullYear()}`;
+      const footerText = `Extracted from ProjectMATCH, COMPSCOPE Nonmetallics | www.compscope.in | Generated on: ${formattedDate}`;
 
       let heightLeft = imgHeight;
       let position = 0;
+      let pageNumber = 1;
 
+      // Add first page with image and footer
       pdf.addImage(dataUrl, "JPEG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      
+      // Add footer to first page
+      pdf.setFontSize(9);
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      const footerWidth = pdf.getTextWidth(footerText);
+      pdf.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10);
+      
+      heightLeft -= effectivePageHeight;
 
+      // Add remaining pages
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
+        pageNumber++;
+        
         pdf.addImage(dataUrl, "JPEG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        
+        // Add footer to each page
+        pdf.setFontSize(9);
+        pdf.setTextColor(100, 100, 100);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10);
+        
+        heightLeft -= effectivePageHeight;
       }
-
-      // Add footer only to the last page
-      const totalPages = pdf.getNumberOfPages();
-      const currentDate = new Date();
-      const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}/${currentDate.getFullYear()}`;
-      
-      // Set to last page only
-      pdf.setPage(totalPages);
-      
-      // Footer text
-      pdf.setFontSize(9);
-      pdf.setTextColor(100, 100, 100); // Gray color
-      pdf.setFont('helvetica', 'normal');
-      const footerText = `Extracted from ProjectMATCH, COMPSCOPE Nonmetallics | www.compscope.in | Generated on: ${formattedDate}`;
-      const footerWidth = pdf.getTextWidth(footerText);
-      pdf.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10);
 
       pdf.save(`${applicantDetail?.name?.replace(/\s+/g, "-") || "CV"}-CV.pdf`);
     } finally {
