@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.3.0",
     "@heroui/react": "^2.8.4",
     "@tabler/icons-react": "^3.35.0",
     "@types/axios": "^0.9.36",

@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 import { ArrowLeft, MapPin, Clock, CheckCircle, Download } from "lucide-react";
 import { WorkExperienceCard } from "./WorkExperienceCard";
 import { useRef, useState } from "react";
-import { toJpeg } from "html-to-image";
-import jsPDF from "jspdf";
+import { pdf } from "@react-pdf/renderer";
+import ResumePDF from "./pdf/ResumePDF";
 
 interface CompanyApplicantsProps {
   itemId: any;
@@ -26,77 +26,66 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
   const isAvailable = applicant?.openToRoles && applicant.openToRoles.length > 0;
 
   const handleDownload = async () => {
-    if (!contentRef.current || !applicant) return;
-
+    if (!applicant) return;
     setPreparingPdf(true);
-    
-    await new Promise((r) =>
-      requestAnimationFrame(() => requestAnimationFrame(r))
-    );
-
     try {
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
+      const now = new Date();
+      const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
 
-      const node = contentRef.current;
-      const rect = node.getBoundingClientRect();
-
-      const cvDataUrl = await toJpeg(node, {
-        quality: 0.95,
-        backgroundColor: "#ffffff",
-        cacheBust: true,
-        filter: (n: HTMLElement) => {
-          const hasAttr = typeof n.getAttribute === "function";
-          const ignore =
-            hasAttr &&
-            (n.getAttribute("data-html2canvas-ignore") === "true" ||
-              n.getAttribute("data-pdf-hide") === "true");
-          return !ignore;
-        },
+      // Normalize certifications
+      const certifications = (applicant?.certificates || []).map((cert: any) => {
+        if (typeof cert === 'string') return { name: cert };
+        return {
+          name: cert?.name || cert?.title,
+          issuer: cert?.issuer,
+          date: cert?.date,
+          description: cert?.description,
+        };
       });
 
-      const imgWidth = pageWidth;
-      const imgHeight = (rect.height * imgWidth) / rect.width;
+      // Normalize experiences
+      const experience_details = (applicant?.WorkExperience || []).map((exp: any) => ({
+        title: exp?.title,
+        company: exp?.company,
+        period: exp?.period || `${exp?.startDate || ''} - ${exp?.endDate || ''}`.trim().replace(/^-|-$/g, ''),
+        description: exp?.description,
+        points: Array.isArray(exp?.points) ? exp.points.map((p: any) => ({ point: p.point || p })) : undefined,
+      }));
 
-      // Footer setup (match cv.tsx)
-      const bottomPadding = 20; // space reserved for footer
-      const effectivePageHeight = pageHeight - bottomPadding;
-      const currentDate = new Date();
-      const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}/${String(
-        currentDate.getMonth() + 1
-      ).padStart(2, '0')}/${currentDate.getFullYear()}`;
-      const footerText = `Extracted from ProjectMATCH, COMPSCOPE Nonmetallics | www.compscope.in | Generated on: ${formattedDate}`;
+      const academics = (applicant?.education || []).map((edu: any) => ({
+        level: edu?.Degree,
+        institution: edu?.institure || edu?.institute,
+        completed: true,
+      }));
 
-      let heightLeft = imgHeight;
-      let position = 0;
+      const blob = await pdf(
+        <ResumePDF
+          data={{
+            name: applicant?.name || 'Unknown',
+            title: applicant?.WorkExperience?.[0]?.title || 'Professional',
+            location: applicant?.location,
+            imageUrl: applicant?.profile_image_url || applicant?.profilePicture || undefined,
+            available: Boolean(applicant?.openToRoles && applicant.openToRoles.length > 0),
+            experience: applicant?.yearsOfExp ? `${applicant.yearsOfExp}` : undefined,
+            skills: applicant?.skills || [],
+            certifications,
+            experience_details,
+            academics,
+            languages: applicant?.languages || [],
+            contact: { email: applicant?.user?.email, phone: applicant?.phoneNumber },
+          }}
+          generatedOn={formattedDate}
+        />
+      ).toBlob();
 
-      // First page
-      pdf.addImage(cvDataUrl, "JPEG", 0, position, imgWidth, imgHeight);
-      // Footer on first page
-      pdf.setFontSize(9);
-      pdf.setTextColor(100, 100, 100);
-      pdf.setFont('helvetica', 'normal');
-      const footerWidth = pdf.getTextWidth(footerText);
-      pdf.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10);
-      heightLeft -= effectivePageHeight;
-
-      // Remaining pages
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(cvDataUrl, "JPEG", 0, position, imgWidth, imgHeight);
-        // Footer on subsequent pages
-        pdf.setFontSize(9);
-        pdf.setTextColor(100, 100, 100);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10);
-        heightLeft -= effectivePageHeight;
-      }
-
-      pdf.save(
-        `${applicant.name?.replace(/\s+/g, "-") || "Profile"}-Details.pdf`
-      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${applicant.name?.replace(/\s+/g, "-") || "Profile"}-Details.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert("Error generating PDF. Please try again.");

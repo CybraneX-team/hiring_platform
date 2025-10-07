@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, MapPin, Clock, CheckCircle, Download, ExternalLink, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { toJpeg } from "html-to-image";
-import jsPDF from "jspdf";
+import { pdf } from "@react-pdf/renderer";
+import ResumePDF from "./pdf/ResumePDF";
 import { useUser } from "../context/UserContext";
 
 const CircularProgress = ({ percentage }: { percentage: number }) => {
@@ -210,81 +210,43 @@ export default function ApplicationDetailView() {
   };
 
   const handleDownload = async () => {
-    if (!contentRef.current) return;
+    // React-PDF export that mirrors Profile Tab styling via ResumePDF component
+    if (!applicantDetail) return;
 
     setPreparingPdf(true);
-    await new Promise((r) =>
-      requestAnimationFrame(() => requestAnimationFrame(r))
-    );
-
     try {
-      const node = contentRef.current;
-      const rect = node.getBoundingClientRect();
+      const now = new Date();
+      const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+      const blob = await pdf(
+        <ResumePDF
+          data={{
+            name: applicantDetail.name,
+            title: applicantDetail.title,
+            location: applicantDetail.location,
+            imageUrl: (profile as any)?.profile_image_url || undefined,
+            available: applicantDetail.available,
+            experience: applicantDetail.experience,
+            skills: applicantDetail.skills,
+            certifications: applicantDetail.certifications,
+            experience_details: applicantDetail.experience_details,
+            academics: applicantDetail.academics,
+            languages: applicantDetail.languages,
+            contact: applicantDetail.contact,
+          }}
+          generatedOn={formattedDate}
+        />
+      ).toBlob();
 
-      const dataUrl = await toJpeg(node, {
-        quality: 0.95,
-        backgroundColor: "#ffffff",
-        cacheBust: true,
-        filter: (n: HTMLElement) => {
-          const hasAttr = typeof n.getAttribute === "function";
-          const ignore =
-            hasAttr &&
-            (n.getAttribute("data-html2canvas-ignore") === "true" ||
-              n.getAttribute("data-pdf-hide") === "true");
-          return !ignore;
-        },
-      });
-
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-
-      const imgWidth = pageWidth;
-      const imgHeight = (rect.height * imgWidth) / rect.width - 40; // Reduce height by 50mm
-
-      const bottomPadding = 20; // 20mm padding at bottom for footer
-      const topPadding = 10; // 10mm padding at top of new pages
-      const effectivePageHeight = pageHeight - bottomPadding;
-
-      // Prepare footer text
-      const currentDate = new Date();
-      const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}/${currentDate.getFullYear()}`;
-      const footerText = `Extracted from ProjectMATCH, COMPSCOPE Nonmetallics | www.compscope.in | Generated on: ${formattedDate}`;
-
-      let heightLeft = imgHeight;
-      let position = 0;
-      let pageNumber = 1;
-
-      // Add first page with image and footer
-      pdf.addImage(dataUrl, "JPEG", 0, position, imgWidth, imgHeight);
-      
-      // Add footer to first page
-      pdf.setFontSize(9);
-      pdf.setTextColor(100, 100, 100);
-      pdf.setFont('helvetica', 'normal');
-      const footerWidth = pdf.getTextWidth(footerText);
-      pdf.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10);
-      
-      heightLeft -= effectivePageHeight;
-
-      // Add remaining pages
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pageNumber++;
-        
-        pdf.addImage(dataUrl, "JPEG", 0, position, imgWidth, imgHeight);
-        
-        // Add footer to each page
-        pdf.setFontSize(9);
-        pdf.setTextColor(100, 100, 100);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10);
-        
-        heightLeft -= effectivePageHeight;
-      }
-
-      pdf.save(`${applicantDetail?.name?.replace(/\s+/g, "-") || "CV"}-CV.pdf`);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${applicantDetail?.name?.replace(/\s+/g, "-") || "CV"}-CV.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (_) {
+      alert("Error generating PDF. Please try again.");
     } finally {
       setPreparingPdf(false);
     }
