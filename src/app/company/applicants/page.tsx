@@ -11,8 +11,8 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState, useEffect, Suspense } from "react";
-import { toJpeg } from "html-to-image";
-import jsPDF from "jspdf";
+import { pdf } from "@react-pdf/renderer";
+import ResumePDF from "@/app/components/pdf/ResumePDF";
 import { useUser } from "@/app/context/UserContext";
 import Image from "next/image";
 
@@ -204,111 +204,117 @@ function ApplicationDetailContent() {
   };
 
   const handleDownload = async () => {
-    if (!contentRef.current || !applicant) return;
-
+    if (!applicant) return;
     setPreparingPdf(true);
-    
-    // Wait for state to update and render
-    await new Promise((r) =>
-      requestAnimationFrame(() => requestAnimationFrame(r))
-    );
-
-    // Wait for images to load
-    if (profile?.companyLogo) {
-      await new Promise<void>((resolve) => {
-        const images = contentRef.current?.querySelectorAll('img');
-        if (!images || images.length === 0) {
-          resolve();
-          return;
-        }
-
-        let loadedCount = 0;
-        const totalImages = images.length;
-
-        images.forEach((img) => {
-          if (img.complete) {
-            loadedCount++;
-            if (loadedCount === totalImages) resolve();
-          } else {
-            img.onload = () => {
-              loadedCount++;
-              if (loadedCount === totalImages) resolve();
-            };
-            img.onerror = () => {
-              loadedCount++;
-              if (loadedCount === totalImages) resolve();
-            };
-          }
-        });
-
-        // Fallback timeout
-        setTimeout(resolve, 3000);
-      });
-    }
-
     try {
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
+      const now = new Date();
+      const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
 
-      const node = contentRef.current;
-      const rect = node.getBoundingClientRect();
-
-      const cvDataUrl = await toJpeg(node, {
-        quality: 0.95,
-        backgroundColor: "#ffffff",
-        cacheBust: true,
-        filter: (n: HTMLElement) => {
-          const hasAttr = typeof n.getAttribute === "function";
-          const ignore =
-            hasAttr &&
-            (n.getAttribute("data-html2canvas-ignore") === "true" ||
-              n.getAttribute("data-pdf-hide") === "true");
-          return !ignore;
-        },
-      });
-
-      const imgWidth = pageWidth;
-      const imgHeight = (rect.height * imgWidth) / rect.width;
-
-      // Footer setup (match cv.tsx)
-      const bottomPadding = 20; // space reserved for footer
-      const effectivePageHeight = pageHeight - bottomPadding;
-      const currentDate = new Date();
-      const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}/${String(
-        currentDate.getMonth() + 1
-      ).padStart(2, '0')}/${currentDate.getFullYear()}`;
-      const footerText = `Extracted from ProjectMATCH, COMPSCOPE Nonmetallics | www.compscope.in | Generated on: ${formattedDate}`;
-
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      // First page
-      pdf.addImage(cvDataUrl, "JPEG", 0, position, imgWidth, imgHeight);
-      // Footer on first page
-      pdf.setFontSize(9);
-      pdf.setTextColor(100, 100, 100);
-      pdf.setFont('helvetica', 'normal');
-      const footerWidth = pdf.getTextWidth(footerText);
-      pdf.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10);
-      heightLeft -= effectivePageHeight;
-
-      // Remaining pages
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(cvDataUrl, "JPEG", 0, position, imgWidth, imgHeight);
-        // Footer on subsequent pages
-        pdf.setFontSize(9);
-        pdf.setTextColor(100, 100, 100);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10);
-        heightLeft -= effectivePageHeight;
+      // Prefer localStorage values like cv.tsx/profile tab/UserContext
+      let lsProfile: any = null;
+      let lsUser: any = null;
+      if (typeof window !== 'undefined') {
+        try {
+          const storedProfile = localStorage.getItem('profile');
+          const storedUser = localStorage.getItem('user');
+          if (storedProfile) lsProfile = JSON.parse(storedProfile);
+          if (storedUser) lsUser = JSON.parse(storedUser);
+        } catch (_) {}
       }
 
-      pdf.save(
-        `${applicant.name.replace(/\s+/g, "-")}-Consolidated-Profile.pdf`
-      );
+      // Normalize data source to match cv.tsx structure
+      const p: any = lsProfile || applicant?.profile || applicant;
+
+      // Certifications
+      const certifications = Array.isArray(p?.certificates)
+        ? p.certificates.map((c: any) => ({
+            name: c?.name,
+            issuer: c?.issuer,
+            date: c?.date,
+            description: c?.description,
+          }))
+        : Array.isArray(applicant?.certifications)
+        ? applicant.certifications.map((c: any) => ({
+            name: c?.name || c?.title,
+            issuer: c?.issuer,
+            date: c?.date,
+            description: c?.description,
+          }))
+        : [];
+
+      // Experience details
+      const experience_details = Array.isArray(p?.WorkExperience)
+        ? p.WorkExperience.map((exp: any) => ({
+            title: exp?.title,
+            company: exp?.company,
+            period:
+              exp?.period || `${exp?.startDate || ''} - ${exp?.endDate || ''}`.trim().replace(/^-|-$/g, ''),
+            description: exp?.description,
+            points: Array.isArray(exp?.points)
+              ? exp.points.map((pt: any) => ({ point: pt?.point || pt }))
+              : undefined,
+          }))
+        : Array.isArray(applicant?.experience_details)
+        ? applicant.experience_details.map((e: any) => ({
+            title: e?.title,
+            company: e?.company,
+            period: e?.period,
+            description: Array.isArray(e?.description) ? undefined : e?.description,
+            points: Array.isArray(e?.description) ? e.description.map((d: string) => ({ point: d })) : undefined,
+          }))
+        : [];
+
+      // Academics/Education
+      const academics = Array.isArray(p?.education)
+        ? p.education.map((edu: any) => ({
+            level: edu?.Degree,
+            institution: edu?.institure || edu?.institute,
+            completed: true,
+          }))
+        : Array.isArray(applicant?.academics)
+        ? applicant.academics.map((a: any) => ({ level: a?.level, institution: a?.institution, completed: true }))
+        : [];
+
+      const skills = Array.isArray(p?.skills) ? p.skills : applicant?.skills || [];
+      const languages = Array.isArray(p?.languages) ? p.languages : applicant?.languages || [];
+
+      const name = p?.name || applicant?.name || lsUser?.name || 'Unknown';
+      const title = p?.openToRoles?.[0] || p?.WorkExperience?.[0]?.title || applicant?.title || 'Professional';
+      const location = p?.location || p?.locationData?.address || applicant?.location || '';
+      const imageUrl = p?.profile_image_url || applicant?.profile_image_url || applicant?.profilePicture || undefined;
+      const available = typeof applicant?.available === 'boolean' ? applicant.available : Boolean(p?.openToRoles && p.openToRoles.length > 0);
+      const experience = p?.yearsOfExp || (Array.isArray(p?.WorkExperience) && p.WorkExperience.length ? `${p.WorkExperience.length} Roles` : applicant?.experience);
+      const email = lsUser?.email || applicant?.user?.email || p?.user?.email || undefined;
+      const phone = p?.phoneNumber || applicant?.phoneNumber || undefined;
+
+      const blob = await pdf(
+        <ResumePDF
+          data={{
+            name,
+            title,
+            location,
+            imageUrl,
+            available,
+            experience,
+            skills,
+            certifications,
+            experience_details,
+            academics,
+            languages,
+            contact: { email, phone },
+          }}
+          generatedOn={formattedDate}
+        />
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${applicant.name.replace(/\s+/g, "-")}-Consolidated-Profile.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error("[v0] Error generating consolidated PDF:", error);
       alert("Error generating PDF. Please try again.");
