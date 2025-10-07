@@ -59,17 +59,39 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
       const imgWidth = pageWidth;
       const imgHeight = (rect.height * imgWidth) / rect.width;
 
+      // Footer setup (match cv.tsx)
+      const bottomPadding = 20; // space reserved for footer
+      const effectivePageHeight = pageHeight - bottomPadding;
+      const currentDate = new Date();
+      const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}/${String(
+        currentDate.getMonth() + 1
+      ).padStart(2, '0')}/${currentDate.getFullYear()}`;
+      const footerText = `Extracted from ProjectMATCH, COMPSCOPE Nonmetallics | www.compscope.in | Generated on: ${formattedDate}`;
+
       let heightLeft = imgHeight;
       let position = 0;
 
+      // First page
       pdf.addImage(cvDataUrl, "JPEG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      // Footer on first page
+      pdf.setFontSize(9);
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      const footerWidth = pdf.getTextWidth(footerText);
+      pdf.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10);
+      heightLeft -= effectivePageHeight;
 
+      // Remaining pages
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(cvDataUrl, "JPEG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        // Footer on subsequent pages
+        pdf.setFontSize(9);
+        pdf.setTextColor(100, 100, 100);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10);
+        heightLeft -= effectivePageHeight;
       }
 
       pdf.save(
