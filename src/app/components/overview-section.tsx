@@ -162,7 +162,7 @@ export default function OverviewSection() {
               },
               { 
                 image: "/flaticon_assets/hydrogen.png", 
-                label: "Green Energy", 
+                label: "Green Hydrogen", 
                 color: "bg-green-50 border-green-200" 
               },
             ].map((item, index) => (
@@ -174,7 +174,7 @@ export default function OverviewSection() {
                 transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.1 }}
                 className="group"
               >
-                <div className={`${item.color} rounded-2xl p-8 md:p-10 border-2 hover:shadow-lg transition-all duration-300`}>
+                <div className={`${item.color} rounded-2xl p-8 md:p-8 border-2 hover:shadow-lg transition-all duration-300`}>
                   <div className="text-center">
                     <div className="bg-white rounded-full w-20 h-20 md:w-28 md:h-28 flex items-center justify-center mx-auto mb-6 transition-transform duration-300">
                       <Image
@@ -185,7 +185,7 @@ export default function OverviewSection() {
                         className="w-12 h-12 md:w-20 md:h-20 object-contain"
                       />
                     </div>
-                    <h3 className="font-semibold text-[#163A33] text-lg md:text-xl">{item.label}</h3>
+                    <h3 className="font-semibold text-[#163A33] text-lg md:text-lg">{item.label}</h3>
                   </div>
                 </div>
               </motion.div>

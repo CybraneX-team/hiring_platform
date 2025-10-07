@@ -22,21 +22,21 @@ export default function Home() {
   const [ready, setReady] = useState(false);
   const { user } = useUser();
 
-  useEffect(() => {
-    let token = localStorage.getItem("token");
-    if (token) {
-      if (user && user.signedUpAs == "Company") {
-        router.push("/company/profile");
-      } else {
-        router.push("/jobs");
-      }
-      return;
-    }
+  // useEffect(() => {
+  //   let token = localStorage.getItem("token");
+  //   if (token) {
+  //     if (user && user.signedUpAs == "Company") {
+  //       router.push("/company/profile");
+  //     } else {
+  //       router.push("/jobs");
+  //     }
+  //     return;
+  //   }
 
-    setReady(true);
-  }, [user, router]);
+  //   setReady(true);
+  // }, [user, router]);
 
-  if (!ready) return <Loader className="animate-spin m-auto mt-20" />;
+  // if (!ready) return <Loader className="animate-spin m-auto mt-20" />;
 
   return (
     <div className="min-h-screen bg-white ">

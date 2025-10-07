@@ -230,9 +230,9 @@ export default function CookiePolicy() {
                   If you have any questions about our use of cookies or this Cookie Policy, please contact us at:
                 </p>
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <p><strong>Email:</strong> privacy@projectmatch.com</p>
-                  <p><strong>Address:</strong> Compscope Technology Solutions</p>
-                  <p>123 Energy Plaza, Houston, TX 77001</p>
+                  <p><strong>Phone:</strong> +91 7318546574</p>
+                  <p><strong>Email:</strong> Support@compscope.in</p>
+                  <p><strong>Address:</strong> KHA NO. 310, PLOT NO. - 60, GANESHPUR, RAHMANPUR CHINHAT, LUCKNOW, 226028</p>
                 </div>
               </div>
             </section>

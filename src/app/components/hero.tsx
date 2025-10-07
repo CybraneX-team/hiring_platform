@@ -9,8 +9,14 @@ import Link from "next/link";
 import Header from "./header";
 import Image from "next/image";
 import { motion } from "motion/react";
+import { useUser } from "../context/UserContext";
 
 export default function HeroSection() {
+  const { user } = useUser();
+  const profileHref =
+    (user?.signedUpAs || "")?.toLowerCase() === "company"
+      ? "/company/profile"
+      : "/profile";
   return (
     <>
       <div className="absolute inset-0">
@@ -76,16 +82,26 @@ export default function HeroSection() {
               transition={{ duration: 0.6, ease: "easeOut", delay: 0.22 }}
               className="flex gap-3 flex-wrap"
             >
-              <Link href="/company/signup">
-                <button className="cursor-pointer bg-[#3EA442] hover:bg-[#6ef07a] text-white rounded-md font-semibold px-6 md:px-8 py-2.5 text-xs md:text-sm transition-colors">
-                  Hire an Engineer
-                </button>
-              </Link>
-              <Link href="/signup">
-                <button className="cursor-pointer bg-white/10 hover:bg-white/20 text-white rounded-md px-6 md:px-8 py-2.5 text-xs md:text-sm font-semibold backdrop-blur-sm ring-1 ring-white/20">
-                  Find a Job
-                </button>
-              </Link>
+              {user ? (
+                <Link href={profileHref}>
+                  <button className="cursor-pointer bg-[#3EA442] hover:bg-[#6ef07a] text-white rounded-md font-semibold px-6 md:px-8 py-2.5 text-xs md:text-sm transition-colors">
+                    Go to Profile
+                  </button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/company/signup">
+                    <button className="cursor-pointer bg-[#3EA442] hover:bg-[#6ef07a] text-white rounded-md font-semibold px-6 md:px-8 py-2.5 text-xs md:text-sm transition-colors">
+                      Hire an Engineer
+                    </button>
+                  </Link>
+                  <Link href="/signup">
+                    <button className="cursor-pointer bg-white/10 hover:bg-white/20 text-white rounded-md px-6 md:px-8 py-2.5 text-xs md:text-sm font-semibold backdrop-blur-sm ring-1 ring-white/20">
+                      Find a Job
+                    </button>
+                  </Link>
+                </>
+              )}
             </motion.div>
           </div>
         </div>
