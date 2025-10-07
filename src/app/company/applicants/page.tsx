@@ -569,19 +569,28 @@ function ApplicationDetailContent() {
             )}
           </div>
           
-          {/* Bullet Points */}
-          {exp.description && exp.description.length > 0 && (
-            <div className="mt-3">
-              <ul className="space-y-2">
-                {exp.description.map((desc: string, descIndex: number) => (
-                  <li key={descIndex} className="flex items-start">
-                    <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    <p className="text-black text-sm leading-relaxed">{desc}</p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {/* Bullet Points (prefer points from DB; fallback to description) */}
+          {(() => {
+            const points: string[] = Array.isArray(exp?.points) && exp.points.length
+              ? exp.points.map((p: any) => (typeof p === 'string' ? p : p?.point)).filter(Boolean)
+              : Array.isArray(exp?.description)
+                ? exp.description
+                : exp?.description
+                  ? [exp.description]
+                  : [];
+            return points.length > 0 ? (
+              <div className="mt-3">
+                <ul className="space-y-2">
+                  {points.map((pt: string, idx: number) => (
+                    <li key={idx} className="flex items-start">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                      <p className="text-black text-sm leading-relaxed">{pt}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null;
+          })()}
         </div>
       ))
     ) : (
