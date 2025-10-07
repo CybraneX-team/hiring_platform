@@ -274,7 +274,7 @@ export default function ApplicationDetailView() {
         {/* Header */}
         <div className="mb-10 flex items-center justify-between">
           {/* Resume Link */}
-          <div className="flex items-center gap-3">
+          {/* <div className="flex items-center gap-3">
             {applicantDetail.resumeUrl && (
               <a
                 href={applicantDetail.resumeUrl}
@@ -287,7 +287,7 @@ export default function ApplicationDetailView() {
                 <ExternalLink className="w-3 h-3" />
               </a>
             )}
-          </div>
+          </div> */}
 
           <div className="flex items-center gap-3" data-html2canvas-ignore="true">
             <motion.button

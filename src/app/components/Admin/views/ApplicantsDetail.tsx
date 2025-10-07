@@ -218,12 +218,7 @@ export default function ApplicantDetailsView({
           </div>
         </div>
       )}
-      <div className="">
-      <Companyapplicants
-        itemId={selectedApplicant.id}
-        onBack={() => {/* implement back navigation here */}}
-      />
-      </div>
+      
     
       {/* Schedule Modal - placed at component root to match calendar modal styling */}
       {showScheduleModal && (
