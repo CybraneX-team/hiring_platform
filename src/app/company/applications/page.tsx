@@ -128,6 +128,7 @@ function ApplicationsListContent() {
 
     // Generate avatar from name
     const generateAvatar = (name: string) => {
+      if (!name || name === "Unknown Applicant") return "NA";
       const names = name.split(" ");
       if (names.length >= 2) {
         return `${names[0][0]}${names[1][0]}`.toUpperCase();
@@ -144,19 +145,27 @@ function ApplicationsListContent() {
       return `${years} Year${years !== 1 ? "s" : ""}`;
     };
 
+    // FIX: Check both applicant.name and profile.name
+    const applicantName =
+      applicant?.name || profile?.name || "Unknown Applicant";
+
     return {
-      id: applicant._id || applicant.id,
-      name: application.profile.name || "Unknown Applicant",
+      // FIX: Use applicant._id if available, otherwise application._id
+      id: applicant?._id || applicant?.id || application._id || "",
+      name: applicantName,
       title:
         profile.openToRoles?.[0] ||
         profile.WorkExperience?.[0]?.title ||
         "Professional",
-      avatar: generateAvatar(application.profile.name || "NA"),
+      avatar: generateAvatar(applicantName),
       available:
         application.status === "pending" || application.status === "reviewing",
       location: profile.location || "Location not specified",
-      experience: getExperienceText(profile.yearsOfExp),
-      skills: profile.skills || ["No skills listed"],
+      experience: getExperienceText(profile.yearsOfExp || 0),
+      skills:
+        profile.skills && profile.skills.length > 0
+          ? profile.skills
+          : ["No skills listed"],
       certifications: profile.certificates?.map((cert: any) => cert.name) || [
         "No certifications",
       ],
@@ -249,7 +258,6 @@ function ApplicationsListContent() {
       }
 
       const data = await response.json();
-
       if (data.success) {
         setJobInfo(data.data.job);
 
@@ -408,7 +416,7 @@ function ApplicationsListContent() {
                         {/* Name and Title */}
                         <div className="mb-5 w-full">
                           <h3 className="text-lg font-semibold text-gray-900 mb-1 max-w-[200px]">
-                            {applicant.name}
+                            {applicant.name || "No name found"}
                           </h3>
                           <p className="text-gray-600 text-sm">
                             {applicant.title}
@@ -520,7 +528,8 @@ function ApplicationsListContent() {
                                     setRatingModal({
                                       isOpen: true,
                                       applicationId: applicant.applicationId,
-                                      applicantName: applicant.name,
+                                      applicantName:
+                                        applicant.name || "No name found",
                                       jobTitle: jobInfo?.title || "Position",
                                     })
                                   }
@@ -587,7 +596,9 @@ function ApplicationsListContent() {
           <RatingModal
             isOpen={ratingModal.isOpen}
             onClose={() => setRatingModal(null)}
-            onSubmit={(rating) => submitRating(ratingModal.applicationId, rating)}
+            onSubmit={(rating) =>
+              submitRating(ratingModal.applicationId, rating)
+            }
             applicantName={ratingModal.applicantName}
             jobTitle={ratingModal.jobTitle}
             isSubmitting={ratingSubmitting}
