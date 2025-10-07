@@ -1,6 +1,9 @@
 "use client";
 
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
+import { useUser } from '../context/UserContext';
+import { useEffect } from 'react';
 
 // Disable SSR for the ProfileTab component
 const ProfileTab = dynamic(() => import('../components/profile-tab'), {
@@ -16,5 +19,15 @@ const ProfileTab = dynamic(() => import('../components/profile-tab'), {
 });
 
 export default function ProfilePage() {
+  const router = useRouter();
+  const { user } = useUser();
+
+  useEffect(() => {
+    // Check if user is signed up as company and redirect
+    if (user && user.signedUpAs === 'company') {
+      router.push('/company/profile');
+    }
+  }, [user, router]);
+
   return <ProfileTab />;
 }

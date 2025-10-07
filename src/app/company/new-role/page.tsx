@@ -9,6 +9,7 @@ import { useUser } from "@/app/context/UserContext";
 import { toast } from "react-toastify";
 import Link from "next/link";
 import Image from "next/image";
+import { JobPreviewModal } from "@/app/components/Job-Preview";
 
 // Ola Maps types
 interface OlaMapsPlace {
@@ -75,141 +76,113 @@ const OlaMapComponent = ({
   const [isSearching, setIsSearching] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>("");
 
-  useEffect(() => {
-    const loadMap = async () => {
-      await initializeOlaMaps();
+useEffect(() => {
+  const loadMap = async () => {
+    await initializeOlaMaps();
 
-      if (mapRef.current && olaMaps && !mapInstanceRef.current) {
-        try {
-          let mapCenter = { lat: 12.9716, lng: 77.5946 };
+    if (mapRef.current && olaMaps && !mapInstanceRef.current) {
+      try {
+        let mapCenter = { lat: 12.9716, lng: 77.5946 };
 
-          if (location) {
-            // Check if location has valid coordinates
-            if (
-              typeof location.lat === "number" &&
-              typeof location.lng === "number" &&
-              !isNaN(location.lat) &&
-              !isNaN(location.lng) &&
-              isFinite(location.lat) &&
-              isFinite(location.lng)
-            ) {
-              mapCenter = { lat: location.lat, lng: location.lng };
-            } else {
-              console.warn("Invalid location coordinates provided:", location);
-              setDebugInfo(
-                "Invalid location coordinates, using default location"
-              );
-            }
+        // Check if location has valid coordinates
+        if (location) {
+          if (
+            typeof location.lat === "number" &&
+            typeof location.lng === "number" &&
+            !isNaN(location.lat) &&
+            !isNaN(location.lng) &&
+            isFinite(location.lat) &&
+            isFinite(location.lng)
+          ) {
+            mapCenter = { lat: location.lat, lng: location.lng };
+          } else {
+            console.warn("Invalid location coordinates provided:", location);
+            setDebugInfo("Invalid location coordinates, using default location");
           }
-
-          // Use 2D-only style to avoid 3D layer errors
-          try {
-            // Try default light style first
-            mapInstanceRef.current = olaMaps.init({
-              style:
-                "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
-              container: mapRef.current,
-              center: [mapCenter.lng, mapCenter.lat],
-              zoom: 12,
-              pitch: 0,
-              bearing: 0,
-              maxPitch: 0, // Force 2D mode
-            });
-          } catch (styleError) {
-            console.warn(
-              "Failed to load default style, trying satellite style:",
-              styleError
-            );
-            try {
-              // Try satellite style as fallback
-              mapInstanceRef.current = olaMaps.init({
-                style:
-                  "https://api.olamaps.io/tiles/vector/v1/styles/satellite/style.json",
-                container: mapRef.current,
-                center: [mapCenter.lng, mapCenter.lat],
-                zoom: 12,
-                pitch: 0,
-                bearing: 0,
-                maxPitch: 0,
-              });
-            } catch (satelliteError) {
-              console.warn(
-                "Failed to load satellite style, using minimal config:",
-                satelliteError
-              );
-              // Final fallback with minimal configuration
-              mapInstanceRef.current = olaMaps.init({
-                container: mapRef.current,
-                center: [mapCenter.lng, mapCenter.lat],
-                zoom: 12,
-                pitch: 0,
-                bearing: 0,
-                maxPitch: 0,
-              });
-            }
-          }
-
-          mapInstanceRef.current.on("load", () => {
-            setIsMapLoaded(true);
-            setDebugInfo("");
-
-            // Add marker if valid location exists
-            if (
-              location &&
-              typeof location.lat === "number" &&
-              typeof location.lng === "number" &&
-              !isNaN(location.lat) &&
-              !isNaN(location.lng)
-            ) {
-              addMarker(
-                location.lat,
-                location.lng,
-                location.address || "Selected Location"
-              );
-            }
-          });
-
-          // Add click event listener
-          mapInstanceRef.current.on("click", (e: any) => {
-            const { lat, lng } = e.lngLat;
-            reverseGeocode(lat, lng);
-          });
-
-          // Add error handling with 3D model error filtering
-          mapInstanceRef.current.on("error", (e: any) => {
-            // Suppress 3D model layer errors as they're expected when using 2D mode
-            if (
-              e.error &&
-              e.error.message &&
-              (e.error.message.includes("3d_model") ||
-                (e.error.message.includes("Source layer") &&
-                  e.error.message.includes("does not exist")))
-            ) {
-              console.warn(
-                "Suppressing 3D model layer error (expected in 2D mode):",
-                e.error.message
-              );
-              return;
-            }
-            console.error("Map error:", e);
-            setDebugInfo("Map loading error");
-          });
-        } catch (error) {
-          console.error("Error initializing map:", error);
-          setDebugInfo("Failed to initialize map");
         }
-      }
-    };
 
-    loadMap();
+        // Use 2D-only style to avoid 3D layer errors
+        try {
+          // Try default light style first
+          mapInstanceRef.current = olaMaps.init({
+            style: "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
+            container: mapRef.current,
+            center: [mapCenter.lng, mapCenter.lat],
+            zoom: 12,
+            pitch: 0,
+            bearing: 0,
+            maxPitch: 0, // Force 2D mode
+          });
+        } catch (styleError) {
+          console.warn("Failed to load default style, trying basic config:", styleError);
+          // Fallback with minimal configuration
+          mapInstanceRef.current = olaMaps.init({
+            container: mapRef.current,
+            center: [mapCenter.lng, mapCenter.lat],
+            zoom: 12,
+            pitch: 0,
+            bearing: 0,
+            maxPitch: 0,
+          });
+        }
 
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
+        mapInstanceRef.current.on("load", () => {
+          console.log("Map loaded successfully");
+          setIsMapLoaded(true);
+          setDebugInfo("");
+
+          // Add marker if valid location exists
+          if (
+            location &&
+            typeof location.lat === "number" &&
+            typeof location.lng === "number" &&
+            !isNaN(location.lat) &&
+            !isNaN(location.lng)
+          ) {
+            addMarker(location.lat, location.lng, location.address || "Selected Location");
+          }
+        });
+
+        // Add click event listener
+        mapInstanceRef.current.on("click", (e: any) => {
+          const { lat, lng } = e.lngLat;
+          reverseGeocode(lat, lng);
+        });
+
+        // Add error handling with 3D model error filtering
+        mapInstanceRef.current.on("error", (e: any) => {
+          // Suppress 3D model layer errors as they're expected when using 2D mode
+          if (
+            e.error &&
+            e.error.message &&
+            (e.error.message.includes("3dmodel") ||
+              e.error.message.includes("Source layer") ||
+              e.error.message.includes("does not exist"))
+          ) {
+            console.warn("Suppressing 3D model layer error (expected in 2D mode):", e.error.message);
+            return;
+          }
+          console.error("Map error:", e);
+          setDebugInfo("Map loading error");
+        });
+      } catch (error) {
+        console.error("Error initializing map:", error);
+        setDebugInfo("Failed to initialize map: " + (error as Error).message);
       }
-    };
-  }, []);
+    }
+  };
+
+  loadMap();
+
+  // Cleanup
+  return () => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
+    }
+  };
+}, []); // Empty dependency array - only run once on mount
+
 
   // Handle location updates separately
   useEffect(() => {
@@ -249,14 +222,12 @@ const OlaMapComponent = ({
   const geocodeAddress = async (address: string) => {
     if (!address.trim()) return;
 
-
     try {
       const response = await fetch(
         `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(
           address
         )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
       );
-
 
       if (response.ok) {
         const data = await response.json();
@@ -265,7 +236,6 @@ const OlaMapComponent = ({
           const result = data.geocodingResults[0];
           const { lat, lng } = result.geometry.location;
           const formattedAddress = result.formatted_address || address;
-
 
           // Update map center and add marker
           if (mapInstanceRef.current) {
@@ -403,7 +373,6 @@ const OlaMapComponent = ({
   };
 
   const reverseGeocode = async (lat: number, lng: number) => {
-
     try {
       const response = await fetch(
         `https://api.olamaps.io/places/v1/reverse-geocode?latlng=${lat},${lng}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
@@ -601,9 +570,10 @@ const LocationInputWithSearch = ({
         const data = await response.json();
         console.log("Ola Maps API response:", data);
         // Handle different response structures from Ola Maps API
-        const predictions = data.predictions || data.suggestions || data.results || [];
+        const predictions =
+          data.predictions || data.suggestions || data.results || [];
         console.log("Processed predictions:", predictions);
-        
+
         if (predictions.length > 0) {
           setSuggestions(predictions);
           setShowSuggestions(true);
@@ -626,12 +596,16 @@ const LocationInputWithSearch = ({
   const handleSuggestionClick = (suggestion: any) => {
     setShowSuggestions(false);
     setSelectedIndex(-1);
-    
+
     // Handle different response structures
-    const address = suggestion.formatted_address || suggestion.description || suggestion.place_name || suggestion.name;
+    const address =
+      suggestion.formatted_address ||
+      suggestion.description ||
+      suggestion.place_name ||
+      suggestion.name;
     const lat = suggestion.geometry?.location?.lat || suggestion.lat;
     const lng = suggestion.geometry?.location?.lng || suggestion.lng;
-    
+
     onChange(address);
     onLocationSelect({
       lat: lat,
@@ -690,7 +664,6 @@ const LocationInputWithSearch = ({
       setShowSuggestions(false);
     }
   }, [selectedLocation, onChange]);
-
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -756,10 +729,16 @@ const LocationInputWithSearch = ({
                 onMouseEnter={() => setSelectedIndex(index)}
               >
                 <div className="font-medium text-gray-900">
-                  {(suggestion as any).name || (suggestion as any).description || (suggestion as any).place_name || "Location"}
+                  {(suggestion as any).name ||
+                    (suggestion as any).description ||
+                    (suggestion as any).place_name ||
+                    "Location"}
                 </div>
                 <div className="text-gray-500 text-xs">
-                  {(suggestion as any).formatted_address || (suggestion as any).description || (suggestion as any).place_name || "Address not available"}
+                  {(suggestion as any).formatted_address ||
+                    (suggestion as any).description ||
+                    (suggestion as any).place_name ||
+                    "Address not available"}
                 </div>
               </div>
             ))}
@@ -776,7 +755,15 @@ const LocationInputWithSearch = ({
   );
 };
 
-export default function PostRole() {
+export default function PostRole({
+  initialData = null,
+  isEditMode = false,
+  jobId = null,
+}: {
+  initialData?: any;
+  isEditMode?: boolean;
+  jobId?: string | null;
+} = {}) {
   const [activePayRange, setActivePayRange] = useState("Daily");
   const [companyPerksInput, setCompanyPerksInput] = useState("");
   const [companyPerks, setCompanyPerks] = useState<string[]>([]);
@@ -799,7 +786,7 @@ export default function PostRole() {
   const [workEndDate, setWorkEndDate] = useState("");
 
   const [workLocation, setWorkLocation] = useState("");
-  const [jobType, setJobType] = useState("Short Term"); 
+  const [jobType, setJobType] = useState("Short Term");
 
   const [locationSearchQuery, setLocationSearchQuery] = useState("");
   const [locationSuggestions, setLocationSuggestions] = useState<
@@ -833,6 +820,10 @@ export default function PostRole() {
   >("MCQ");
   const [currentOption, setCurrentOption] = useState("");
   const [currentOptions, setCurrentOptions] = useState<string[]>([]);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [experienceLevel, setExperienceLevel] = useState<any>("");
+  const [previewJobData, setPreviewJobData] = useState<any>(null);
+
   const [educationQualificationInput, setEducationQualificationInput] =
     useState("");
   const [educationQualifications, setEducationQualifications] = useState<
@@ -1047,7 +1038,8 @@ export default function PostRole() {
     const endDate = new Date(workEndDate);
     const todayDate = new Date(today);
 
-    if (startDate < todayDate) {
+    // Only validate past dates for NEW jobs, not when editing
+    if (!isEditMode && startDate < todayDate) {
       toast.error("Work start date cannot be in the past");
       return false;
     }
@@ -1059,19 +1051,59 @@ export default function PostRole() {
 
     return true;
   };
+
   const router = useRouter();
   const { user } = useUser();
+  useEffect(() => {
+    if (isEditMode && initialData) {
+      console.log("Initializing edit mode with data:", initialData);
+
+      // Populate all form fields with initial data
+      setjobTittle(initialData.title || "");
+      setAboutJob(initialData.description || "");
+      setExperienceLevel(initialData.experienceLevel || "Entry");
+      setExperience(initialData.experience || "");
+      setCompanyPerks(initialData.benefits || []);
+      setRequiredSkillset(initialData.skillsInJobPost || []);
+      setMandatoryCertificates(initialData.mandatoryCertificates || []);
+      setEducationQualifications(initialData.educationQualifications || []);
+      setResponsibilities(initialData.responsibilities || []);
+      setnoOfOpenings(initialData.noOfOpenings || 0);
+      setJobType(initialData.jobType || "Short Term");
+      setWorkLocation(initialData.location || "");
+      setLocationSearchQuery(initialData.location || "");
+      setCustomQuestions(initialData.customQuestions || []);
+      setFatAdded(initialData.fatIncluded || false);
+
+      // Set pay range
+      if (initialData.salaryRange) {
+        const { min, max, currency } = initialData.salaryRange;
+        const formattedRange = `${currency}${min.toLocaleString()}-${max.toLocaleString()}`;
+        setPayRange(formattedRange);
+      }
+
+      setActivePayRange(initialData.payRangeType || "Daily");
+
+      // Set work dates
+      if (initialData.workSchedule) {
+        if (initialData.workSchedule.startDate) {
+          const startDate = new Date(initialData.workSchedule.startDate);
+          setWorkStartDate(startDate.toISOString().split("T")[0]);
+        }
+        if (initialData.workSchedule.endDate) {
+          const endDate = new Date(initialData.workSchedule.endDate);
+          setWorkEndDate(endDate.toISOString().split("T")[0]);
+        }
+      }
+    }
+  }, [isEditMode, initialData]);
 
   const handleSubmit = async () => {
     if (!jobTittle.trim()) {
       toast.error("Job title is required");
       return;
     }
-    if (!experience.trim()) {
-      toast.error("Experience is required");
-      return;
-    }
-    if (!validateWorkDates()) {
+    if (!validateWorkDates() && !isEditMode) {
       return;
     }
     if (noOfOpenings <= 0) {
@@ -1082,6 +1114,48 @@ export default function PostRole() {
       toast.error("Please select a work location (use search or auto-detect)");
       return;
     }
+
+    // Prepare job data
+    const jobData: any = {
+      company: `${user?.id}`,
+      userId: `${user?.id}`,
+      title: jobTittle,
+      jobType,
+      experienceLevel,
+      experience,
+      companyPerks,
+      requiredSkillset,
+      mandatoryCertificates,
+      noOfOpenings,
+      educationQualifications,
+      responsibilities,
+      payRange,
+      payRangeType: activePayRange,
+      workStartDate,
+      workEndDate,
+      workLocation,
+      description: aboutJob,
+      customQuestions,
+      locationCoordinates: selectedLocation,
+      fatIncluded: fatAdded,
+    };
+
+    if (selectedLocation) {
+      jobData.location = {
+        address: workLocation,
+        coordinates: {
+          longitude: selectedLocation.lng,
+          latitude: selectedLocation.lat,
+        },
+      };
+    }
+
+    // Show preview modal instead of posting directly
+    setPreviewJobData(jobData);
+    setShowPreviewModal(true);
+  };
+
+  const confirmAndPost = async () => {
     setIsPosting(true);
 
     try {
@@ -1107,31 +1181,24 @@ export default function PostRole() {
         locationCoordinates: selectedLocation,
         fatIncluded: fatAdded,
       };
+      const url = isEditMode
+        ? `${process.env.NEXT_PUBLIC_API_URL}/jobs/${jobId}/edit`
+        : `${process.env.NEXT_PUBLIC_API_URL}/jobs`;
 
-      // Also send normalized location object if backend expects it
-      if (selectedLocation) {
-        jobData.location = {
-          address: workLocation,
-          coordinates: {
-            longitude: selectedLocation.lng,
-            latitude: selectedLocation.lat,
-          },
-        };
-      }
+      const method = isEditMode ? "PUT" : "POST";
 
-      // Debug: log payload before sending
-      console.log("Posting job payload:", jobData);
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/jobs`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(jobData),
-        }
+      console.log(
+        `${isEditMode ? "Updating" : "Creating"} job:`,
+        previewJobData
       );
+
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(previewJobData),
+      });
 
       let data: any = null;
       const rawText = await response.text();
@@ -1142,21 +1209,26 @@ export default function PostRole() {
       }
 
       if (response.ok) {
-        toast.success("Job posted successfully!");
+        toast.success(
+          isEditMode ? "Job updated successfully!" : "Job posted successfully!"
+        );
+        setShowPreviewModal(false);
         router.push("/company/profile");
       } else {
-        console.error("Job post failed:", {
+        console.error("Job operation failed:", {
           status: response.status,
           statusText: response.statusText,
           body: data,
         });
         toast.error(
           (data && (data.error || data.message)) ||
-            `Failed to post job (HTTP ${response.status})`
+            `Failed to ${isEditMode ? "update" : "post"} job (HTTP ${
+              response.status
+            })`
         );
       }
     } catch (error) {
-      console.error("Error posting job:", error);
+      console.error(`Error ${isEditMode ? "updating" : "posting"} job:`, error);
       toast.error("An error occurred. Please try again later.");
     } finally {
       setIsPosting(false);
@@ -1343,8 +1415,9 @@ export default function PostRole() {
                 <span className="text-purple-700 font-semibold text-sm">R</span>
               </div>
               <h1 className="text-xl font-semibold text-gray-900">
-                Post a Role
+                {isEditMode ? "Edit Role" : "Post a Role"}
               </h1>
+
               <span className="text-gray-500 text-lg">Role - 1</span>
             </div>
             <motion.button
@@ -1358,7 +1431,7 @@ export default function PostRole() {
                   : "bg-[#76FF82] hover:bg-green-300"
               }`}
             >
-              {isPosting ? "Posting..." : "Post"}
+              {isPosting ? "Saving..." : isEditMode ? "Update" : "Post"}
             </motion.button>
           </div>
 
@@ -1381,7 +1454,29 @@ export default function PostRole() {
           <div className="space-y-8">
             {/* Experience (required) */}
             <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700">Experience</label>
+              <label className="text-sm font-medium text-gray-700">
+                Experience Level
+              </label>
+              <div className="flex bg-gray-100 rounded-lg p-1 w-fit">
+                {(["Entry", "Mid", "Senior", "Executive"] as const).map(
+                  (level) => (
+                    <button
+                      key={level}
+                      onClick={() => setExperienceLevel(level)}
+                      className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                        experienceLevel === level
+                          ? "bg-[#76FF82] text-black shadow-sm"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      {level}
+                    </button>
+                  )
+                )}
+              </div>
+              <label className="text-sm font-medium text-gray-700">
+                Experience (optional)
+              </label>
               <input
                 type="text"
                 value={experience}
@@ -1440,7 +1535,7 @@ export default function PostRole() {
                 Job Type
               </label>
               <div className="cursor-pointer flex bg-gray-100 rounded-lg p-1 w-fit">
-                {["Short Term", "Long Term", ].map((type) => (
+                {["Short Term", "Long Term"].map((type) => (
                   <button
                     key={type}
                     onClick={() => setJobType(type)}
@@ -2070,6 +2165,13 @@ export default function PostRole() {
           </div>
         </motion.div>
       </div>
+      <JobPreviewModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        onConfirm={confirmAndPost}
+        jobData={previewJobData}
+        isPosting={isPosting}
+      />
     </div>
   );
 }

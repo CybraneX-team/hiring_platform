@@ -23,6 +23,7 @@ export interface Role {
   status: string;
   experienceLevel?: string;
   location?: string;
+  payoffAmountPercentage?: number;
 }
 
 export interface Application {
@@ -51,6 +52,8 @@ export interface SubmittedDocument {
   status: "requested" | "submitted" | "approved" | "rejected";
   file?: string | null;
   fileUrl?: string | null;
+  inputType : string;
+  value : string | any
 }
 
 export interface AnalyticsData {

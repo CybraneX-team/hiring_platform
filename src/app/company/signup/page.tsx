@@ -297,13 +297,6 @@ export default function SignupPage() {
     },
   };
 
-  const handleGoogleSignIn = () => {
-    const state = JSON.stringify({ mode: "Company" });
-    const encodedState = encodeURIComponent(state);
-
-    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google?state=${encodedState}`;
-  };
-
   return (
     <motion.div
       className="min-h-screen bg-[#F5F5F5]"
@@ -512,35 +505,6 @@ export default function SignupPage() {
               {loading ? "Sending OTP..." : "Verify your account"}
             </motion.span>
           </motion.button>
-
-          {/* Divider */}
-          <motion.div className="relative" variants={itemVariants}>
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-[#F5F5F5] px-2 text-gray-500">
-                Or continue with
-              </span>
-            </div>
-          </motion.div>
-
-          {/* Social Buttons */}
-          <motion.div
-            className="grid  gap-3 cursor-pointer"
-            variants={itemVariants}
-            onClick={handleGoogleSignIn}
-          >
-            <motion.button
-              className="h-12 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors"
-              variants={socialButtonVariants}
-              initial="initial"
-              whileHover="hover"
-              whileTap="tap"
-            >
-              <span className="text-lg font-bold text-black">G</span>
-            </motion.button>
-          </motion.div>
         </div>
       </div>
     </motion.div>

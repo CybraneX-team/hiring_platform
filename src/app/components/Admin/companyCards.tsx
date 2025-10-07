@@ -114,7 +114,7 @@ export default function CompanyCard({
               boxShadow: "0 4px 12px rgba(118, 255, 130, 0.3)",
             }}
             whileTap={{ scale: 0.98 }}
-            className="flex-1 bg-[#76FF82] text-black font-medium py-2 sm:py-3 rounded-full text-sm"
+            className="cursor-pointer flex-1 bg-[#76FF82] text-black font-medium py-2 sm:py-3 rounded-full text-sm"
           >
             View Roles
           </motion.button>

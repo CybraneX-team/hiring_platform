@@ -57,7 +57,9 @@ export default function AdminPanel() {
   const [documentsError, setDocumentsError] = useState<string | null>(null);
   const [documentMutationLoading, setDocumentMutationLoading] = useState(false);
   const [selectedDocs, setSelectedDocs] = useState<number[]>([]);
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
+    null
+  );
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const [analyticsInitialized, setAnalyticsInitialized] = useState(false);
@@ -80,17 +82,18 @@ export default function AdminPanel() {
   const [authError, setAuthError] = useState<string | null>(null);
   const bootstrapAttemptedRef = useRef(false);
 
-  const normalizeDocuments = useCallback(
-    (docs: any[]): SubmittedDocument[] =>
-      docs.map((doc: any) => ({
-        id: Number(doc.id),
-        name: String(doc.name || `Document ${doc.id}`),
-        status: (doc.status || "requested") as SubmittedDocument["status"],
-        file: doc.file ?? null,
-        fileUrl: doc.fileUrl ?? null,
-      })),
-    []
-  );
+const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
+  return docs.map((doc: any) => ({
+    id: Number(doc.id),
+    name: String(doc.name || `Document ${doc.id}`),
+    status: (doc.status || "requested") as SubmittedDocument["status"],
+    file: doc.file ?? null,
+    fileUrl: doc.fileUrl ?? null,
+    inputType: doc.inputType || "file",  // ✅ ADD THIS LINE
+    value: doc.value ?? null,             // ✅ ADD THIS LINE
+  }));
+}, []);
+
 
   const fetchAnalytics = useCallback(
     async (passwordOverride?: string) => {
@@ -145,7 +148,9 @@ export default function AdminPanel() {
         setAnalyticsLoading(false);
         setAnalyticsInitialized(true);
       }
-    }, [adminPassword]);
+    },
+    [adminPassword]
+  );
 
   const attemptAdminLogin = useCallback(
     async (password: string) => {
@@ -208,7 +213,9 @@ export default function AdminPanel() {
       const response = await fetch(`${baseUrl}/company/`);
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch companies (status ${response.status})`);
+        throw new Error(
+          `Failed to fetch companies (status ${response.status})`
+        );
       }
 
       const result = await response.json();
@@ -246,18 +253,12 @@ export default function AdminPanel() {
               ? Number(company.totalApplications)
               : 0,
             location:
-              typeof company?.location === "string"
-                ? company.location
-                : "",
+              typeof company?.location === "string" ? company.location : "",
             industry:
-              typeof company?.industry === "string"
-                ? company.industry
-                : "",
+              typeof company?.industry === "string" ? company.industry : "",
             orgSize:
               typeof company?.orgSize === "string" ? company.orgSize : "",
-            createdAt: company?.createdAt
-              ? String(company.createdAt)
-              : null,
+            createdAt: company?.createdAt ? String(company.createdAt) : null,
           };
         }
       );
@@ -284,7 +285,8 @@ export default function AdminPanel() {
     const seconds = Math.floor(diffMs / 1000);
     if (seconds < 60) return "Just now";
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return minutes === 1 ? "1 minute ago" : `${minutes} minutes ago`;
+    if (minutes < 60)
+      return minutes === 1 ? "1 minute ago" : `${minutes} minutes ago`;
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return hours === 1 ? "1 hour ago" : `${hours} hours ago`;
     const days = Math.floor(hours / 24);
@@ -292,7 +294,8 @@ export default function AdminPanel() {
     const weeks = Math.floor(days / 7);
     if (weeks < 4) return weeks === 1 ? "1 week ago" : `${weeks} weeks ago`;
     const months = Math.floor(days / 30);
-    if (months < 12) return months === 1 ? "1 month ago" : `${months} months ago`;
+    if (months < 12)
+      return months === 1 ? "1 month ago" : `${months} months ago`;
     const years = Math.floor(days / 365);
     return years === 1 ? "1 year ago" : `${years} years ago`;
   }, []);
@@ -317,7 +320,9 @@ export default function AdminPanel() {
     try {
       const response = await fetch(`${baseUrl}/application/document-types`);
       if (!response.ok) {
-        throw new Error(`Failed to fetch document types (status ${response.status})`);
+        throw new Error(
+          `Failed to fetch document types (status ${response.status})`
+        );
       }
 
       const result = await response.json();
@@ -335,7 +340,9 @@ export default function AdminPanel() {
     } catch (error) {
       console.error("Failed to fetch document types", error);
       setDocumentsError(
-        error instanceof Error ? error.message : "Failed to fetch document types"
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch document types"
       );
       setDocumentTypesData(FALLBACK_DOCUMENT_TYPES);
     }
@@ -386,6 +393,21 @@ export default function AdminPanel() {
     [formatRelative, normalizeDocuments]
   );
 
+  // Add this handler function in your AdminPanel component
+  const handlePayoffUpdate = useCallback(
+    (roleId: string, newPercentage: number) => {
+      setRolesData((prev) =>
+        prev.map((role) =>
+          role.id === roleId
+            ? { ...role, payoffAmountPercentage: newPercentage }
+            : role
+        )
+      );
+    },
+    []
+  );
+
+  // Update your fetchRoles function to include payoffAmountPercentage
   const fetchRoles = useCallback(async (companyId: string) => {
     setRolesLoading(true);
     setRolesError(null);
@@ -420,59 +442,55 @@ export default function AdminPanel() {
         console.log("[Admin][fetchRoles] rawRoles (count):", rawRoles.length, rawRoles[0]);
       } catch {}
 
-      const normalizedRoles: Role[] = rawRoles.map((role: any, index: number) => {
-        const title =
-          typeof role?.title === "string" && role.title.trim().length > 0
-            ? role.title.trim()
-            : "Untitled Role";
+      const normalizedRoles: Role[] = rawRoles.map(
+        (role: any, index: number) => {
+          const title =
+            typeof role?.title === "string" && role.title.trim().length > 0
+              ? role.title.trim()
+              : "Untitled Role";
 
-        const identifier =
-          role?.id ?? role?._id ?? `role-${companyId}-${index.toString()}`;
+          const identifier =
+            role?.id ?? role?._id ?? `role-${companyId}-${index.toString()}`;
 
-        const mapped: Role = {
-          id: String(identifier),
-          title,
-          department:
-            typeof role?.department === "string" ? role.department : undefined,
-          applications: Number.isFinite(role?.applications)
-            ? Number(role.applications)
-            : 0,
-          salary:
-            typeof role?.salary === "string" && role.salary.trim().length > 0
-              ? role.salary
-              : "Not disclosed",
-          type:
-            typeof role?.type === "string" && role.type.trim().length > 0
-              ? role.type
-              : "Unknown",
-          payRangeType: typeof role?.payRangeType === "string" ? role.payRangeType : undefined,
-          posted:
-            typeof role?.posted === "string" && role.posted.trim().length > 0
-              ? role.posted
-              : "Unknown",
-          status:
-            typeof role?.status === "string" && role.status.trim().length > 0
-              ? role.status
-              : "Unknown",
-          experienceLevel:
-            typeof role?.experienceLevel === "string"
-              ? role.experienceLevel
-              : undefined,
-          location:
-            typeof role?.location === "string" ? role.location : undefined,
-        };
-        try {
-          // eslint-disable-next-line no-console
-          console.log("[Admin][fetchRoles] mapped role snapshot:", {
-            id: mapped.id,
-            title: mapped.title,
-            salary: mapped.salary,
-            type: mapped.type,
-            payRangeType: role?.payRangeType,
-          });
-        } catch {}
-        return mapped;
-      });
+          return {
+            id: String(identifier),
+            title,
+            department:
+              typeof role?.department === "string"
+                ? role.department
+                : undefined,
+            applications: Number.isFinite(role?.applications)
+              ? Number(role.applications)
+              : 0,
+            salary:
+              typeof role?.salary === "string" && role.salary.trim().length > 0
+                ? role.salary
+                : "Not disclosed",
+            type:
+              typeof role?.type === "string" && role.type.trim().length > 0
+                ? role.type
+                : "Unknown",
+            posted:
+              typeof role?.posted === "string" && role.posted.trim().length > 0
+                ? role.posted
+                : "Unknown",
+            status:
+              typeof role?.status === "string" && role.status.trim().length > 0
+                ? role.status
+                : "Unknown",
+            experienceLevel:
+              typeof role?.experienceLevel === "string"
+                ? role.experienceLevel
+                : undefined,
+            location:
+              typeof role?.location === "string" ? role.location : undefined,
+            payoffAmountPercentage:
+              typeof role?.payoffAmountPercentage === "number"
+                ? role.payoffAmountPercentage
+                : 25, // ✅ ADD THIS LINE
+          };
+        }
+      );
 
       setRolesData(normalizedRoles);
     } catch (error) {
@@ -485,7 +503,6 @@ export default function AdminPanel() {
       setRolesLoading(false);
     }
   }, []);
-
   const fetchApplications = useCallback(
     async (jobId: string) => {
       setApplicationsLoading(true);
@@ -562,29 +579,28 @@ export default function AdminPanel() {
                   : typeof profile?.user?.email === "string"
                   ? profile.user.email
                   : "",
-              phone:
-                (profile?.contactNumber ||
-                  profile?.phoneNumber ||
-                  profile?.phone ||
-                  "") as string,
+              phone: (profile?.contactNumber ||
+                profile?.phoneNumber ||
+                profile?.phone ||
+                "") as string,
               experience: experienceLabel,
-              status:
-                typeof app?.status === "string" ? app.status : "pending",
+              status: typeof app?.status === "string" ? app.status : "pending",
               appliedDate: formatRelative(appliedDateString),
               avatar:
                 (profile?.avatar ||
                   profile?.profilePicture ||
                   applicantInfo?.name?.charAt(0)?.toUpperCase() ||
-                  profile?.name?.charAt(0)?.toUpperCase()) ?? undefined,
-              location:
-                (profile?.location ||
-                  applicantInfo?.location ||
-                  app?.job?.location ||
-                  "") as string,
+                  profile?.name?.charAt(0)?.toUpperCase()) ??
+                undefined,
+              location: (profile?.location ||
+                applicantInfo?.location ||
+                app?.job?.location ||
+                "") as string,
               currentRole:
                 (profile?.WorkExperience?.[0]?.title ||
                   profile?.currentRole ||
-                  app?.job?.title) ?? undefined,
+                  app?.job?.title) ??
+                undefined,
               matchScore:
                 typeof matchScoreRaw === "number"
                   ? Math.round(matchScoreRaw)
@@ -622,51 +638,69 @@ export default function AdminPanel() {
     setDocumentsError(null);
   }, []);
 
-  const handleCompanyDelete = useCallback(async (companyId: string) => {
-    try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const deleteUrl = `${baseUrl}/company/delete/${companyId}`;
-      console.log('Attempting to delete company:', { companyId, baseUrl, deleteUrl });
-      
-      const response = await fetch(deleteUrl, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+  const handleCompanyDelete = useCallback(
+    async (companyId: string) => {
+      try {
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const deleteUrl = `${baseUrl}/company/delete/${companyId}`;
+        console.log("Attempting to delete company:", {
+          companyId,
+          baseUrl,
+          deleteUrl,
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        const response = await fetch(deleteUrl, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response
+            .json()
+            .catch(() => ({ message: "Unknown error" }));
+          throw new Error(
+            errorData.message ||
+              `HTTP ${response.status}: ${response.statusText}`
+          );
+        }
+
+        const result = await response.json();
+        console.log("Delete response:", result);
+
+        // Remove the company from the local state
+        setCompaniesData((prev) =>
+          prev.filter((company) => company.id !== companyId)
+        );
+
+        // If the deleted company was selected, reset the selection
+        if (selectedCompany?.id === companyId) {
+          setSelectedCompany(null);
+          setCurrentView("companies");
+          setSelectedRole(null);
+          setRolesData([]);
+          setApplicationsData([]);
+          setSelectedApplicant(null);
+          setSelectedApplicantId(null);
+          setSubmittedDocs([]);
+          setSelectedDocs([]);
+          setDocumentsError(null);
+        }
+
+        toast.success("Company deleted successfully");
+      } catch (error) {
+        console.error("Error deleting company:", error);
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Failed to delete company. Please try again.";
+        toast.error(errorMessage);
       }
-
-      const result = await response.json();
-      console.log('Delete response:', result);
-
-      // Remove the company from the local state
-      setCompaniesData(prev => prev.filter(company => company.id !== companyId));
-      
-      // If the deleted company was selected, reset the selection
-      if (selectedCompany?.id === companyId) {
-        setSelectedCompany(null);
-        setCurrentView("companies");
-        setSelectedRole(null);
-        setRolesData([]);
-        setApplicationsData([]);
-        setSelectedApplicant(null);
-        setSelectedApplicantId(null);
-        setSubmittedDocs([]);
-        setSelectedDocs([]);
-        setDocumentsError(null);
-      }
-
-      toast.success('Company deleted successfully');
-    } catch (error) {
-      console.error('Error deleting company:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete company. Please try again.';
-      toast.error(errorMessage);
-    }
-  }, [selectedCompany]);
+    },
+    [selectedCompany]
+  );
 
   const handleRoleSelect = useCallback((role: Role) => {
     setSelectedRole(role);
@@ -678,16 +712,13 @@ export default function AdminPanel() {
     setSelectedDocs([]);
   }, []);
 
-  const handleApplicantSelect = useCallback(
-    (applicant: Application) => {
-      setSelectedApplicant(applicant);
-      setSelectedApplicantId(applicant.id);
-      setCurrentView("applicant-details");
-      setSelectedDocs([]);
-      setDocumentsError(null);
-    },
-    []
-  );
+  const handleApplicantSelect = useCallback((applicant: Application) => {
+    setSelectedApplicant(applicant);
+    setSelectedApplicantId(applicant.id);
+    setCurrentView("applicant-details");
+    setSelectedDocs([]);
+    setDocumentsError(null);
+  }, []);
 
   const handleToggleDoc = useCallback((docId: number) => {
     setSelectedDocs((prev) =>
@@ -743,19 +774,13 @@ export default function AdminPanel() {
       } catch (error) {
         console.error("Failed to request documents", error);
         toast.error(
-          error instanceof Error
-            ? error.message
-            : "Failed to request documents"
+          error instanceof Error ? error.message : "Failed to request documents"
         );
       } finally {
         setDocumentMutationLoading(false);
       }
     },
-    [
-      selectedApplicantId,
-      normalizeDocuments,
-      fetchApplicationDocuments,
-    ]
+    [selectedApplicantId, normalizeDocuments, fetchApplicationDocuments]
   );
 
   const handleDocumentApproval = useCallback(
@@ -801,9 +826,7 @@ export default function AdminPanel() {
         }
 
         toast.success(
-          approved
-            ? "Document approved successfully."
-            : "Document rejected."
+          approved ? "Document approved successfully." : "Document rejected."
         );
       } catch (error) {
         console.error("Failed to update document status", error);
@@ -816,11 +839,7 @@ export default function AdminPanel() {
         setDocumentMutationLoading(false);
       }
     },
-    [
-      selectedApplicantId,
-      normalizeDocuments,
-      fetchApplicationDocuments,
-    ]
+    [selectedApplicantId, normalizeDocuments, fetchApplicationDocuments]
   );
 
   const handleVerificationDone = useCallback(() => {
@@ -937,7 +956,9 @@ export default function AdminPanel() {
       const name = application.name.toLowerCase();
       const email = application.email.toLowerCase();
       const role = application.currentRole?.toLowerCase() ?? "";
-      return name.includes(query) || email.includes(query) || role.includes(query);
+      return (
+        name.includes(query) || email.includes(query) || role.includes(query)
+      );
     });
   }, [applicationsData, searchQuery]);
 
@@ -1045,6 +1066,7 @@ export default function AdminPanel() {
                 selectedCompany={selectedCompany}
                 roles={filteredRoles}
                 onRoleSelect={handleRoleSelect}
+                onPayoffUpdate={handlePayoffUpdate}
               />
             )}
           </div>
@@ -1193,7 +1215,12 @@ export default function AdminPanel() {
         return <AnalyticsView analyticsData={analyticsData} />;
 
       case "inspect":
-        return <InspectView onItemSelect={handleInspectItemSelect} searchQuery={searchQuery} />;
+        return (
+          <InspectView
+            onItemSelect={handleInspectItemSelect}
+            searchQuery={searchQuery}
+          />
+        );
 
       case "inspect-detail":
         if (!selectedInspectItem) {
@@ -1251,7 +1278,10 @@ export default function AdminPanel() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="admin-password" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="admin-password"
+              className="block text-sm font-medium text-gray-700"
+            >
               Admin Password
             </label>
             <input
@@ -1263,9 +1293,7 @@ export default function AdminPanel() {
               placeholder="Enter password"
               disabled={authLoading}
             />
-            {authError && (
-              <p className="text-sm text-red-600">{authError}</p>
-            )}
+            {authError && <p className="text-sm text-red-600">{authError}</p>}
           </div>
 
           <button
@@ -1290,9 +1318,7 @@ export default function AdminPanel() {
         onNavigate={handleNavigate}
       />
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
-        <div className="max-w-7xl mx-auto">
-          {renderContent()}
-        </div>
+        <div className="max-w-7xl mx-auto">{renderContent()}</div>
       </main>
     </div>
   );

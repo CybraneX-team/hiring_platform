@@ -22,6 +22,7 @@ import { useUser } from "@/app/context/UserContext";
 // import { toast } from "react-toastify";
 import JobStatusDropdown from "@/app/components/JobStatusDropdown";
 import { handleLogout } from "@/app/Helper/logout";
+import { JobOptionsMenu } from "@/app/components/JobOptionsMenu";
 
 // OlaMaps integration
 let OlaMaps: any = null;
@@ -1037,6 +1038,11 @@ export default function ProfileTab() {
 
   const [applications, setApplications] = useState<any>([]);
   const [applicationsLoading, setApplicationsLoading] = useState(false);
+  // Job edit/delete states
+  const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState<string | null>(null);
+
   const [applicationsError, setApplicationsError] = useState<any>(null);
   const [updatingJobStatus, setUpdatingJobStatus] = useState<string | null>(
     null
@@ -1044,19 +1050,12 @@ export default function ProfileTab() {
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<any>(null);
 
-  // Add this useEffect for authentication check
-  // useEffect(() => {
-  //   // if there is no valid token, force sign-in
-  //   if (!token) {
-  //     router.push("/signin");
-  //     return;
-  //   }
-
-  //   // if user info exists but role is wrong, also sign-in
-  //   if (user && user.signedUpAs !== "Company") {
-  //     router.push("/signin");
-  //   }
-  // }, [token, user, router]);
+    useEffect(() => {
+      // Check if user is signed up as Inspector (capital I)
+      if (user && user.signedUpAs === "Inspector") {
+        router.push("/profile");
+      }
+    }, [user, router]);
 
   const fetchApplications = async () => {
     if (!user?.id) {
@@ -1456,6 +1455,74 @@ export default function ProfileTab() {
       setUpdatingJobStatus(null);
     }
   };
+  const handleEditJob = (jobId: string) => {
+    router.push(`/company/edit-role?jobId=${jobId}`);
+  };
+
+  const handleDeleteJob = (jobId: string) => {
+    setJobToDelete(jobId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteJob = async () => {
+    if (!jobToDelete || !user?.id) {
+      toast({
+        title: "Error",
+        description: "Job ID or user information missing",
+        duration: 2000,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setDeletingJobId(jobToDelete);
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/jobs/${jobToDelete}/delete`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: user.id,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to delete job");
+      }
+
+      setApplications((prevApps: any) =>
+        prevApps.filter((job: any) => job._id !== jobToDelete)
+      );
+
+      toast({
+        title: "Job Deleted",
+        description: "Job has been deleted successfully",
+        duration: 5000,
+        variant: "success",
+      });
+
+      setShowDeleteConfirm(false);
+      setJobToDelete(null);
+    } catch (error: any) {
+      console.error("Error deleting job:", error);
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete job",
+        duration: 5000,
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingJobId(null);
+    }
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "profile":
@@ -1668,17 +1735,28 @@ export default function ProfileTab() {
                       key={job._id || index}
                       variants={cardVariants}
                       whileHover={{ y: -4, scale: 1.02 }}
-                      className="bg-white rounded-lg p-4 sm:p-6 min-h-[200px] sm:min-h-[250px] flex flex-col justify-between"
+                      className="bg-white rounded-lg p-4 sm:p-6 min-h-[200px] sm:min-h-[250px] flex flex-col justify-between relative"
                     >
+                      {/* 3-dot menu */}
+                      <div className="absolute top-4 right-4 z-10 cursor-pointer">
+                        <JobOptionsMenu
+                          jobId={job._id}
+                          onEdit={() => handleEditJob(job._id)}
+                          onDelete={() => handleDeleteJob(job._id)}
+                        />
+                      </div>
+
                       <div>
                         {/* Job Title and Status Row */}
-                        <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-start justify-between mb-2 pr-8">
                           <h3 className="text-base sm:text-lg font-semibold text-gray-900 line-clamp-2 flex-1 mr-2">
                             {job.title || "Untitled Job"}
                           </h3>
                           <JobStatusDropdown
                             value={job.jobStatus || "Open"}
-                            onChange={handleJobStatusUpdate}
+                            onChange={(newStatus: string) =>
+                              handleJobStatusUpdate(newStatus, job._id)
+                            }
                             jobId={job._id}
                             isUpdating={updatingJobStatus === job._id}
                           />
@@ -1711,8 +1789,8 @@ export default function ProfileTab() {
 
                         {job.description && (
                           <div className="mb-2">
-                            <TruncatedText 
-                              text={job.description.replace(/\n/g, " ")} 
+                            <TruncatedText
+                              text={job.description.replace(/\n/g, " ")}
                               maxWords={50}
                               className="text-xs text-gray-600"
                             />
@@ -1774,8 +1852,12 @@ export default function ProfileTab() {
             priority
           />
           <div className="leading-tight text-[#163A33]">
-            <div className="text-xs sm:text-sm md:text-base lg:text-2xl font-black">ProjectMATCH</div>
-            <div className="text-[10px] sm:text-xs md:text-sm text-gray-600"><span className="text-[#3EA442] font-bold">by Compscope</span></div>
+            <div className="text-xs sm:text-sm md:text-base lg:text-2xl font-black">
+              ProjectMATCH
+            </div>
+            <div className="text-[10px] sm:text-xs md:text-sm text-gray-600">
+              <span className="text-[#3EA442] font-bold">by Compscope</span>
+            </div>
           </div>
         </Link>
         {user && (
@@ -2139,7 +2221,55 @@ export default function ProfileTab() {
           </motion.div>
         )}
       </AnimatePresence>
+      {showDeleteConfirm && (
+        <motion.div
+          key="delete-confirm-modal"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowDeleteConfirm(false)}
+          />
 
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="relative bg-white rounded-lg p-6 max-w-md w-full"
+          >
+            <h3 className="text-lg font-semibold mb-4">Delete Job</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete this job? This action cannot be
+              undone and will also delete all applications for this job.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setJobToDelete(null);
+                }}
+                disabled={deletingJobId !== null}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteJob}
+                disabled={deletingJobId !== null}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                {deletingJobId ? "Deleting..." : "Delete Job"}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }

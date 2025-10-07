@@ -1,16 +1,23 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Briefcase, Clock, Users, MapPin } from "lucide-react";
+import { Briefcase, Clock, Users, MapPin, Percent, Edit2 } from "lucide-react";
 import type { Role } from "../../types";
+import { useState } from "react";
+import { toast } from "react-toastify";
 
 interface RoleCardProps {
   role: Role;
   index: number;
   onSelect: (role: Role) => void;
+  onPayoffUpdate?: (roleId: string, newPercentage: number) => void;
 }
 
-export default function RoleCard({ role, index, onSelect }: RoleCardProps) {
+export default function RoleCard({ role, index, onSelect, onPayoffUpdate }: RoleCardProps) {
+  const [isEditingPayoff, setIsEditingPayoff] = useState(false);
+  const [payoffValue, setPayoffValue] = useState(role.payoffAmountPercentage?.toString() || "25");
+  const [isUpdating, setIsUpdating] = useState(false);
+
   const departmentLabel = role.department?.trim() || "Department not specified";
   const typeLabel = role.type?.trim() || "Unknown";
   // Show payRangeType (Daily/Monthly) under price strictly from API
@@ -21,6 +28,63 @@ export default function RoleCard({ role, index, onSelect }: RoleCardProps) {
   const postedLabel = role.posted?.trim() || "Unknown";
   const locationLabel = role.location?.trim();
   const experienceLabel = role.experienceLevel?.trim();
+  const payoffPercentage = role.payoffAmountPercentage ?? 25;
+
+  const handlePayoffUpdate = async () => {
+    const newValue = parseFloat(payoffValue);
+    
+    if (isNaN(newValue) || newValue < 0 || newValue > 100) {
+      toast.error("Payoff percentage must be between 0 and 100");
+      return;
+    }
+
+    setIsUpdating(true);
+    
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      
+      if (!baseUrl) {
+        toast.error("API URL not configured");
+        return;
+      }
+
+      const response = await fetch(`${baseUrl}/jobs/${role.id}/payoff-percentage`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          payoffAmountPercentage: newValue,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+        throw new Error(errorData.message || `Failed to update payoff percentage`);
+      }
+
+      const result = await response.json();
+      
+      toast.success("Payoff percentage updated successfully");
+      setIsEditingPayoff(false);
+      
+      // Call the callback to update parent state
+      if (onPayoffUpdate) {
+        onPayoffUpdate(role.id, newValue);
+      }
+      
+    } catch (error) {
+      console.error("Error updating payoff percentage:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to update payoff percentage");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setPayoffValue(role.payoffAmountPercentage?.toString() || "25");
+    setIsEditingPayoff(false);
+  };
 
   return (
     <motion.div
@@ -85,6 +149,60 @@ export default function RoleCard({ role, index, onSelect }: RoleCardProps) {
                   <span className="truncate max-w-[120px]">{locationLabel}</span>
                 </div>
               )}
+            </div>
+
+            {/* Payoff Percentage Section */}
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <div className="flex items-center gap-2">
+                <Percent className="w-4 h-4 text-purple-600" />
+                <span className="text-xs text-gray-500">Payoff:</span>
+                
+                {isEditingPayoff ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={payoffValue}
+                      onChange={(e) => setPayoffValue(e.target.value)}
+                      className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      disabled={isUpdating}
+                    />
+                    <span className="text-xs text-gray-600">%</span>
+                    <button
+                      onClick={handlePayoffUpdate}
+                      disabled={isUpdating}
+                      className="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 disabled:opacity-50"
+                    >
+                      {isUpdating ? "..." : "Save"}
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      disabled={isUpdating}
+                      className="px-2 py-1 bg-gray-300 text-gray-700 text-xs rounded hover:bg-gray-400 disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-purple-600">
+                      {payoffPercentage}%
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditingPayoff(true);
+                      }}
+                      className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                      title="Edit payoff percentage"
+                    >
+                      <Edit2 className="w-3 h-3 text-gray-500" />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

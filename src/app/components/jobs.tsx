@@ -106,31 +106,52 @@ export default function JobComponent() {
   };
 
   // Function to format salary and type from API (no hardcoded per/year)
-  const formatSalary = (salaryRange: any, payRangeType?: string) => {
-    if (!salaryRange) return { salary: "Negotiable", salaryType: payRangeType || "" };
+// Function to format salary and type from API with payoff percentage deduction
+const formatSalary = (salaryRange: any, payRangeType?: string, payoffPercentage?: number) => {
+  if (!salaryRange) return { salary: "Negotiable", salaryType: payRangeType || "" };
 
-    const { min, max, currency = "₹", period } = salaryRange;
-    const derivedType = period || payRangeType || "";
+  const { min, max, currency = "₹", period } = salaryRange;
+  const derivedType = period || payRangeType || "";
+  const payoff = payoffPercentage || 0;
 
-    if (min && max) {
+  // Calculate amounts after deducting payoff percentage
+  const calculateDeductedAmount = (amount: number) => {
+    return Math.round(amount - (amount * payoff / 100));
+  };
+
+  if (min && max) {
+    // If min and max are the same, show single value with deduction
+    if (min === max) {
+      const deductedAmount = calculateDeductedAmount(min);
       return {
-        salary: `${currency}${min}-${max}`,
-        salaryType: derivedType,
-      };
-    } else if (min) {
-      return {
-        salary: `${currency}${min}+`,
-        salaryType: derivedType,
-      };
-    } else if (max) {
-      return {
-        salary: `Up to ${currency}${max}`,
+        salary: `${currency}${deductedAmount.toLocaleString()}`,
         salaryType: derivedType,
       };
     }
+    // Different min and max - show range with deductions
+    const deductedMin = calculateDeductedAmount(min);
+    const deductedMax = calculateDeductedAmount(max);
+    return {
+      salary: `${currency}${deductedMin.toLocaleString()}-${deductedMax.toLocaleString()}`,
+      salaryType: derivedType,
+    };
+  } else if (min) {
+    const deductedMin = calculateDeductedAmount(min);
+    return {
+      salary: `${currency}${deductedMin.toLocaleString()}+`,
+      salaryType: derivedType,
+    };
+  } else if (max) {
+    const deductedMax = calculateDeductedAmount(max);
+    return {
+      salary: `Up to ${currency}${deductedMax.toLocaleString()}`,
+      salaryType: derivedType,
+    };
+  }
 
-    return { salary: "Negotiable", salaryType: derivedType };
-  };
+  return { salary: "Negotiable", salaryType: derivedType };
+};
+
 
   // Normalize period text coming from API (e.g., "Per/Year" -> "Year", "per/monthly" -> "Monthly")
   const normalizePeriod = (t?: string) => {
@@ -141,28 +162,35 @@ export default function JobComponent() {
   };
 
   // Function to map API response to frontend format
-  const mapJobData = (apiJobs: any[]): any => {
-    return apiJobs.map((job: any) => {
-      const { salary, salaryType } = formatSalary(job.salaryRange, job.payRangeType);
-      // Only show period strictly from API-provided payRangeType
-      const period = normalizePeriod(job.payRangeType || "");
-      return {
-        id: job.id,
-        title: job.title,
-        company: job.company?.companyName || "",
-        salary,
-        salaryType: period,
-        description: job.description,
-        location: job.location,
-        timePosted: formatTimeAgo(job.postedDate),
-        jobType: job.jobType,
-        experienceLevel: job.experienceLevel,
-        department: job.department,
-        noOfOpenings: job.noOfOpenings,
-        totalApplications: job.totalApplications,
-      };
-    });
-  };
+// Function to map API response to frontend format
+const mapJobData = (apiJobs: any[]): any => {
+  return apiJobs.map((job: any) => {
+    const { salary, salaryType } = formatSalary(
+      job.salaryRange, 
+      job.payRangeType,
+      job.payoffAmountPercentage // Pass the payoff percentage
+    );
+    // Only show period strictly from API-provided payRangeType
+    const period = normalizePeriod(job.payRangeType || "");
+    return {
+      id: job.id,
+      title: job.title,
+      company: job.company?.companyName || "",
+      salary,
+      salaryType: period,
+      description: job.description,
+      location: job.location,
+      timePosted: formatTimeAgo(job.postedDate),
+      jobType: job.jobType,
+      experienceLevel: job.experienceLevel,
+      department: job.department,
+      noOfOpenings: job.noOfOpenings,
+      totalApplications: job.totalApplications,
+      payoffAmountPercentage: job.payoffAmountPercentage, // Store for future reference
+    };
+  });
+};
+
 
   // Function to filter jobs based on active filter
   const filterJobs = (jobs: JobListing[], filter: string): JobListing[] => {

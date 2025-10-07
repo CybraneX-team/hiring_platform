@@ -74,3 +74,59 @@ export const processCerts = (arr: any[]) =>
       date: c.date ?? "Unknown Date",
       description: c.description ?? "",
     }));
+// Helper function to transform API profile data into component state format
+  export const convertDescriptionToPoints = (description: string): string[] => {
+    if (!description) return [""];
+
+    // Split by common bullet point indicators
+    const points = description
+      .split(/[\n•\-\*]/)
+      .map((point) => point.trim())
+      .filter((point) => point.length > 0 && point.length > 5) // Filter very short points
+      .map((point) => point.replace(/^[\-\*\•]\s*/, ""));
+
+    return points.length > 0 ? points : [description];
+  };
+
+export const transformProfileData = (apiProfile: any) => {
+  return {
+    profile: {
+      bio: apiProfile.bio || "",
+      skills: apiProfile.skills || [],
+      languages: apiProfile.languages || [],
+      unavailability: apiProfile.unavailability || [],
+      location: apiProfile.locationData || null,
+      phoneNumber: apiProfile.phoneNumber || "",
+    },
+    education: apiProfile.education?.map((edu: any, index: any) => ({
+      id: index + 1,
+      type: edu.Degree || "Degree",
+      period: edu.period || "",
+      institution: edu.institure || edu.institute || "",
+      description: edu.GPA ? `GPA: ${edu.GPA}` : "",
+    })) || [],
+    experiences: apiProfile.WorkExperience?.map((exp: any, index: any) => ({
+      id: index + 1,
+      title: exp.title || "",
+      company: exp.company || "",
+      period: exp.period || "",
+      description: exp.description || "",
+      points: exp.points || (exp.description ? convertDescriptionToPoints(exp.description) : []),
+    })) || [],
+    certifications: apiProfile.certificates?.map((cert: any, index: any) => ({
+      id: index + 1,
+      name: cert.name || "",
+      issuer: cert.issuer || "",
+      date: cert.date || "",
+      description: cert.description || "",
+      certificateUrl: cert.fileUrl || "",
+      certificateFileName: cert.fileName || "",
+      certificateMime: cert.mimeType || "",
+    })) || [],
+    schedule: {
+      availability: "Monday - Friday, 9:00 AM - 6:00 PM EST",
+      timezone: "Eastern Standard Time",
+      preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
+    },
+  };
+};

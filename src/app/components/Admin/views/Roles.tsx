@@ -7,12 +7,14 @@ interface RolesViewProps {
   selectedCompany: Company;
   roles: Role[];
   onRoleSelect: (role: Role) => void;
+  onPayoffUpdate?: (roleId: string, newPercentage: number) => void;
 }
 
 export default function RolesView({
   selectedCompany,
   roles,
   onRoleSelect,
+  onPayoffUpdate,
 }: RolesViewProps) {
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -38,6 +40,7 @@ export default function RolesView({
               role={role}
               index={index}
               onSelect={onRoleSelect}
+              onPayoffUpdate={onPayoffUpdate}
             />
           ))
         )}

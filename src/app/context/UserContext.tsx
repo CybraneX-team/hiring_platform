@@ -58,19 +58,33 @@ export const UserProvider = ({ children }: UserProviderProps): JSX.Element => {
   });
 
   const [user, setuser] = useState<UserInterface | null>(null);
-
   const [profile, setprofile] = useState<any>(null);
-
   const [mode, setmode] = useState("");
 
-  // Add updateProfile method
+  // FIXED: Update profile and localStorage in one place
   const updateProfile = (newProfile: any) => {
+    console.log("Updating profile in context:", newProfile);
+    
+    // Update state
     setprofile(newProfile);
+    
+    // Update localStorage
     if (typeof window !== "undefined") {
-      localStorage.setItem("profile", JSON.stringify(newProfile));
+      try {
+        if (newProfile) {
+          localStorage.setItem("profile", JSON.stringify(newProfile));
+          console.log("Profile saved to localStorage");
+        } else {
+          localStorage.removeItem("profile");
+          console.log("Profile removed from localStorage");
+        }
+      } catch (error) {
+        console.error("Failed to update localStorage:", error);
+      }
     }
   };
 
+  // Load initial data from localStorage on mount
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
@@ -88,30 +102,32 @@ export const UserProvider = ({ children }: UserProviderProps): JSX.Element => {
     try {
       const storedProfile = localStorage.getItem("profile");
       if (storedProfile) {
-        setprofile(JSON.parse(storedProfile));
+        const parsedProfile = JSON.parse(storedProfile);
+        setprofile(parsedProfile);
+        console.log("Profile loaded from localStorage:", parsedProfile);
       }
     } catch (error) {
       console.error("Failed to parse profile from localStorage", error);
     }
   }, []);
 
-  // Sync user state with localStorage
+  // Sync user state with localStorage when it changes
   useEffect(() => {
-    if (user) {
-      localStorage.setItem("user", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("user");
+    if (typeof window === "undefined") return;
+    
+    try {
+      if (user) {
+        localStorage.setItem("user", JSON.stringify(user));
+      } else {
+        localStorage.removeItem("user");
+      }
+    } catch (error) {
+      console.error("Failed to sync user to localStorage", error);
     }
   }, [user]);
 
-  // Sync profile state with localStorage
-  useEffect(() => {
-    if (profile) {
-      localStorage.setItem("profile", JSON.stringify(profile));
-    } else {
-      localStorage.removeItem("profile");
-    }
-  }, [profile]);
+  // REMOVED: The profile sync useEffect that was causing duplication
+  // Profile updates should ONLY happen through updateProfile()
 
   return (
     <UserContext.Provider

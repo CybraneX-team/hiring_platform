@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { FileText, Eye, Download, CheckCircle, XCircle } from "lucide-react";
 import type { Application, SubmittedDocument } from "../../../types";
 
-
 interface DocumentVerificationViewProps {
   selectedApplicant: Application;
   submittedDocs: SubmittedDocument[];
@@ -20,6 +19,50 @@ export default function DocumentVerificationView({
   onDone,
   isUpdating = false,
 }: DocumentVerificationViewProps) {
+  
+  const renderTextValue = (doc: SubmittedDocument) => {
+    if (doc.inputType !== "text" || !doc.value) return null;
+
+    // Handle Bank Details object
+    if (doc.name === "Bank Details" && typeof doc.value === "object") {
+      return (
+        <div className="mt-3 p-4 bg-gray-50 rounded-lg space-y-2 text-sm border border-gray-200">
+          <p className="font-semibold text-gray-700 mb-2">Submitted Bank Details:</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <span className="text-gray-600 text-xs">Account Holder:</span>
+              <p className="text-gray-900 font-medium">{doc.value.accountHolderName || "N/A"}</p>
+            </div>
+            <div>
+              <span className="text-gray-600 text-xs">Account Number:</span>
+              <p className="text-gray-900 font-medium">{doc.value.accountNumber || "N/A"}</p>
+            </div>
+            <div>
+              <span className="text-gray-600 text-xs">IFSC Code:</span>
+              <p className="text-gray-900 font-medium">{doc.value.ifscCode || "N/A"}</p>
+            </div>
+            <div>
+              <span className="text-gray-600 text-xs">Bank Name:</span>
+              <p className="text-gray-900 font-medium">{doc.value.bankName || "N/A"}</p>
+            </div>
+            <div className="col-span-2">
+              <span className="text-gray-600 text-xs">Branch:</span>
+              <p className="text-gray-900 font-medium">{doc.value.branch || "N/A"}</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Handle simple text value
+    return (
+      <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <p className="text-gray-600 text-xs mb-1">Submitted Information:</p>
+        <p className="text-sm text-gray-900 font-medium">{doc.value}</p>
+      </div>
+    );
+  };
+
   const renderDocumentActions = (doc: SubmittedDocument) => {
     if (doc.status !== "submitted") {
       return null;
@@ -85,18 +128,23 @@ export default function DocumentVerificationView({
       key={doc.id}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-3 sm:p-4 border border-gray-200 rounded-lg"
+      className="p-3 sm:p-4 border border-gray-200 rounded-lg bg-white"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center space-x-3 min-w-0">
           <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <span className="text-sm font-medium text-gray-700 line-clamp-1">
               {doc.name}
             </span>
-            <p className="text-xs text-gray-500 line-clamp-1">
-              {doc.file || "No file provided"}
-            </p>
+            {doc.inputType === "file" && (
+              <p className="text-xs text-gray-500 line-clamp-1">
+                {doc.file || "No file provided"}
+              </p>
+            )}
+            {doc.inputType === "text" && doc.status !== "submitted" && (
+              <p className="text-xs text-gray-500">Text input {doc.status || ""}</p>
+            )}
           </div>
         </div>
 
@@ -118,6 +166,9 @@ export default function DocumentVerificationView({
           {renderDocumentActions(doc)}
         </div>
       </div>
+
+      {/* Display text value for text inputs when submitted */}
+      {doc.inputType === "text" && doc.status === "submitted" && renderTextValue(doc)}
     </motion.div>
   );
 

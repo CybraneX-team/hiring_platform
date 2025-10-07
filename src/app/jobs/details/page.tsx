@@ -54,7 +54,7 @@ interface Job {
   postedDate: string;
   applicationDeadline?: string;
   companyDescription: string;
-  skillsInJobPost : string[];
+  skillsInJobPost: string[];
   educationQualifications: string[];
   responsibilities: string[];
   benefits: string[];
@@ -70,6 +70,7 @@ interface Job {
   mandatoryCertificates?: string[];
   payRangeType?: "Daily" | "Monthly";
   fatIncluded?: boolean;
+   payoffAmountPercentage?: number; 
 }
 
 // Components (keep your existing CustomButton, CustomBadge, CustomAvatar)
@@ -688,8 +689,17 @@ function JobListingContent() {
   };
 
   // Handle actual job application (your original API call)
-  const handleActualApply = async () => {
-    // console.log("jobId || !user?.id || !profile?.id", jobId, user?.id, profile?._id);
+  // Modify handleActualApply to accept custom answers as parameter
+  const handleActualApply = async (
+    customAnswersData?: Record<string, string>
+  ) => {
+    console.log(
+      "jobId !user?.id || !profile?.id",
+      jobId,
+      user?.id,
+      profile?._id
+    );
+
     if (!jobId || !user?.id || !profile?._id) {
       toast.error(
         "Missing required information. Please ensure you're logged in and have a profile."
@@ -700,20 +710,27 @@ function JobListingContent() {
     try {
       setIsApplying(true);
 
+      // Transform the custom answers to match backend format
+      const customQuestionAnswers =
+        job?.customQuestions?.map((question: any) => ({
+          questionId: question.id,
+          question: question.question,
+          answer: customAnswersData?.[question.id] || "",
+        })) || [];
+
       const applicationData = {
         jobId: jobId,
         userId: user.id,
         profileId: profile._id,
         coverLetter: "",
+        customQuestionAnswers: customQuestionAnswers, 
       };
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/application/`,
+        `${process.env.NEXT_PUBLIC_API_URL}/application`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(applicationData),
         }
       );
@@ -734,14 +751,14 @@ function JobListingContent() {
       // Success
       setHasApplied(true);
       toast.success(
-        `Application submitted successfully! Match Score: ${result.data.matchAnalysis.overallScore}%`,
+        `Application submitted successfully! Match Score: ${result.data.matchAnalysis.overallScore}`,
         {
           position: "top-right",
           autoClose: 5000,
         }
       );
-      
-      await fetchJobDetails()
+
+      await fetchJobDetails();
 
       if (result.data.matchAnalysis.recommendations?.length > 0) {
         setTimeout(() => {
@@ -760,10 +777,7 @@ function JobListingContent() {
         error instanceof Error
           ? error.message
           : "Failed to submit application. Please try again.",
-        {
-          position: "top-right",
-          autoClose: 5000,
-        }
+        { position: "top-right", autoClose: 5000 }
       );
     } finally {
       setIsApplying(false);
@@ -792,15 +806,20 @@ function JobListingContent() {
   //   setShowApplicationPopup(true)
   // }
 
+  // Replace the existing handleApplicationSubmit function with this:
   const handleApplicationSubmit = (data: any) => {
-    // console.log("Application submitted:", data)
+    console.log("Application submitted", data);
     setShowApplicationPopup(false);
 
-    // If this was custom questions, call the actual API
+    // If this was custom questions, call the actual API with the answers
     if (job?.customQuestions && job.customQuestions.length > 0) {
-      handleActualApply(); // Call your actual API
+      // Update the parent state with the received answers
+      setCustomQAnswers(data);
+      // Call API with the received data
+      handleActualApply(data);
     } else {
-      setShowSuccessPopup(true); // Show success for full form
+      // Show success for full form
+      setShowSuccessPopup(true);
     }
   };
 
@@ -835,43 +854,74 @@ function JobListingContent() {
   }
 
   // Format helpers
-  const formatSalary = () => {
-    if (!job.salaryRange) return "Salary not specified";
-    const { min, max, currency, period } = job.salaryRange;
+// Format helpers
+const formatSalary = () => {
 
-    const payType = job.payRangeType ? ` / ${job.payRangeType}` : (period ? ` / ${period}` : "");
-    const currencySymbol = currency || "₹";
-    if (min && min > 0) {
-      return `${currencySymbol}${min.toLocaleString()} - ${currencySymbol}${max.toLocaleString()}`;
-    }
-    return `Up to ${currencySymbol}${max.toLocaleString()}`;
+  if (!job.salaryRange) return "Salary not specified";
+  const { min, max, currency, period } = job.salaryRange;
+  
+  const payoff = (job as any).payoffAmountPercentage || 0;
+  
+  // Calculate amounts after deducting payoff percentage
+  const calculateDeductedAmount = (amount: number) => {
+    return Math.round(amount - (amount * payoff / 100));
   };
+  
+  const payType = job.payRangeType
+    ? ` / ${job.payRangeType}`
+    : "";
+  const currencySymbol = currency || "₹";
+  
+  if (min && min > 0) {
+    // If min and max are the same, show single value with deduction
+    if (min === max) {
+      const deductedAmount = calculateDeductedAmount(min);
+      return `${currencySymbol}${deductedAmount.toLocaleString()}${payType}`;
+    }
+    // Different min and max - show range with deductions
+    const deductedMin = calculateDeductedAmount(min);
+    const deductedMax = calculateDeductedAmount(max);
+    return `${currencySymbol}${deductedMin.toLocaleString()} - ${currencySymbol}${deductedMax.toLocaleString()}${payType}`;
+  }
+  const deductedMax = calculateDeductedAmount(max);
+  return `Up to ${currencySymbol}${deductedMax.toLocaleString()}`;
+};
+
 
   // Helper: last four comma-separated parts of an address
   const getLastFourParts = (address?: string) => {
     if (!address) return "Location unavailable";
     const parts = address
-      .split(',')
+      .split(",")
       .map((p) => p.trim())
       .filter((p) => p.length > 0);
     if (parts.length <= 4) return address;
-    return parts.slice(-4).join(', ');
+    return parts.slice(-4).join(", ");
   };
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "—";
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return "—";
-    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    return d.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
-  
+
   const formatPeriod = (t?: string) => {
     if (!t) return "";
     return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
   };
-  
+
   const formatCoords = (coords?: { latitude?: number; longitude?: number }) => {
-    if (!coords || typeof coords.latitude !== 'number' || typeof coords.longitude !== 'number') return undefined;
+    if (
+      !coords ||
+      typeof coords.latitude !== "number" ||
+      typeof coords.longitude !== "number"
+    )
+      return undefined;
     return `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`;
   };
 
@@ -942,11 +992,21 @@ function JobListingContent() {
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {job.jobType && <CustomBadge>{job.jobType}</CustomBadge>}
                       {(job.experienceLevel || job.experience) && (
-                        <CustomBadge>{job.experienceLevel || job.experience}</CustomBadge>
+                        <CustomBadge>
+                          {job.experienceLevel || job.experience}
+                        </CustomBadge>
                       )}
-                      {job.department && <CustomBadge>{job.department}</CustomBadge>}
+                      {job.department && (
+                        <CustomBadge>{job.department}</CustomBadge>
+                      )}
                       {job.location && (
-                        <CustomBadge>{getLastFourParts(typeof job.location === 'string' ? job.location : job.location?.address)}</CustomBadge>
+                        <CustomBadge>
+                          {getLastFourParts(
+                            typeof job.location === "string"
+                              ? job.location
+                              : job.location?.address
+                          )}
+                        </CustomBadge>
                       )}
                     </div>
                   </div>
@@ -956,10 +1016,10 @@ function JobListingContent() {
                 <div className="flex flex-col items-stretch lg:items-end gap-2 mt-1 lg:mt-0 lg:ml-6 w-full lg:w-auto">
                   <div className="text-left lg:text-right w-full">
                     <div className="inline-flex items-center gap-2 px-3 py-1.5">
-                      <span className="text-base sm:text-xl font-bold text-[#111827] leading-tight">{formatSalary()}</span>
-                      {job.payRangeType && (
-                        <span className="text-xs font-normal text-[#6B7280]">/ {formatPeriod(job.payRangeType)}</span>
-                      )}
+                      <span className="text-base sm:text-xl font-bold text-[#111827] leading-tight">
+                        {formatSalary()}
+                      </span>
+                      
                     </div>
                   </div>
                   <CustomButton
@@ -977,30 +1037,39 @@ function JobListingContent() {
                     ) : !job.isActive ? (
                       "Position Closed"
                     ) : (
-                      <span className="inline-flex items-center gap-1">Apply <ExternalLink className="w-4 h-4" /></span>
+                      <span className="inline-flex items-center gap-1">
+                        Apply <ExternalLink className="w-4 h-4" />
+                      </span>
                     )}
                   </CustomButton>
                 </div>
-
               </div>
 
               {/* Quick stats row to utilize width */}
               <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-6 text-sm border-t border-gray-100 pt-4 justify-center items-center text-center">
                 <div>
                   <div className="text-[#A1A1A1]">Openings</div>
-                  <div className="text-[#32343A] font-medium">{job.noOfOpenings || 1}</div>
+                  <div className="text-[#32343A] font-medium">
+                    {job.noOfOpenings || 1}
+                  </div>
                 </div>
                 <div>
                   <div className="text-[#A1A1A1]">Applications</div>
-                  <div className="text-[#32343A] font-medium">{job.totalApplications}</div>
+                  <div className="text-[#32343A] font-medium">
+                    {job.totalApplications}
+                  </div>
                 </div>
                 <div>
                   <div className="text-[#A1A1A1]">Posted</div>
-                  <div className="text-[#32343A] font-medium">{formatDate(job.postedDate)}</div>
+                  <div className="text-[#32343A] font-medium">
+                    {formatDate(job.postedDate)}
+                  </div>
                 </div>
                 <div>
                   <div className="text-[#A1A1A1]">Deadline</div>
-                  <div className="text-[#32343A] font-medium">{formatDate(job.applicationDeadline)}</div>
+                  <div className="text-[#32343A] font-medium">
+                    {formatDate(job.applicationDeadline)}
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -1013,122 +1082,143 @@ function JobListingContent() {
           >
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
               <div className="lg:col-span-2 space-y-8 lg:pr-10">
-              {/* Job Description */}
-              <div className="">
-                <h2 className="text-lg font-semibold text-[#1F2937] mb-3">
-                  Job description
-                </h2>
-                <div className="space-y-4 text-justify text-sm text-[#4B5563] leading-relaxed max-w-4xl">
-                  <TruncatedText 
-                    text={job.description} 
-                    maxWords={50}
-                    className="text-sm text-[#4B5563] leading-relaxed"
-                  />
-                </div>
-              </div>
-
-              {/* Skills in Job Post (raw tags) */}
-              {job.skillsInJobPost && job.skillsInJobPost.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Skills Mentioned</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {job.skillsInJobPost.map((skill: string, idx: number) => (
-                      <CustomBadge key={`${skill}-${idx}`}>{skill}</CustomBadge>
-                    ))}
+                {/* Job Description */}
+                <div className="">
+                  <h2 className="text-lg font-semibold text-[#1F2937] mb-3">
+                    Job description
+                  </h2>
+                  <div className="space-y-4 text-justify text-sm text-[#4B5563] leading-relaxed max-w-4xl">
+                    <TruncatedText
+                      text={job.description}
+                      maxWords={50}
+                      className="text-sm text-[#4B5563] leading-relaxed"
+                    />
                   </div>
                 </div>
-              )}
 
-              {/* Required Skills */}
-              {job.requiredSkills && job.requiredSkills.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
-                    Required Skills
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {job.requiredSkills.map((skill, index) => (
-                      <CustomBadge key={index}>
-                        {typeof skill === "string" ? skill : skill.name}
-                        {typeof skill === "object" && skill.level && (
-                          <span className="ml-1 text-xs">({skill.level})</span>
-                        )}
-                      </CustomBadge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Qualifications */}
-              {job.educationQualifications &&
-                job.educationQualifications.length > 0 && (
+                {/* Skills in Job Post (raw tags) */}
+                {job.skillsInJobPost && job.skillsInJobPost.length > 0 && (
                   <div>
                     <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
-                      Qualifications
+                      Skills Mentioned
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {job.skillsInJobPost.map((skill: string, idx: number) => (
+                        <CustomBadge key={`${skill}-${idx}`}>
+                          {skill}
+                        </CustomBadge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Required Skills */}
+                {job.requiredSkills && job.requiredSkills.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                      Required Skills
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {job.requiredSkills.map((skill, index) => (
+                        <CustomBadge key={index}>
+                          {typeof skill === "string" ? skill : skill.name}
+                          {typeof skill === "object" && skill.level && (
+                            <span className="ml-1 text-xs">
+                              ({skill.level})
+                            </span>
+                          )}
+                        </CustomBadge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Qualifications */}
+                {job.educationQualifications &&
+                  job.educationQualifications.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                        Qualifications
+                      </h3>
+                      <ul className="space-y-2 text-sm text-[#4B5563]">
+                        {job.educationQualifications.map(
+                          (requirement, index) => (
+                            <li key={index} className="flex items-start">
+                              <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                              {requirement}
+                            </li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  )}
+
+                {/* Key Responsibilities */}
+                {job.responsibilities && job.responsibilities.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                      Key Responsibilities
                     </h3>
                     <ul className="space-y-2 text-sm text-[#4B5563]">
-                      {job.educationQualifications.map((requirement, index) => (
+                      {job.responsibilities.map((responsibility, index) => (
                         <li key={index} className="flex items-start">
                           <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                          {requirement}
+                          {responsibility}
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
 
-              {/* Key Responsibilities */}
-              {job.responsibilities && job.responsibilities.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
-                    Key Responsibilities
-                  </h3>
-                  <ul className="space-y-2 text-sm text-[#4B5563]">
-                    {job.responsibilities.map((responsibility, index) => (
-                      <li key={index} className="flex items-start">
-                        <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                        {responsibility}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+                {/* Mandatory Certificates */}
+                {job.mandatoryCertificates &&
+                  job.mandatoryCertificates.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                        Mandatory Certificates
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {job.mandatoryCertificates.map((cert, idx) => (
+                          <CustomBadge key={`${cert}-${idx}`}>
+                            {cert}
+                          </CustomBadge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-              {/* Mandatory Certificates */}
-              {job.mandatoryCertificates && job.mandatoryCertificates.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Mandatory Certificates</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {job.mandatoryCertificates.map((cert, idx) => (
-                      <CustomBadge key={`${cert}-${idx}`}>{cert}</CustomBadge>
-                    ))}
+                {/* Benefits */}
+                {job.benefits && job.benefits.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#1F2937] mb-4">
+                      Benefits
+                    </h3>
+                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-[#4B5563]">
+                      {job.benefits.map((benefit, idx) => (
+                        <li key={idx} className="flex items-start">
+                          <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                          {benefit}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Benefits */}
-              {job.benefits && job.benefits.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Benefits</h3>
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-[#4B5563]">
-                    {job.benefits.map((benefit, idx) => (
-                      <li key={idx} className="flex items-start">
-                        <span className="inline-block w-1.5 h-1.5 bg-[#6B7280] rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                        {benefit}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Work Schedule moved to right facts card */}
+                {/* Work Schedule moved to right facts card */}
               </div>
 
               {/* Secondary column: About company and additional meta (no duplicates) */}
               <div className="space-y-8 border-t lg:border-t-0 mt-8 lg:mt-0 pt-8 lg:pt-0 lg:-ml-10">
                 <div className="lg:border-l border-gray-200 lg:pl-10">
-                  <h2 className="text-lg font-semibold text-[#1F2937] mb-3">About Company</h2>
+                  <h2 className="text-lg font-semibold text-[#1F2937] mb-3">
+                    About Company
+                  </h2>
                   <div className="space-y-4 text-justify text-sm text-[#4B5563] leading-relaxed">
-                    <TruncatedText text={job.companyDescription} maxWords={50} className="text-sm text-[#4B5563] leading-relaxed" />
+                    <TruncatedText
+                      text={job.companyDescription}
+                      maxWords={50}
+                      className="text-sm text-[#4B5563] leading-relaxed"
+                    />
                   </div>
                 </div>
 
@@ -1136,20 +1226,36 @@ function JobListingContent() {
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <div className="text-[#A1A1A1]">Status</div>
-                      <div className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium mt-1 ${job.isActive ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                        {job.jobStatus || (job.isActive ? 'Open' : 'Closed')}
+                      <div
+                        className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium mt-1 ${
+                          job.isActive
+                            ? "bg-green-50 text-green-700"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {job.jobStatus || (job.isActive ? "Open" : "Closed")}
                       </div>
                     </div>
                     <div>
                       <div className="text-[#A1A1A1]">FAT Included</div>
-                      <div className="font-medium text-[#32343A]">{typeof job.fatIncluded === 'boolean' ? (job.fatIncluded ? 'Yes' : 'No') : '—'}</div>
+                      <div className="font-medium text-[#32343A]">
+                        {typeof job.fatIncluded === "boolean"
+                          ? job.fatIncluded
+                            ? "Yes"
+                            : "No"
+                          : "—"}
+                      </div>
                     </div>
                     {(() => {
-                      const coords = formatCoords((job as any).location?.coordinates);
+                      const coords = formatCoords(
+                        (job as any).location?.coordinates
+                      );
                       return coords ? (
                         <div className="col-span-2">
                           <div className="text-[#A1A1A1]">Coordinates</div>
-                          <div className="font-medium text-[#32343A]">{coords}</div>
+                          <div className="font-medium text-[#32343A]">
+                            {coords}
+                          </div>
                         </div>
                       ) : null;
                     })()}
@@ -1158,36 +1264,52 @@ function JobListingContent() {
                         {job.workSchedule?.startDate && (
                           <div>
                             <div className="text-[#A1A1A1]">Start</div>
-                            <div className="font-medium text-[#32343A]">{formatDate(String(job.workSchedule.startDate))}</div>
+                            <div className="font-medium text-[#32343A]">
+                              {formatDate(String(job.workSchedule.startDate))}
+                            </div>
                           </div>
                         )}
                         {job.workSchedule?.endDate && (
                           <div>
                             <div className="text-[#A1A1A1]">End</div>
-                            <div className="font-medium text-[#32343A]">{formatDate(String(job.workSchedule.endDate))}</div>
+                            <div className="font-medium text-[#32343A]">
+                              {formatDate(String(job.workSchedule.endDate))}
+                            </div>
                           </div>
                         )}
                         {job.workSchedule?.hoursPerWeek && (
                           <div>
                             <div className="text-[#A1A1A1]">Hours/Week</div>
-                            <div className="font-medium text-[#32343A]">{job.workSchedule.hoursPerWeek}</div>
+                            <div className="font-medium text-[#32343A]">
+                              {job.workSchedule.hoursPerWeek}
+                            </div>
                           </div>
                         )}
                         {job.workSchedule?.flexibility && (
                           <div className="col-span-2">
                             <div className="text-[#A1A1A1]">Flexibility</div>
-                            <div className="font-medium text-[#32343A]">{job.workSchedule.flexibility}</div>
+                            <div className="font-medium text-[#32343A]">
+                              {job.workSchedule.flexibility}
+                            </div>
                           </div>
                         )}
                       </div>
                     )}
                     <div>
                       <div className="text-[#A1A1A1]">Custom Questions</div>
-                      <div className="font-medium text-[#32343A]">{Array.isArray(job.customQuestions) ? job.customQuestions.length : 0}</div>
+                      <div className="font-medium text-[#32343A]">
+                        {Array.isArray(job.customQuestions)
+                          ? job.customQuestions.length
+                          : 0}
+                      </div>
                     </div>
                     <div>
                       <div className="text-[#A1A1A1]">Users Applied</div>
-                      <div className="font-medium text-[#32343A]">{Array.isArray(job.usersApplied) ? job.usersApplied.length : (job.totalApplications || 0)}</div>
+                      <div className="font-medium text-[#32343A]">
+                        {Array.isArray(job.usersApplied)
+                          ? job.usersApplied.length
+                          : job.totalApplications || 0}
+                      </div>
                     </div>
                   </div>
                 </div>
