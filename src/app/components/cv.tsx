@@ -196,7 +196,9 @@ export default function ApplicationDetailView() {
   }, [profile, user]);
 
   const router = useRouter();
-
+//  const [companyLogo, setCompanyLogo] = useState(
+//     profile ? profile.companyLogo : ""
+//   );
   const [isShortlisted, setIsShortlisted] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const brandName = "Compscope";

@@ -1,52 +1,123 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, MapPin, Clock, CheckCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, CheckCircle, Download } from "lucide-react";
 import { WorkExperienceCard } from "./WorkExperienceCard";
+import { useRef, useState } from "react";
+import { toJpeg } from "html-to-image";
+import jsPDF from "jspdf";
 
 interface CompanyApplicantsProps {
-  itemId: any; // The selected profile data
+  itemId: any;
   onBack: () => void;
 }
 
 export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsProps) {
-  const applicant = itemId; // The actual profile data passed from parent
+  const applicant = itemId;
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [preparingPdf, setPreparingPdf] = useState(false);
+
   console.log("applicant", applicant);
 
-  // Generate avatar initials from name
   const getInitials = (name: string) => {
     return name?.split(" ").map(n => n[0]).join("").toUpperCase() || "N/A";
   };
 
-  // Check if user is available based on openToRoles
   const isAvailable = applicant?.openToRoles && applicant.openToRoles.length > 0;
+
+  const handleDownload = async () => {
+    if (!contentRef.current || !applicant) return;
+
+    setPreparingPdf(true);
+    
+    await new Promise((r) =>
+      requestAnimationFrame(() => requestAnimationFrame(r))
+    );
+
+    try {
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const node = contentRef.current;
+      const rect = node.getBoundingClientRect();
+
+      const cvDataUrl = await toJpeg(node, {
+        quality: 0.95,
+        backgroundColor: "#ffffff",
+        cacheBust: true,
+        filter: (n: HTMLElement) => {
+          const hasAttr = typeof n.getAttribute === "function";
+          const ignore =
+            hasAttr &&
+            (n.getAttribute("data-html2canvas-ignore") === "true" ||
+              n.getAttribute("data-pdf-hide") === "true");
+          return !ignore;
+        },
+      });
+
+      const imgWidth = pageWidth;
+      const imgHeight = (rect.height * imgWidth) / rect.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(cvDataUrl, "JPEG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(cvDataUrl, "JPEG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(
+        `${applicant.name?.replace(/\s+/g, "-") || "Profile"}-Details.pdf`
+      );
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Error generating PDF. Please try again.");
+    } finally {
+      setPreparingPdf(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] p-4 sm:p-6 md:p-0">
-      {/* <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">
-        Compscope
-      </h1> */}
       <div className="max-w-7xl mx-auto mt-12">
-        {/* Header */}
-        {/* <div className="mb-10">
+        <div className="mb-10 flex items-center justify-between">
           <motion.button
             onClick={onBack}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className=" cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
+            className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
           </motion.button>
-        </div> */}
 
-        {/* Main Content Card */}
+          <div data-html2canvas-ignore="true">
+            <motion.button
+              type="button"
+              onClick={handleDownload}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              disabled={preparingPdf}
+              className="px-4 py-2 rounded-full bg-[#76FF82] cursor-pointer text-black font-medium inline-flex items-center gap-2 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#76FF82] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-4 h-4" />
+              {preparingPdf ? "Preparing..." : "Download"}
+            </motion.button>
+          </div>
+        </div>
+
         <motion.div
+          ref={contentRef}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-xl p-6 sm:p-8 shadow-sm"
         >
-          {/* Profile Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-gray-200">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
@@ -66,7 +137,6 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
             </div>
           </div>
 
-          {/* Status Indicators */}
           <div className="flex flex-wrap items-center gap-6 mb-8 text-sm text-gray-600">
             <div className="flex items-center gap-2">
               <CheckCircle className={`w-4 h-4 ${isAvailable ? 'text-blue-500' : 'text-red-500'}`} />
@@ -90,7 +160,6 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
             )}
           </div>
 
-          {/* Open to Roles Section */}
           {applicant?.openToRoles && applicant.openToRoles.length > 0 && (
             <div className="mb-8">
               <h3 className="text-sm font-medium text-gray-900 mb-3">Open to Roles</h3>
@@ -107,7 +176,6 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
             </div>
           )}
 
-          {/* Skills Section */}
           {applicant?.skills && applicant.skills.length > 0 && (
             <div className="mb-8">
               <h3 className="text-sm font-medium text-gray-900 mb-3">Skills</h3>
@@ -124,7 +192,6 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
             </div>
           )}
 
-          {/* Certifications Section */}
           {applicant?.certificates && applicant.certificates.length > 0 && (
             <div className="mb-8">
               <h3 className="text-sm font-medium text-gray-900 mb-3">
@@ -153,7 +220,6 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
             </div>
           )}
 
-          {/* Experience Section */}
           {applicant?.WorkExperience && applicant.WorkExperience.length > 0 && (
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-900 mb-6">
@@ -171,7 +237,6 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {/* Education Section */}
             {applicant?.education && applicant.education.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -204,7 +269,6 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
               </div>
             )}
 
-            {/* Bio Section */}
             {applicant?.bio && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -217,7 +281,6 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
             )}
           </div>
 
-          {/* Contact Section */}
           <div className="border-t border-gray-200 pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Contact Information
