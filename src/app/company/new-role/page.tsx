@@ -791,9 +791,7 @@ export default function PostRole() {
   const [payRange, setPayRange] = useState("₹12,000-60,000");
   const [aboutJob, setAboutJob] = useState("");
   const [jobTittle, setjobTittle] = useState("");
-  const [experienceLevel, setExperienceLevel] = useState<
-    "Entry" | "Mid" | "Senior" | "Executive"
-  >("Entry");
+  // Removed experience level toggle; use mandatory experience text instead
   const [experience, setExperience] = useState("");
 
   const [workStartDate, setWorkStartDate] = useState("");
@@ -1069,6 +1067,10 @@ export default function PostRole() {
       toast.error("Job title is required");
       return;
     }
+    if (!experience.trim()) {
+      toast.error("Experience is required");
+      return;
+    }
     if (!validateWorkDates()) {
       return;
     }
@@ -1088,7 +1090,6 @@ export default function PostRole() {
         userId: `${user?.id}`,
         title: jobTittle,
         jobType,
-        experienceLevel,
         experience,
         companyPerks,
         requiredSkillset,
@@ -1258,13 +1259,7 @@ export default function PostRole() {
           setActivePayRange(data.payRangeType);
         }
 
-        // Populate experience fields if present
-        if (data.experienceLevel) {
-          const lvl = String(data.experienceLevel) as any;
-          if (["Entry", "Mid", "Senior", "Executive"].includes(lvl)) {
-            setExperienceLevel(lvl);
-          }
-        }
+        // Experience level removed; keep only experience text if provided
         if (data.experience) {
           setExperience(data.experience);
         }
@@ -1384,25 +1379,9 @@ export default function PostRole() {
           </div>
 
           <div className="space-y-8">
-            {/* Experience */}
+            {/* Experience (required) */}
             <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700">Experience Level</label>
-              <div className="flex bg-gray-100 rounded-lg p-1 w-fit">
-                {(["Entry", "Mid", "Senior", "Executive"] as const).map((level) => (
-                  <button
-                    key={level}
-                    onClick={() => setExperienceLevel(level)}
-                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
-                      experienceLevel === level
-                        ? "bg-[#76FF82] text-black shadow-sm"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                  >
-                    {level}
-                  </button>
-                ))}
-              </div>
-              <label className="text-sm font-medium text-gray-700">Experience (optional)</label>
+              <label className="text-sm font-medium text-gray-700">Experience</label>
               <input
                 type="text"
                 value={experience}

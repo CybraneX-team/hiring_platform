@@ -406,11 +406,19 @@ export default function AdminPanel() {
       }
 
       const result = await response.json();
+      try {
+        // eslint-disable-next-line no-console
+        console.log("[Admin][fetchRoles] API result:", result);
+      } catch {}
       const rawRoles = Array.isArray(result?.roles)
         ? result.roles
         : Array.isArray(result?.data?.roles)
         ? result.data.roles
         : [];
+      try {
+        // eslint-disable-next-line no-console
+        console.log("[Admin][fetchRoles] rawRoles (count):", rawRoles.length, rawRoles[0]);
+      } catch {}
 
       const normalizedRoles: Role[] = rawRoles.map((role: any, index: number) => {
         const title =
@@ -421,7 +429,7 @@ export default function AdminPanel() {
         const identifier =
           role?.id ?? role?._id ?? `role-${companyId}-${index.toString()}`;
 
-        return {
+        const mapped: Role = {
           id: String(identifier),
           title,
           department:
@@ -437,6 +445,7 @@ export default function AdminPanel() {
             typeof role?.type === "string" && role.type.trim().length > 0
               ? role.type
               : "Unknown",
+          payRangeType: typeof role?.payRangeType === "string" ? role.payRangeType : undefined,
           posted:
             typeof role?.posted === "string" && role.posted.trim().length > 0
               ? role.posted
@@ -452,6 +461,17 @@ export default function AdminPanel() {
           location:
             typeof role?.location === "string" ? role.location : undefined,
         };
+        try {
+          // eslint-disable-next-line no-console
+          console.log("[Admin][fetchRoles] mapped role snapshot:", {
+            id: mapped.id,
+            title: mapped.title,
+            salary: mapped.salary,
+            type: mapped.type,
+            payRangeType: role?.payRangeType,
+          });
+        } catch {}
+        return mapped;
       });
 
       setRolesData(normalizedRoles);

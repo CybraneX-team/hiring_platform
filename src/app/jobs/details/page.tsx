@@ -953,8 +953,8 @@ function JobListingContent() {
                 </div>
 
                 {/* Right side - Pay and Apply */}
-                <div className="flex flex-col items-end gap-2 mt-1 lg:mt-0 lg:ml-6">
-                  <div className="text-right">
+                <div className="flex flex-col items-stretch lg:items-end gap-2 mt-1 lg:mt-0 lg:ml-6 w-full lg:w-auto">
+                  <div className="text-left lg:text-right w-full">
                     <div className="inline-flex items-center gap-2 px-3 py-1.5">
                       <span className="text-base sm:text-xl font-bold text-[#111827] leading-tight">{formatSalary()}</span>
                       {job.payRangeType && (
@@ -963,7 +963,7 @@ function JobListingContent() {
                     </div>
                   </div>
                   <CustomButton
-                    className="font-semibold px-6 py-2 focus:outline-none cursor-pointer rounded-full shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-[#76FF82] to-[#8BFFA1]"
+                    className="w-full lg:w-auto font-semibold px-6 py-2 focus:outline-none cursor-pointer rounded-full shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-[#76FF82] to-[#8BFFA1]"
                     disabled={!job.isActive || isApplying || hasApplied}
                     onClick={handleApplyClick}
                   >
@@ -1124,7 +1124,7 @@ function JobListingContent() {
               </div>
 
               {/* Secondary column: About company and additional meta (no duplicates) */}
-              <div className="space-y-8 border-t lg:border-t-0 mt-8 lg:mt-0 pt-8 lg:pt-0 -ml-10">
+              <div className="space-y-8 border-t lg:border-t-0 mt-8 lg:mt-0 pt-8 lg:pt-0 lg:-ml-10">
                 <div className="lg:border-l border-gray-200 lg:pl-10">
                   <h2 className="text-lg font-semibold text-[#1F2937] mb-3">About Company</h2>
                   <div className="space-y-4 text-justify text-sm text-[#4B5563] leading-relaxed">

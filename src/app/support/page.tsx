@@ -63,7 +63,7 @@ export default function SupportPage() {
               className="text-center mb-16"
             >
               <h1 className="text-4xl md:text-5xl font-bold text-[#163A33] mb-4">
-                Support Center
+                Contact
               </h1>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                 Get help with ProjectMATCH.
@@ -81,8 +81,7 @@ export default function SupportPage() {
                 <div>
                   <h2 className="text-2xl font-bold text-[#163A33] mb-6 mt-10">Get in Touch</h2>
                   <p className="text-gray-600 mb-8">
-                    Reach out to our support team for assistance with your ProjectMATCH account, 
-                    technical issues, or general inquiries.
+                    Reach out to us for any queries, support or partnership opportunities.
                   </p>
                 </div>
 
@@ -92,9 +91,8 @@ export default function SupportPage() {
                       <Phone className="w-5 h-5 text-[#163A33]" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-[#163A33] mb-1">Phone Support</h3>
-                      <p className="text-gray-600">+1 (555) 123-4567</p>
-                      <p className="text-sm text-gray-500">Mon-Fri, 9AM-6PM</p>
+                      <h3 className="font-semibold text-[#163A33] mb-1">Contact</h3>
+                      <p className="text-gray-600">+91 7318546574</p>
                     </div>
                   </div>
 
@@ -103,20 +101,18 @@ export default function SupportPage() {
                       <Mail className="w-5 h-5 text-[#163A33]" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-[#163A33] mb-1">Email Support</h3>
-                      <p className="text-gray-600">support@projectmatch.com</p>
+                      <h3 className="font-semibold text-[#163A33] mb-1">Email</h3>
+                      <p className="text-gray-600">Support@compscope.in</p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-4">
                     <div className="bg-[#A6F56B] rounded-full p-3 flex-shrink-0">
-                      <Clock className="w-5 h-5 text-[#163A33]" />
+                      <MapPin className="w-5 h-5 text-[#163A33]" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-[#163A33] mb-1">Business Hours</h3>
-                      <p className="text-gray-600">Monday - Friday: 9:00 AM - 6:00 PM</p>
-                      <p className="text-gray-600">Saturday: 10:00 AM - 4:00 PM</p>
-                      <p className="text-gray-600">Sunday: Closed</p>
+                      <h3 className="font-semibold text-[#163A33] mb-1">Address</h3>
+                      <p className="text-gray-600">KHA NO. 310, PLOT NO. - 60, GANESHPUR, RAHMANPUR CHINHAT, LUCKNOW, 226028</p>
                     </div>
                   </div>
                 </div>

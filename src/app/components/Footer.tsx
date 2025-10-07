@@ -67,7 +67,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-8 sm:mt-10 md:mt-12 pt-6 sm:pt-7 md:pt-8 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-          <p className="text-[10px] sm:text-xs text-gray-600">© 2025 Compscope Non Metallics. All rights reserved.</p>
+          <p className="text-[10px] sm:text-xs text-gray-600">© 2025 Compscope Non Metallics. All rights reserved. COMPSCOPE Nonmetallics Technology Solutions (OPC) Pvt. Ltd.</p>
           <div className="flex items-center gap-3 sm:gap-4 text-[10px] sm:text-xs">
             <Link href="/privacy" className="text-gray-600 hover:text-[#17181D]">Privacy</Link>
             <span className="text-gray-300">|</span>

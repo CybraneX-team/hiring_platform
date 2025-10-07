@@ -13,6 +13,10 @@ interface RoleCardProps {
 export default function RoleCard({ role, index, onSelect }: RoleCardProps) {
   const departmentLabel = role.department?.trim() || "Department not specified";
   const typeLabel = role.type?.trim() || "Unknown";
+  // Show payRangeType (Daily/Monthly) under price strictly from API
+  const periodLabel = role.payRangeType
+    ? role.payRangeType.charAt(0).toUpperCase() + role.payRangeType.slice(1).toLowerCase()
+    : "";
   const statusLabel = role.status?.trim() || "Unknown";
   const postedLabel = role.posted?.trim() || "Unknown";
   const locationLabel = role.location?.trim();
@@ -90,7 +94,9 @@ export default function RoleCard({ role, index, onSelect }: RoleCardProps) {
             <div className="text-lg sm:text-xl font-bold text-black">
               {role.salary}
             </div>
-            <div className="text-sm text-gray-500">Per Year</div>
+            {role.payRangeType && (
+              <div className="text-sm text-gray-500">{role.payRangeType}</div>
+            )}
           </div>
 
           <motion.button

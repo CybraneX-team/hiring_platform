@@ -169,30 +169,13 @@ export default function JobComponent() {
     if (filter === "All") return jobs;
 
     return jobs.filter((job) => {
-      const jobType = job.jobType?.toLowerCase() || "";
-      const location = job.location?.toLowerCase() || "";
+      const jobType = (job.jobType || "").toLowerCase();
 
       switch (filter) {
         case "Long Term":
-          return (
-            jobType.includes("full-time") ||
-            jobType.includes("fulltime") ||
-            jobType.includes("Full-time") ||
-            jobType.includes("long-term") ||
-            jobType.includes("longterm") ||
-            jobType.includes("Long-term")
-          );
+          return jobType.includes("long term") || jobType.includes("long-term") || jobType === "longterm";
         case "Short Term":
-          return (
-            jobType.includes("part-time") ||
-            jobType.includes("parttime") ||
-            jobType.includes("Part-time") ||
-            jobType.includes("shortterm") ||
-            jobType.includes("short-term") ||
-            jobType.includes("Short-term")
-          );
-        case "Remote":
-          return jobType.includes("remote");
+          return jobType.includes("short term") || jobType.includes("short-term") || jobType === "shortterm";
         default:
           return true;
       }

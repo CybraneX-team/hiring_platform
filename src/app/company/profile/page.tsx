@@ -100,6 +100,23 @@ const cardVariants = {
   },
 };
 
+// Helper: last four comma-separated parts of an address
+const getLastFourParts = (address?: string) => {
+  if (!address) return "";
+  const parts = address
+    .split(",")
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
+  if (parts.length <= 4) return address.trim();
+  return parts.slice(-4).join(", ");
+};
+
+// Helper: truncate string to max characters with ellipsis
+const truncateChars = (text: string, max: number) => {
+  if (!text) return text;
+  return text.length > max ? `${text.slice(0, max)}...` : text;
+};
+
 const OlaMapComponent = ({
   location,
   onLocationSelect,
@@ -1442,6 +1459,39 @@ export default function ProfileTab() {
   const renderTabContent = () => {
     switch (activeTab) {
       case "profile":
+        // If profile has no data, show a single call-to-action card
+        if (!isProfileComplete()) {
+          return (
+            <motion.div
+              key="profile-empty"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="space-y-6 sm:space-y-8 text-black p-4 sm:p-6 lg:px-8"
+            >
+              <div className="bg-white rounded-lg p-8 sm:p-12 flex items-center justify-center min-h-[260px] sm:min-h-[320px]">
+                <div className="text-center">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Complete your company profile</h3>
+                  <p className="text-gray-500 text-sm sm:text-base mb-6">Add details like description, team size and location to get started.</p>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setActiveTab("profile");
+                      setIsEditOpen(true);
+                    }}
+                    className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#76FF82] hover:bg-green-400 text-black text-sm sm:text-base font-medium cursor-pointer"
+                  >
+                    Add Profile
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          );
+        }
+
         return (
           <motion.div
             key="profile"
@@ -1486,30 +1536,33 @@ export default function ProfileTab() {
                 </div>
               </motion.div>
 
-              <motion.div
-                variants={itemVariants}
-                className="space-y-3 sm:space-y-4"
-              >
-                <h3 className="text-xs sm:text-sm font-medium text-[#A1A1A1]">
-                  Company description
-                </h3>
-                <p className="text-justify text-xs sm:text-sm text-gray-600 leading-relaxed p-3 sm:p-4 rounded-lg">
-                  {formState.companyDescription ||
-                    "Enter company description..."}
-                </p>
-              </motion.div>
+              {formState.companyDescription?.trim() && (
+                <motion.div
+                  variants={itemVariants}
+                  className="space-y-3 sm:space-y-4"
+                >
+                  <h3 className="text-xs sm:text-sm font-medium text-[#A1A1A1]">
+                    Company description
+                  </h3>
+                  <p className="text-justify text-xs sm:text-sm text-gray-600 leading-relaxed p-3 sm:p-4 rounded-lg">
+                    {formState.companyDescription}
+                  </p>
+                </motion.div>
+              )}
 
-              <motion.div
-                variants={itemVariants}
-                className="space-y-3 mt-6 sm:mt-10 pb-6 sm:pb-10"
-              >
-                <h3 className="text-xs sm:text-sm text-[#A1A1A1]">
-                  No of People in Organization
-                </h3>
-                <div className="text-md  max-w-full sm:max-w-sm  text-gray-900 p-3 sm:p-4 rounded-lg">
-                  {formState.orgSize || "Enter team size"}
-                </div>
-              </motion.div>
+              {formState.orgSize?.trim() && (
+                <motion.div
+                  variants={itemVariants}
+                  className="space-y-3 mt-6 sm:mt-10 pb-6 sm:pb-10"
+                >
+                  <h3 className="text-xs sm:text-sm text-[#A1A1A1]">
+                    No of People in Organization
+                  </h3>
+                  <div className="text-md  max-w-full sm:max-w-sm  text-gray-900 p-3 sm:p-4 rounded-lg">
+                    {formState.orgSize}
+                  </div>
+                </motion.div>
+              )}
               <motion.div
                 variants={itemVariants}
                 className="space-y-3 sm:space-y-4"
@@ -1740,15 +1793,6 @@ export default function ProfileTab() {
 
       <div className="pt-16 sm:pt-24 pb-8 sm:pb-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Back Button */}
-          <motion.button
-            variants={itemVariants}
-            onClick={() => router.back()}
-            className="flex cursor-pointer  items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-200 rounded-full text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors mb-6 sm:mb-10"
-          >
-            <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
-            Back
-          </motion.button>
 
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -1780,7 +1824,7 @@ export default function ProfileTab() {
                   {formState.companyName || "Company Name"}
                 </h2>
                 <p className="text-gray-500 text-sm sm:text-base">
-                  {formState.locationText || "Location"}
+                  {truncateChars(getLastFourParts(formState.locationText), 50) || "Location"}
                 </p>
               </div>
             </div>

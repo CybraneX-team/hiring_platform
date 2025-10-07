@@ -18,6 +18,7 @@ export interface Role {
   applications: number;
   salary: string;
   type: string;
+  payRangeType?: string;
   posted: string;
   status: string;
   experienceLevel?: string;

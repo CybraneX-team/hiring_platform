@@ -75,6 +75,7 @@ const OlaMapComponent = ({
   location,
   onLocationSelect,
   searchQuery,
+  showAutoDetect = true,
 }: {
   location?: { lat: number; lng: number; address?: string };
   onLocationSelect?: (location: {
@@ -83,6 +84,7 @@ const OlaMapComponent = ({
     address: string;
   }) => void;
   searchQuery?: string;
+  showAutoDetect?: boolean;
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -575,27 +577,29 @@ const OlaMapComponent = ({
         </div>
       )}
 
-      <div className="absolute top-1 sm:top-1 right-1 sm:right-1 flex gap-1 sm:gap-2">
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={autoDetectLocation}
-          disabled={isDetecting}
-          className="cursor-pointer px-2 sm:px-3 py-1 bg-gray-800 text-white text-xs rounded-full border border-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center gap-1"
-        >
-          {isDetecting ? (
-            <>
-              <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-              Detecting...
-            </>
-          ) : (
-            <>
-              <MapPin className="w-3 h-3" />
-              Auto Detect
-            </>
-          )}
-        </motion.button>
-      </div>
+      {showAutoDetect && (
+        <div className="absolute top-1 sm:top-1 right-1 sm:right-1 flex gap-1 sm:gap-2">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={autoDetectLocation}
+            disabled={isDetecting}
+            className="cursor-pointer px-2 sm:px-3 py-1 bg-gray-800 text-white text-xs rounded-full border border-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+          >
+            {isDetecting ? (
+              <>
+                <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                Detecting...
+              </>
+            ) : (
+              <>
+                <MapPin className="w-3 h-3" />
+                Auto Detect
+              </>
+            )}
+          </motion.button>
+        </div>
+      )}
     </div>
   );
 };
@@ -2855,6 +2859,7 @@ export default function ProfileTab() {
                       <OlaMapComponent
                         location={profileData.profile.location}
                         searchQuery=""
+                        showAutoDetect={false}
                       />
                     </div>
                   </motion.div>
@@ -3252,7 +3257,7 @@ export default function ProfileTab() {
                 <div className="bg-white rounded-xl p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-semibold text-gray-900">
-                      Resume Management
+                      AI Profile Creation 
                     </h3>
                     {currentResumeId && (
                       <button
