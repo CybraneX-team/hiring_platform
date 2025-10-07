@@ -149,13 +149,10 @@ export const ResumePDF: React.FC<{ data: ResumeData; generatedOn?: string }> = (
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View style={[styles.row, { marginBottom: 8 }]}>
-            {/* Avatar: use image when available, fallback to initials */}
-            {/* {data.imageUrl ? (
-              // @ts-ignore - Image component is provided by react-pdf runtime
-              (React.createElement as any)('Image', { src: data.imageUrl, style: styles.imageAvatar })
-            ) : (
-              <Text style={styles.avatar}>{initials}</Text>
-            )} */}
+
+            {/* For Initials of name */}
+              {/* <Text style={styles.avatar}>{initials}</Text> */}
+
             <View>
               <Text style={styles.name}>{data.name || 'Unknown Name'}</Text>
             {data.title && (
