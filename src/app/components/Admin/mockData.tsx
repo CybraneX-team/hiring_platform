@@ -138,8 +138,8 @@ export const documentTypes: DocumentType[] = [
   { id: 6, name: "Portfolio/Work Samples", required: false },
 ];
 
-export const submittedDocuments: SubmittedDocument[] = [
-  { id: 1, name: "Aadhar Card", status: "submitted", file: "aadhar_john.pdf" },
-  { id: 2, name: "PAN Card", status: "submitted", file: "pan_john.pdf" },
-  { id: 3, name: "Resume/CV", status: "submitted", file: "resume_john.pdf" },
+export const submittedDocuments: any[] = [
+  { id: 1, name: "Aadhar Card", status: "submitted", file: "aadhar_john.pdf", inputType : "file" },
+  { id: 2, name: "PAN Card", status: "submitted", file: "pan_john.pdf", inputType : "file" },
+  { id: 3, name: "Resume/CV", status: "submitted", file: "resume_john.pdf", inputType : "file" },
 ];

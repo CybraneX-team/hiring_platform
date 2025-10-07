@@ -23,7 +23,14 @@ interface OlaMapsPlace {
   };
   name: string;
 }
-
+interface PageProps {
+  params?: Promise<{ [key: string]: string | string[] }>;
+  searchParams?: Promise<{ 
+    initialData?: string;
+    isEditMode?: string;
+    jobId?: string;
+  }>;
+}
 // OlaMaps integration
 let OlaMaps: any = null;
 let olaMaps: any = null;
@@ -759,11 +766,7 @@ export default function PostRole({
   initialData = null,
   isEditMode = false,
   jobId = null,
-}: {
-  initialData?: any;
-  isEditMode?: boolean;
-  jobId?: string | null;
-} = {}) {
+}:any) {
   const [activePayRange, setActivePayRange] = useState("Daily");
   const [companyPerksInput, setCompanyPerksInput] = useState("");
   const [companyPerks, setCompanyPerks] = useState<string[]>([]);
