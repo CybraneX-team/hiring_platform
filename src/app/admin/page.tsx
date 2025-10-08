@@ -488,6 +488,7 @@ const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
               typeof role?.payoffAmountPercentage === "number"
                 ? role.payoffAmountPercentage
                 : 25, // ✅ ADD THIS LINE
+            payRangeType :  role.payRangeType ?  role.payRangeType : ""
           };
         }
       );
@@ -533,7 +534,6 @@ const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
           : Array.isArray(result?.applications)
           ? result.applications
           : [];
-
         const normalizedApplications: Application[] = rawApplications.map(
           (app: any, index: number) => {
             const profile = app?.profile ?? {};
@@ -566,9 +566,9 @@ const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
             return {
               id: String(app?._id ?? app?.id ?? applicantInfo?._id ?? index),
               name:
-                typeof applicantInfo?.name === "string" &&
-                applicantInfo.name.trim().length > 0
-                  ? applicantInfo.name
+                typeof profile?.name === "string" &&
+                profile.name.trim().length > 0
+                  ? profile.name
                   : typeof profile?.name === "string" &&
                     profile.name.trim().length > 0
                   ? profile.name
@@ -644,11 +644,7 @@ const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
         const baseUrl =
           process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         const deleteUrl = `${baseUrl}/company/delete/${companyId}`;
-        console.log("Attempting to delete company:", {
-          companyId,
-          baseUrl,
-          deleteUrl,
-        });
+
 
         const response = await fetch(deleteUrl, {
           method: "DELETE",
@@ -953,6 +949,7 @@ const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
     }
 
     return applicationsData.filter((application) => {
+      console.log("application is", application)
       const name = application.name.toLowerCase();
       const email = application.email.toLowerCase();
       const role = application.currentRole?.toLowerCase() ?? "";

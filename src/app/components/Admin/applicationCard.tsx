@@ -15,7 +15,7 @@ export default function ApplicationCard({
   index,
   onSelect,
 }: ApplicationCardProps) {
-  const nameLabel = applicant.name || "Unknown Applicant";
+  const nameLabel = applicant?.name || "Unknown Applicant";
   const emailLabel = applicant.email || "Not provided";
   const locationLabel = applicant.location || "Location unavailable";
   const experienceLabel = applicant.experience || "Experience not specified";

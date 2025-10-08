@@ -29,7 +29,8 @@ export default function RoleCard({ role, index, onSelect, onPayoffUpdate }: Role
   const locationLabel = role.location?.trim();
   const experienceLabel = role.experienceLevel?.trim();
   const payoffPercentage = role.payoffAmountPercentage ?? 25;
-
+  const payRangeType = role.payRangeType ;
+  console.log("payRangeType", payRangeType)
   const handlePayoffUpdate = async () => {
     const newValue = parseFloat(payoffValue);
     
@@ -210,10 +211,10 @@ export default function RoleCard({ role, index, onSelect, onPayoffUpdate }: Role
         <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-between lg:ml-4 gap-4">
           <div className="text-left lg:text-right">
             <div className="text-lg sm:text-xl font-bold text-black">
-              {role.salary}
+              {role.salary}/
             </div>
             {role.payRangeType && (
-              <div className="text-sm text-gray-500">{role.payRangeType}</div>
+              <div className="text-sm text-gray-500">{payRangeType}</div>
             )}
           </div>
 

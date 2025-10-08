@@ -1180,7 +1180,7 @@ export default function PostRole({
         workEndDate,
         workLocation,
         description: aboutJob,
-        customQuestions, // This line should already exist
+        customQuestions, 
         locationCoordinates: selectedLocation,
         fatIncluded: fatAdded,
       };
@@ -1334,6 +1334,11 @@ export default function PostRole({
           setActivePayRange(data.payRangeType);
         }
 
+         if (data.experienceRequired) {
+          setExperience(data.experienceRequired);
+        }
+
+
         // Experience level removed; keep only experience text if provided
         if (data.experience) {
           setExperience(data.experience);
@@ -1458,27 +1463,7 @@ export default function PostRole({
             {/* Experience (required) */}
             <div className="space-y-3">
               <label className="text-sm font-medium text-gray-700">
-                Experience Level
-              </label>
-              <div className="flex bg-gray-100 rounded-lg p-1 w-fit">
-                {(["Entry", "Mid", "Senior", "Executive"] as const).map(
-                  (level) => (
-                    <button
-                      key={level}
-                      onClick={() => setExperienceLevel(level)}
-                      className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
-                        experienceLevel === level
-                          ? "bg-[#76FF82] text-black shadow-sm"
-                          : "text-gray-600 hover:text-gray-900"
-                      }`}
-                    >
-                      {level}
-                    </button>
-                  )
-                )}
-              </div>
-              <label className="text-sm font-medium text-gray-700">
-                Experience (optional)
+                Experience
               </label>
               <input
                 type="text"

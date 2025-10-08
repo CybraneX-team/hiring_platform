@@ -3,6 +3,8 @@ import { Mail, Search } from "lucide-react"
 import JobHeader from "../components/jobHeader"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import { useUser } from "../context/UserContext"
+import { toast } from "react-toastify"
 
 
 // const notifications = [
@@ -53,7 +55,15 @@ interface Notification {
 
 export default function NotificationsPage() {
     const router = useRouter();
+    const { user } = useUser();
     const [notifications, setNotifications] = useState<Notification[]>([])
+
+    useEffect(() => {
+      if (user && user.signedUpAs === "company") {
+        toast.error("Only Inspectors can view notifications");
+        router.push("/company/profile");
+      }
+    }, [user, router]);
 
     useEffect(() => {
       async function fetchNotifications() {

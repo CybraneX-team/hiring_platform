@@ -86,9 +86,6 @@ export default function FileUploadModal({
       formData.append("resume", file);
       if (user && user.id) {
         formData.append("userId", user?.id);
-      } else {
-        toast.info("user id is required");
-        return;
       }
 
       // 🔹 Route checking logic
@@ -214,7 +211,6 @@ export default function FileUploadModal({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  multiple
                   accept=".pdf,.doc,.docx"
                   onChange={handleFileInput}
                   className="hidden"
