@@ -147,7 +147,7 @@ function ApplicationsListContent() {
 
     // FIX: Check both applicant.name and profile.name
     const applicantName =
-      applicant?.name || profile?.name || "Unknown Applicant";
+      profile?.name || "Unknown Applicant";
 
     return {
       // FIX: Use applicant._id if available, otherwise application._id
@@ -160,7 +160,7 @@ function ApplicationsListContent() {
       avatar: generateAvatar(applicantName),
       available:
         application.status === "pending" || application.status === "reviewing",
-      location: profile.location || "Location not specified",
+      location: profile?.locationData?.address || "Location not specified",
       experience: getExperienceText(profile.yearsOfExp || 0),
       skills:
         profile.skills && profile.skills.length > 0

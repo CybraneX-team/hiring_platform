@@ -85,6 +85,16 @@ const ErrorMessage = ({
   </div>
 );
 
+// Helper function to generate avatar initials
+const generateAvatar = (name: string) => {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+};
+
 function ApplicationDetailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -98,11 +108,6 @@ function ApplicationDetailContent() {
   const [preparingPdf, setPreparingPdf] = useState(false);
 
   const contentRef = useRef<HTMLDivElement>(null);
-  const brandName = "Compscope";
-  const brandInitial = brandName.charAt(0);
-  const [companyLogo, setCompanyLogo] = useState(
-    profile ? profile.companyLogo : ""
-  );
 
   // Fetch applicant details
   const fetchApplicantDetails = async () => {
@@ -130,10 +135,101 @@ function ApplicationDetailContent() {
       const data = await response.json();
 
       if (data.success) {
-        setApplicant(data.data);
-        setIsShortlisted(
-          data.data.applicationDetails?.status === "shortlisted"
-        );
+        const { profile, application, applicant } = data.data;
+        
+        // Format the data for the frontend with complete profile
+        const formattedData = {
+          // Basic info
+          id: applicant._id,
+          applicationId: application._id,
+          name: profile.name || applicant.name || "Unknown",
+          title:
+            profile.openToRoles?.[0] ||
+            profile.WorkExperience?.[0]?.title ||
+            "Professional",
+          avatar: generateAvatar(profile.name || applicant.name || "NA"),
+          
+          // Status
+          available:
+            application.status === "pending" || application.status === "reviewing",
+          
+          // Location
+          location: profile.locationData?.address || profile.location || "Location not specified",
+          
+          // Experience
+          experience: profile.yearsOfExp ? `${profile.yearsOfExp} Years` : "0 Years",
+          
+          // Match percentage
+          matchPercentage: Math.round(application.matchDetails?.overallScore || 0),
+          
+          // Skills
+          skills: profile.skills || [],
+          
+          // Certifications (from profile.certificates)
+          certifications: profile.certificates || [],
+          
+          // Experience details (from profile.WorkExperience)
+          experience_details:
+            profile.WorkExperience?.map((exp: any) => ({
+              title: exp.title || "Position",
+              company: exp.company,
+              period: exp.period || 
+                (exp.startDate && exp.endDate ? `${exp.startDate} - ${exp.endDate}` : ""),
+              description: exp.description,
+              points: exp.points,
+            })) || [],
+          
+          // Academics (from profile.education)
+          academics:
+            profile.education?.map((edu: any) => ({
+              level: edu.Degree || "Degree",
+              institution: edu.institure || "Institution",
+              completed: true,
+            })) || [],
+          
+          // Languages
+          languages: profile.languages || [],
+          
+          // Contact info
+          contact: {
+            phone: profile.phoneNumber || "+91 00000 00000",
+            email: applicant.email || "Not provided",
+          },
+          
+          // Additional info
+          bio: profile.bio || "",
+          website: profile.website || "",
+          social: {
+            linkedin: profile.linkdin || "",
+            twitter: profile.twitter || "",
+            github: profile.Github || "",
+          },
+          achievements: profile.achivements || "",
+          resumeUrl: profile.resumeUrl || "",
+          
+          // Documents
+          documents: {
+            photo: profile.profile_image_url || "/images/default-avatar.png",
+            certificates: profile.certificateFiles || [],
+            marksheets: [],
+            identificationDocs: [],
+          },
+          
+          // Application details
+          applicationDetails: {
+            appliedDate: application.appliedDate,
+            status: application.status,
+            notes: application.notes,
+            matchDetails: application.matchDetails,
+          },
+          
+          // Store complete profile and user for PDF generation
+          profile: profile,
+          user: applicant,
+        };
+
+        setApplicant(formattedData);
+        setIsShortlisted(application.status === "shortlisted");
       } else {
         throw new Error(data.message || "Failed to fetch applicant details");
       }
@@ -154,7 +250,6 @@ function ApplicationDetailContent() {
 
     try {
       if (isShortlisted) {
-        // If already shortlisted, we need to use the status update endpoint to change it back
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/application/${applicationId}/status`,
           {
@@ -176,7 +271,6 @@ function ApplicationDetailContent() {
           console.error("Failed to update application status:", result.message);
         }
       } else {
-        // Use the dedicated shortlist endpoint
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/application/${applicationId}/shortlist`,
           {
@@ -210,32 +304,13 @@ function ApplicationDetailContent() {
       const now = new Date();
       const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
 
-      // Prefer localStorage values like cv.tsx/profile tab/UserContext
-      let lsProfile: any = null;
-      let lsUser: any = null;
-      if (typeof window !== 'undefined') {
-        try {
-          const storedProfile = localStorage.getItem('profile');
-          const storedUser = localStorage.getItem('user');
-          if (storedProfile) lsProfile = JSON.parse(storedProfile);
-          if (storedUser) lsUser = JSON.parse(storedUser);
-        } catch (_) {}
-      }
-
-      // Normalize data source to match cv.tsx structure
-      const p: any = lsProfile || applicant?.profile || applicant;
+      // Use the complete profile from the API response
+      const p = applicant.profile;
 
       // Certifications
       const certifications = Array.isArray(p?.certificates)
         ? p.certificates.map((c: any) => ({
             name: c?.name,
-            issuer: c?.issuer,
-            date: c?.date,
-            description: c?.description,
-          }))
-        : Array.isArray(applicant?.certifications)
-        ? applicant.certifications.map((c: any) => ({
-            name: c?.name || c?.title,
             issuer: c?.issuer,
             date: c?.date,
             description: c?.description,
@@ -248,19 +323,14 @@ function ApplicationDetailContent() {
             title: exp?.title,
             company: exp?.company,
             period:
-              exp?.period || `${exp?.startDate || ''} - ${exp?.endDate || ''}`.trim().replace(/^-|-$/g, ''),
+              exp?.period || 
+              (exp?.startDate && exp?.endDate 
+                ? `${exp.startDate} - ${exp.endDate}` 
+                : ''),
             description: exp?.description,
             points: Array.isArray(exp?.points)
               ? exp.points.map((pt: any) => ({ point: pt?.point || pt }))
               : undefined,
-          }))
-        : Array.isArray(applicant?.experience_details)
-        ? applicant.experience_details.map((e: any) => ({
-            title: e?.title,
-            company: e?.company,
-            period: e?.period,
-            description: Array.isArray(e?.description) ? undefined : e?.description,
-            points: Array.isArray(e?.description) ? e.description.map((d: string) => ({ point: d })) : undefined,
           }))
         : [];
 
@@ -271,21 +341,19 @@ function ApplicationDetailContent() {
             institution: edu?.institure || edu?.institute,
             completed: true,
           }))
-        : Array.isArray(applicant?.academics)
-        ? applicant.academics.map((a: any) => ({ level: a?.level, institution: a?.institution, completed: true }))
         : [];
 
-      const skills = Array.isArray(p?.skills) ? p.skills : applicant?.skills || [];
-      const languages = Array.isArray(p?.languages) ? p.languages : applicant?.languages || [];
+      const skills = Array.isArray(p?.skills) ? p.skills : [];
+      const languages = Array.isArray(p?.languages) ? p.languages : [];
 
-      const name = p?.name || applicant?.name || lsUser?.name || 'Unknown';
+      const name = p?.name || applicant?.name || 'Unknown';
       const title = p?.openToRoles?.[0] || p?.WorkExperience?.[0]?.title || applicant?.title || 'Professional';
-      const location = p?.location || p?.locationData?.address || applicant?.location || '';
-      const imageUrl = p?.profile_image_url || applicant?.profile_image_url || applicant?.profilePicture || undefined;
-      const available = typeof applicant?.available === 'boolean' ? applicant.available : Boolean(p?.openToRoles && p.openToRoles.length > 0);
-      const experience = p?.yearsOfExp || (Array.isArray(p?.WorkExperience) && p.WorkExperience.length ? `${p.WorkExperience.length} Roles` : applicant?.experience);
-      const email = lsUser?.email || applicant?.user?.email || p?.user?.email || undefined;
-      const phone = p?.phoneNumber || applicant?.phoneNumber || undefined;
+      const location = p?.locationData?.address || p?.location || applicant?.location || '';
+      const imageUrl = p?.profile_image_url || undefined;
+      const available = applicant?.available || false;
+      const experience = p?.yearsOfExp ? `${p.yearsOfExp} Years` : applicant?.experience || '0 Years';
+      const email = applicant?.user?.email || applicant?.contact?.email;
+      const phone = p?.phoneNumber || applicant?.contact?.phone;
 
       const blob = await pdf(
         <ResumePDF
@@ -310,13 +378,13 @@ function ApplicationDetailContent() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${applicant.name.replace(/\s+/g, "-")}-Consolidated-Profile.pdf`;
+      a.download = `${name.replace(/\s+/g, "-")}-Consolidated-Profile.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("[v0] Error generating consolidated PDF:", error);
+      console.error("Error generating consolidated PDF:", error);
       alert("Error generating PDF. Please try again.");
     } finally {
       setPreparingPdf(false);
@@ -457,10 +525,10 @@ function ApplicationDetailContent() {
                   <CircularProgress percentage={applicant.matchPercentage} />
                 </div>
               )}
-              {preparingPdf && (
+              {preparingPdf && profile?.companyLogo && (
                 <div className="flex items-center justify-center h-full">
                     <Image 
-                      src={profile?.companyLogo} 
+                      src={profile.companyLogo} 
                       alt="Company Logo" 
                       width={0}
                       height={0}
@@ -492,7 +560,7 @@ function ApplicationDetailContent() {
           </div>
 
           <div className="mb-8">
-            <h3 className="text-base  font-medium text-gray-900 mb-3">Skills</h3>
+            <h3 className="text-base font-medium text-gray-900 mb-3">Skills</h3>
             <div className="flex flex-wrap gap-2">
               {applicant.skills && applicant.skills.length > 0 ? (
                 applicant.skills.map((skill: string, index: number) => (
@@ -545,65 +613,62 @@ function ApplicationDetailContent() {
             </div>
           </div>
 
-
-<div className="mb-8">
-  <h3 className="text-base  font-medium text-gray-900 mb-4">
-    Experience
-  </h3>
-  <div className="space-y-4">
-    {applicant.experience_details &&
-      applicant.experience_details.length > 0 ? (
-      applicant.experience_details.map((exp: any, index: number) => (
-        <div key={index} className="bg-gray-50 p-4 rounded-lg mb-4">
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <h4 className="text-base  font-semibold text-gray-900 mb-1">
-                {exp.title}
-              </h4>
-              <p className="text-gray-600 font-medium text-sm">{exp.company}</p>
+          <div className="mb-8">
+            <h3 className="text-base font-medium text-gray-900 mb-4">
+              Experience
+            </h3>
+            <div className="space-y-4">
+              {applicant.experience_details &&
+                applicant.experience_details.length > 0 ? (
+                applicant.experience_details.map((exp: any, index: number) => (
+                  <div key={index} className="bg-gray-50 p-4 rounded-lg mb-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h4 className="text-base font-semibold text-gray-900 mb-1">
+                          {exp.title}
+                        </h4>
+                        <p className="text-gray-600 font-medium text-sm">{exp.company}</p>
+                      </div>
+                      {exp.period && (
+                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                          {exp.period}
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Bullet Points */}
+                    {(() => {
+                      const points: string[] = Array.isArray(exp?.points) && exp.points.length
+                        ? exp.points.map((p: any) => (typeof p === 'string' ? p : p?.point)).filter(Boolean)
+                        : exp?.description
+                          ? [exp.description]
+                          : [];
+                      return points.length > 0 ? (
+                        <div className="mt-3">
+                          <ul className="space-y-2">
+                            {points.map((pt: string, idx: number) => (
+                              <li key={idx} className="flex items-start">
+                                <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                <p className="text-black text-sm leading-relaxed">{pt}</p>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">
+                  No experience details available
+                </p>
+              )}
             </div>
-            {exp.period && (
-              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                {exp.period}
-              </span>
-            )}
           </div>
-          
-          {/* Bullet Points (prefer points from DB; fallback to description) */}
-          {(() => {
-            const points: string[] = Array.isArray(exp?.points) && exp.points.length
-              ? exp.points.map((p: any) => (typeof p === 'string' ? p : p?.point)).filter(Boolean)
-              : Array.isArray(exp?.description)
-                ? exp.description
-                : exp?.description
-                  ? [exp.description]
-                  : [];
-            return points.length > 0 ? (
-              <div className="mt-3">
-                <ul className="space-y-2">
-                  {points.map((pt: string, idx: number) => (
-                    <li key={idx} className="flex items-start">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                      <p className="text-black text-sm leading-relaxed">{pt}</p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null;
-          })()}
-        </div>
-      ))
-    ) : (
-      <p className="text-gray-500 text-sm">
-        No experience details available
-      </p>
-    )}
-  </div>
-</div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <div>
-              <h3 className="text-base  font-medium text-gray-900 mb-4">
+              <h3 className="text-base font-medium text-gray-900 mb-4">
                 Academics
               </h3>
               <div className="space-y-4">
@@ -630,7 +695,7 @@ function ApplicationDetailContent() {
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-base font-medium text-gray-900 mb-4">
                 Languages
               </h3>
               <div className="space-y-2">
