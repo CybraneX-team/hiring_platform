@@ -1,12 +1,21 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, MapPin, Clock, CheckCircle, Download, ExternalLink, FileText } from "lucide-react";
+import {
+  ArrowLeft,
+  MapPin,
+  Clock,
+  CheckCircle,
+  Download,
+  ExternalLink,
+  FileText,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { pdf } from "@react-pdf/renderer";
 import ResumePDF from "./pdf/ResumePDF";
 import { useUser } from "../context/UserContext";
+import Image from "next/image";
 
 const CircularProgress = ({ percentage }: { percentage: number }) => {
   const radius = 20;
@@ -48,10 +57,11 @@ const CircularProgress = ({ percentage }: { percentage: number }) => {
 
 // Certificate Card Component with Links
 const CertificateCard = ({ cert }: { cert: any }) => {
-
   return (
     <div className="bg-gray-50 p-4 rounded-lg">
-      <h4 className="font-semibold text-gray-900 mb-1">{cert.name || "Unknown Certificate"}</h4>
+      <h4 className="font-semibold text-gray-900 mb-1">
+        {cert.name || "Unknown Certificate"}
+      </h4>
       <p className="text-gray-600 text-sm mb-1">
         <span className="font-medium">Issuer:</span> {cert.issuer || "Unknown"}
       </p>
@@ -59,9 +69,11 @@ const CertificateCard = ({ cert }: { cert: any }) => {
         <span className="font-medium">Date:</span> {cert.date || "Unknown"}
       </p>
       {cert.description && (
-        <p className="text-gray-700 text-sm leading-relaxed mb-3">{cert.description}</p>
+        <p className="text-gray-700 text-sm leading-relaxed mb-3">
+          {cert.description}
+        </p>
       )}
-      
+
       {/* Certificate File Link */}
       {cert.fileUrl && (
         <div className="flex items-center gap-2">
@@ -83,15 +95,18 @@ const CertificateCard = ({ cert }: { cert: any }) => {
 
 // Work Experience Card Component
 export const WorkExperienceCard = ({ experience }: any) => {
-
   return (
     <div className="bg-gray-50 p-4 rounded-lg mb-4">
       <div className="flex justify-between items-start mb-2">
         <div>
-          {experience.title  && 
-          <h3 className="font-semibold text-lg text-gray-900">{experience.title || ""}</h3>
-            }
-          <p className="text-gray-600 font-medium">{experience.company || "Company"}</p>
+          {experience.title && (
+            <h3 className="font-semibold text-lg text-gray-900">
+              {experience.title || ""}
+            </h3>
+          )}
+          <p className="text-gray-600 font-medium">
+            {experience.company || "Company"}
+          </p>
         </div>
         {experience.period && (
           <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
@@ -99,7 +114,7 @@ export const WorkExperienceCard = ({ experience }: any) => {
           </span>
         )}
       </div>
-      
+
       {/* Bullet Points */}
       {experience.points && experience.points.length > 0 ? (
         <div className="mt-3">
@@ -107,7 +122,9 @@ export const WorkExperienceCard = ({ experience }: any) => {
             {experience.points.map((item: any, index: any) => (
               <li key={index} className="flex items-start">
                 <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                <p className="text-gray-700 text-sm leading-relaxed">{item.point}</p>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  {item.point}
+                </p>
               </li>
             ))}
           </ul>
@@ -116,15 +133,18 @@ export const WorkExperienceCard = ({ experience }: any) => {
         /* Description fallback if no points */
         experience.description && (
           <div className="mt-3">
-            <p className="text-gray-700 text-sm leading-relaxed">{experience.description}</p>
+            <p className="text-gray-700 text-sm leading-relaxed">
+              {experience.description}
+            </p>
           </div>
         )
       )}
 
       {/* Show message if no points and no description */}
-      {(!experience.points || experience.points.length === 0) && !experience.description && (
-        <p className="text-gray-500 text-sm mt-3">No description available</p>
-      )}
+      {(!experience.points || experience.points.length === 0) &&
+        !experience.description && (
+          <p className="text-gray-500 text-sm mt-3">No description available</p>
+        )}
     </div>
   );
 };
@@ -155,7 +175,9 @@ interface applicantDetail {
 }
 
 export default function ApplicationDetailView() {
-  const [applicantDetail, setapplicantDetail] = useState<applicantDetail | any >(null);
+  const [applicantDetail, setapplicantDetail] = useState<applicantDetail | any>(
+    null
+  );
   const { user, profile } = useUser();
   useEffect(() => {
     if (!profile || !user) {
@@ -166,25 +188,33 @@ export default function ApplicationDetailView() {
     const formatted: applicantDetail = {
       id: profile._id || "unknown",
       name: profile.name || user.name || "Unknown Name",
-      title: profile.openToRoles?.[0] || profile.WorkExperience?.[0]?.title || "Professional",
-      avatar: (profile.name || user.name || "U")
-        .split(" ")
-        .map((n: string) => n[0])
-        .join("")
-        .toUpperCase(),
+      title:
+        profile.openToRoles?.[0] ||
+        profile.WorkExperience?.[0]?.title ||
+        "Professional",
+      avatar: profile.profile_image_url ? profile.profile_image_url : "",
       available: true,
       location: profile.location || "Location not specified",
-      experience: profile.yearsOfExp || `${profile.WorkExperience?.length || 0} Roles`,
+      experience:
+        profile.yearsOfExp || `${profile.WorkExperience?.length || 0} Roles`,
       matchPercentage: 0,
       skills: Array.isArray(profile.skills) ? profile.skills : [],
-      certifications: Array.isArray(profile.certificates) ? profile.certificates : [], 
-      experience_details: Array.isArray(profile.WorkExperience) ? profile.WorkExperience : [], 
-      academics: Array.isArray(profile.education) ? profile.education.map((edu: any) => ({
-        level: edu.Degree || "Degree",
-        institution: edu.institure || "Institution", // Note: keeping the typo from your data
-        completed: true,
-      })) : [],
-      languages: Array.isArray(profile.languages) ? profile.languages : ["English"],
+      certifications: Array.isArray(profile.certificates)
+        ? profile.certificates
+        : [],
+      experience_details: Array.isArray(profile.WorkExperience)
+        ? profile.WorkExperience
+        : [],
+      academics: Array.isArray(profile.education)
+        ? profile.education.map((edu: any) => ({
+            level: edu.Degree || "Degree",
+            institution: edu.institure || "Institution", // Note: keeping the typo from your data
+            completed: true,
+          }))
+        : [],
+      languages: Array.isArray(profile.languages)
+        ? profile.languages
+        : ["English"],
       contact: {
         phone: profile.phoneNumber || "+91 00000 00000",
         email: user.email || "Not provided",
@@ -196,9 +226,9 @@ export default function ApplicationDetailView() {
   }, [profile, user]);
 
   const router = useRouter();
-//  const [companyLogo, setCompanyLogo] = useState(
-//     profile ? profile.companyLogo : ""
-//   );
+  //  const [companyLogo, setCompanyLogo] = useState(
+  //     profile ? profile.companyLogo : ""
+  //   );
   const [isShortlisted, setIsShortlisted] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const brandName = "Compscope";
@@ -216,7 +246,9 @@ export default function ApplicationDetailView() {
     setPreparingPdf(true);
     try {
       const now = new Date();
-      const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+      const formattedDate = `${String(now.getDate()).padStart(2, "0")}/${String(
+        now.getMonth() + 1
+      ).padStart(2, "0")}/${now.getFullYear()}`;
       const blob = await pdf(
         <ResumePDF
           data={{
@@ -240,7 +272,9 @@ export default function ApplicationDetailView() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${applicantDetail?.name?.replace(/\s+/g, "-") || "CV"}-CV.pdf`;
+      a.download = `${
+        applicantDetail?.name?.replace(/\s+/g, "-") || "CV"
+      }-CV.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -269,7 +303,7 @@ export default function ApplicationDetailView() {
       <div className="sr-only" aria-live="polite">
         {isShortlisted ? "Shortlisted" : ""}
       </div>
-     
+
       <div className="max-w-6xl mx-auto mt-12">
         {/* Header */}
         <div className="mb-10 flex items-center justify-between">
@@ -289,7 +323,10 @@ export default function ApplicationDetailView() {
             )}
           </div> */}
 
-          <div className="flex items-center gap-3" data-html2canvas-ignore="true">
+          <div
+            className="flex items-center gap-3"
+            data-html2canvas-ignore="true"
+          >
             <motion.button
               type="button"
               onClick={handleDownload}
@@ -313,12 +350,20 @@ export default function ApplicationDetailView() {
           {/* Profile Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-gray-200">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-semibold text-lg">
-                  {applicantDetail.avatar}
-                </span>
+              <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+                {applicantDetail.avatar ? (
+                  <Image
+                    src={applicantDetail.avatar}
+                    alt={applicantDetail.name}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <span className="text-gray-600 font-semibold text-lg">
+                    {applicantDetail.name?.charAt(0).toUpperCase()}
+                  </span>
+                )}
               </div>
-
               <div>
                 <h2 className="text-2xl font-semibold text-gray-900 mb-1">
                   {applicantDetail.name}
@@ -349,9 +394,11 @@ export default function ApplicationDetailView() {
           {/* Skills Section */}
           {applicantDetail.skills.length > 0 && (
             <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Skills
+              </h3>
               <div className="flex flex-wrap gap-2">
-                {applicantDetail.skills.map((skill : any, index : any) => (
+                {applicantDetail.skills.map((skill: any, index: any) => (
                   <span
                     key={index}
                     className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
@@ -370,11 +417,13 @@ export default function ApplicationDetailView() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {applicantDetail.certifications?.length > 0 ? (
-                applicantDetail.certifications.map((cert : any, index : any) => (
+                applicantDetail.certifications.map((cert: any, index: any) => (
                   <CertificateCard key={index} cert={cert} />
                 ))
               ) : (
-                <p className="text-gray-500 col-span-full">No certificates available</p>
+                <p className="text-gray-500 col-span-full">
+                  No certificates available
+                </p>
               )}
             </div>
           </div>
@@ -386,9 +435,11 @@ export default function ApplicationDetailView() {
             </h3>
             <div className="space-y-4">
               {applicantDetail.experience_details?.length > 0 ? (
-                applicantDetail.experience_details.map((exp : any, index : any) => (
-                  <WorkExperienceCard key={index} experience={exp} />
-                ))
+                applicantDetail.experience_details.map(
+                  (exp: any, index: any) => (
+                    <WorkExperienceCard key={index} experience={exp} />
+                  )
+                )
               ) : (
                 <p className="text-gray-500">No work experience available</p>
               )}
@@ -403,7 +454,7 @@ export default function ApplicationDetailView() {
               </h3>
               <div className="space-y-4">
                 {applicantDetail.academics?.length > 0 ? (
-                  applicantDetail.academics.map((academic : any, index : any) => (
+                  applicantDetail.academics.map((academic: any, index: any) => (
                     <div key={index} className="flex items-center gap-3">
                       <div className="w-3 h-3 rounded-full bg-[#76FF82] flex-shrink-0"></div>
                       <div>
@@ -417,7 +468,9 @@ export default function ApplicationDetailView() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500">No education details available</p>
+                  <p className="text-gray-500">
+                    No education details available
+                  </p>
                 )}
               </div>
             </div>
@@ -429,7 +482,7 @@ export default function ApplicationDetailView() {
               </h3>
               <div className="space-y-2">
                 {applicantDetail.languages?.length > 0 ? (
-                  applicantDetail.languages.map((language : any, index : any) => (
+                  applicantDetail.languages.map((language: any, index: any) => (
                     <p key={index} className="text-gray-700">
                       {language}
                     </p>
@@ -465,11 +518,14 @@ export default function ApplicationDetailView() {
               {applicantDetail.resumeUrl && (
                 <p>Resume: {applicantDetail.resumeUrl}</p>
               )}
-              {applicantDetail.certifications?.map((cert : any, index : any) => (
-                cert.fileUrl && (
-                  <p key={index}>{cert.name}: {cert.fileUrl}</p>
-                )
-              ))}
+              {applicantDetail.certifications?.map(
+                (cert: any, index: any) =>
+                  cert.fileUrl && (
+                    <p key={index}>
+                      {cert.name}: {cert.fileUrl}
+                    </p>
+                  )
+              )}
             </div>
           </div>
         </motion.div>
