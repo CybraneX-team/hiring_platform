@@ -19,7 +19,7 @@ export default function Otp() {
   const [enteredOtp, setenteredOtp] = useState("");
   const { userCreds, setuser, setUserCreds, mode, loginCreds, setprofile } = useUser();
   const [loggingIn, setloggingIn] = useState(false);
-
+  console.log("userCreds", userCreds)
   const finalMode = mode
   const handleOtpChange = (index: number, value: string) => {
     if (value.length <= 1) {
@@ -64,8 +64,8 @@ export default function Otp() {
         url = `${process.env.NEXT_PUBLIC_API_URL}/auth/verify-otp`;
         body = {
           name: userCreds.name,
-          email: loginCreds?.email || userCreds.email,
-          password: loginCreds?.password || userCreds.password,
+          email: userCreds.email,
+          password:  userCreds.password,
           otp: finalOTP,
           mode,
         };
