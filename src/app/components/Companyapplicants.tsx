@@ -1,11 +1,12 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, MapPin, Clock, CheckCircle, Download } from "lucide-react";
 import { WorkExperienceCard } from "./WorkExperienceCard";
 import { useRef, useState } from "react";
 import { pdf } from "@react-pdf/renderer";
 import ResumePDF from "./pdf/ResumePDF";
+import { useRouter } from "next/navigation";
 
 interface CompanyApplicantsProps {
   itemId: any;
@@ -16,6 +17,7 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
   const applicant = itemId;
   const contentRef = useRef<HTMLDivElement>(null);
   const [preparingPdf, setPreparingPdf] = useState(false);
+  const router = useRouter();
 
   console.log("applicant", applicant);
 
@@ -86,9 +88,9 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
           data={{
             name: applicant?.name || 'Unknown',
             title: applicant?.WorkExperience?.[0]?.title || 'Professional',
-            location: applicant?.location,
+            location: applicant.location ? applicant.location.split(",").slice(-4).join(", ") : "Unknown Location",
             imageUrl: applicant?.profile_image_url || applicant?.profilePicture || undefined,
-            available: Boolean(applicant?.openToRoles && applicant.openToRoles.length > 0),
+            
             experience: applicant?.yearsOfExp ? `${applicant.yearsOfExp}` : undefined,
             skills: applicant?.skills || [],
             certifications,
@@ -118,8 +120,14 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] p-4 sm:p-6 md:p-0">
-      <div className="max-w-7xl mx-auto mt-12">
+    <div className="min-h-screen bg-[#F5F5F5] p-4 sm:p-6 lg:p-8">
+      {/* <div className="sr-only" aria-live="polite">
+        {isShortlisted ? "Shortlisted" : ""}
+      </div> */}
+      <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">
+        Compscope
+      </h1>
+      <div className="max-w-6xl mx-auto mt-12">
         <div className="mb-10 flex items-center justify-between">
           <motion.button
             onClick={onBack}
@@ -131,7 +139,61 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
             Back
           </motion.button>
 
-          <div data-html2canvas-ignore="true">
+          <div
+            className="flex items-center gap-3"
+            data-html2canvas-ignore="true"
+          >
+            {/* <motion.button
+              type="button"
+              onClick={handleShortlist}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-4 py-2 rounded-full bg-[#76FF82] cursor-pointer text-black font-medium shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#76FF82]"
+              aria-pressed={isShortlisted}
+            > */}
+              {/* <AnimatePresence initial={false} mode="wait">
+                {!isShortlisted ? (
+                  <motion.span
+                    key="label-shortlist"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.16, ease: "easeOut" }}
+                  >
+                    Shortlist
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="label-shortlisted"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 650,
+                      damping: 18,
+                    }}
+                    className="inline-flex items-center gap-1"
+                  >
+                    <motion.span
+                      initial={{ scale: 0.6, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.6, opacity: 0 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 650,
+                        damping: 18,
+                      }}
+                      className="inline-flex"
+                    >
+                      <CheckCircle className="w-4 h-4" color="#000000" />
+                    </motion.span>
+                    <span>Shortlisted</span>
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button> */}
+
             <motion.button
               type="button"
               onClick={handleDownload}
@@ -156,232 +218,236 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
                 <span className="text-white font-semibold text-lg">
-                  {getInitials(applicant?.name)}
+                  {applicant.avatar || getInitials(applicant.name)}
                 </span>
               </div>
 
               <div>
                 <h2 className="text-2xl font-semibold text-gray-900 mb-1">
-                  {applicant?.name || "Name Not Available"}
+                  {applicant.name}
                 </h2>
-                <p className="text-gray-600">
-                  {applicant?.WorkExperience?.[0]?.title || "Position Not Specified"}
-                </p>
+                <p className="text-gray-600">{applicant.title}</p>
               </div>
+            </div>
+
+            <div className="relative" style={{ minWidth: '48px', minHeight: '48px', maxWidth: '120px', maxHeight: '60px' }}>
+              {/* {!preparingPdf && (
+                <div data-pdf-hide="true" className="absolute inset-0">
+                  <CircularProgress percentage={applicant.matchPercentage} />
+                </div>
+              )} */}
+              {/* {preparingPdf && profile?.companyLogo && (
+                <div className="flex items-center justify-center h-full">
+                    <Image 
+                      src={profile.companyLogo} 
+                      alt="Company Logo" 
+                      width={0}
+                      height={0}
+                      sizes="100vw"
+                      style={{ width: 'auto', height: 'auto', maxWidth: '120px', maxHeight: '60px', objectFit: 'contain' }}
+                    />
+                </div>
+              )} */}
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-6 mb-8 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
-              <CheckCircle className={`w-4 h-4 ${isAvailable ? 'text-blue-500' : 'text-red-500'}`} />
-              <span className={`font-medium ${isAvailable ? 'text-blue-600' : 'text-red-600'}`}>
-                {isAvailable ? 'Available' : 'Unavailable'}
+            {/* <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-blue-500" />
+              <span className="text-blue-600 font-medium">
+                {applicant.available ? "Available" : "Unavailable"}
               </span>
+            </div> */}
+            {/* limit the location to last four words which are seperated by comas if it is not null */}
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              <span>{applicant.location ? applicant.location.split(",").slice(-4).join(", ") : "Unknown Location"}</span>
             </div>
 
-            {applicant?.location && (
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
-                <span>{applicant.location}</span>
-              </div>
-            )}
-
-            {formattedExperience && (
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                <span>Experience: {formattedExperience}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              <span>Experience : {formatExperience(applicant.yearsOfExp) || "Not Specified"}</span>
+            </div>
           </div>
 
-          {applicant?.openToRoles && applicant.openToRoles.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Open to Roles</h3>
-              <div className="flex flex-wrap gap-2">
-                {applicant.openToRoles.map((role: string, index: number) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full"
-                  >
-                    {role}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {applicant?.skills && applicant.skills.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Skills</h3>
-              <div className="flex flex-wrap gap-2">
-                {applicant.skills.map((skill: string, index: number) => (
+          <div className="mb-8">
+            <h3 className="text-base font-medium text-gray-900 mb-3">Skills</h3>
+            <div className="flex flex-wrap gap-2">
+              {applicant.skills && applicant.skills.length > 0 ? (
+                applicant.skills.map((skill: string, index: number) => (
                   <span
                     key={index}
                     className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
                   >
                     {skill}
                   </span>
-                ))}
-              </div>
+                ))
+              ) : (
+                <span className="text-gray-500 text-sm">No skills listed</span>
+              )}
             </div>
-          )}
-
-          {applicant?.certificates && applicant.certificates.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">
-                Certifications from Industry
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {applicant.certificates.map((cert: any, index: number) => {
-                  const name =
-                    typeof cert === "string"
-                      ? cert
-                      : cert?.name || cert?.title || "Certification";
-                  const issuer =
-                    typeof cert === "string" ? undefined : cert?.issuer;
-                  const label = issuer ? `${name} · ${issuer}` : name;
-
-                  return (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
-                    >
-                      {label}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {applicant?.WorkExperience && applicant.WorkExperience.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                Work Experience
-              </h3>
-              <div className="space-y-4">
-                {applicant.WorkExperience.map((experience: any, index: number) => (
-                  <WorkExperienceCard 
-                    key={index} 
-                    experience={experience} 
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {applicant?.education && applicant.education.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Education
-                </h3>
-                <div className="space-y-4">
-                  {applicant.education.map((edu: any, index: number) => (
-                    <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <div className="flex items-start gap-3">
-                        <div className="w-3 h-3 rounded-full bg-blue-500 flex-shrink-0 mt-2"></div>
-                        <div className="flex-1">
-                          <p className="font-semibold text-gray-900 mb-1">
-                            {edu.Degree || "Degree Not Specified"}
-                          </p>
-                          <p className="text-sm text-gray-700 mb-1">
-                            {edu.institure || "Institution Not Specified"}
-                          </p>
-                          {(edu.period || edu.Graduation) && (
-                            <div className="flex items-center gap-2">
-                              <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
-                                {edu.period || (edu.Graduation && new Date(edu.Graduation).getFullYear())}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {applicant?.bio && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Bio
-                </h3>
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <p className="text-gray-700 leading-relaxed">{applicant.bio}</p>
-                </div>
-              </div>
-            )}
           </div>
 
-          <div className="border-t border-gray-200 pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Contact Information
+          <div className="mb-8">
+            <h3 className="text-base font-medium text-gray-900 mb-3">
+              Certifications from Industry
             </h3>
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {applicant?.user?.email && (
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-700 min-w-[80px]">Email:</span>
-                    <a href={`mailto:${applicant.user.email}`} className="text-blue-600 hover:underline">
-                      {applicant.user.email}
-                    </a>
+            <div className="space-y-3">
+              {applicant.certificates && applicant.certificates.length > 0 ? (
+                applicant.certificates.map((cert: any, index: number) => (
+                  <div
+                    key={index}
+                    className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                  >
+                    <h4 className="font-semibold text-gray-900 mb-1">
+                      {cert.name}
+                    </h4>
+                    <p className="text-sm text-gray-600 mb-1">
+                      <span className="font-medium">Issuer:</span> {cert.issuer}
+                    </p>
+                    <p className="text-sm text-gray-600 mb-2">
+                      <span className="font-medium">Date:</span> {cert.date}
+                    </p>
+                    {cert.description && (
+                      <p className="text-sm text-gray-700">
+                        {cert.description}
+                      </p>
+                    )}
                   </div>
-                )}
-                
-                {applicant?.phoneNumber && (
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-700 min-w-[80px]">Phone:</span>
-                    <a href={`tel:${applicant.phoneNumber}`} className="text-blue-600 hover:underline">
-                      {applicant.phoneNumber}
-                    </a>
+                ))
+              ) : (
+                <span className="text-gray-500 text-sm">
+                  No certifications listed
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <h3 className="text-base font-medium text-gray-900 mb-4">
+              Experience
+            </h3>
+            <div className="space-y-4">
+              {applicant.WorkExperience &&
+                applicant.WorkExperience.length > 0 ? (
+                applicant.WorkExperience.map((exp: any, index: number) => (
+                  <div key={index} className="bg-gray-50 p-4 rounded-lg mb-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h4 className="text-base font-semibold text-gray-900 mb-1">
+                          {exp.title}
+                        </h4>
+                        <p className="text-gray-600 font-medium text-sm">{exp.company}</p>
+                      </div>
+                      {exp.period && (
+                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                          {exp.period}
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Bullet Points */}
+                    {(() => {
+                      const points: string[] = Array.isArray(exp?.points) && exp.points.length
+                        ? exp.points.map((p: any) => (typeof p === 'string' ? p : p?.point)).filter(Boolean)
+                        : exp?.description
+                          ? [exp.description]
+                          : [];
+                      return points.length > 0 ? (
+                        <div className="mt-3">
+                          <ul className="space-y-2">
+                            {points.map((pt: string, idx: number) => (
+                              <li key={idx} className="flex items-start">
+                                <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                <p className="text-black text-sm leading-relaxed">{pt}</p>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
-                )}
-                
-                {applicant?.linkdin && (
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-700 min-w-[80px]">LinkedIn:</span>
-                    <a 
-                      href={applicant.linkdin} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="text-blue-600 hover:underline truncate"
-                    >
-                      View Profile
-                    </a>
-                  </div>
-                )}
-                
-                {applicant?.website && (
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-700 min-w-[80px]">Website:</span>
-                    <a 
-                      href={applicant.website} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="text-blue-600 hover:underline truncate"
-                    >
-                      Visit Site
-                    </a>
-                  </div>
-                )}
-                
-                {applicant?.resumeUrl && (
-                  <div className="flex items-center gap-2 md:col-span-2">
-                    <span className="font-medium text-gray-700 min-w-[80px]">Resume:</span>
-                    <a 
-                      href={applicant.resumeUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="inline-flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded-full text-sm font-medium transition-colors"
-                    >
-                      📄 Download Resume
-                    </a>
-                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">
+                  No experience details available
+                </p>
+              )}
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Bio
+              </h3>
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <p className="text-gray-700 leading-relaxed">{applicant.bio || "No bio available."}</p>
+              </div>
+            </div>
+          </div>
+          
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div>
+              <h3 className="text-base font-medium text-gray-900 mb-4">
+                Academics
+              </h3>
+              <div className="space-y-4">
+                {applicant.education && applicant.education.length > 0 ? (
+                  applicant.education.map((academic: any, index: number) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full bg-[#76FF82] flex-shrink-0"></div>
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {academic.Degree}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {academic.institure}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm">
+                    No academic information available
+                  </p>
                 )}
               </div>
             </div>
+
+            <div>
+              <h3 className="text-base font-medium text-gray-900 mb-4">
+                Languages
+              </h3>
+              <div className="space-y-2">
+                {applicant.languages && applicant.languages.length > 0 ? (
+                  applicant.languages.map((language: string, index: number) => (
+                    <p key={index} className="text-gray-700">
+                      {language}
+                    </p>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm">
+                    No language information available
+                  </p>
+                )}
+              </div>
+            </div>
+            {/* Contact Section */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Contact
+            </h3>
+            <div className="space-y-2">
+              <p className="text-gray-700">
+                <span className="font-medium">Phone No :</span>{" "}
+                {applicant.phoneNumber || "+91 00000 00000"}
+              </p>
+              <p className="text-gray-700">
+                <span className="font-medium">Mail :</span>{" "}
+                {applicant.user.email || "example@mail.com"}
+              </p>
+            </div>
+          </div>
+
           </div>
         </motion.div>
       </div>

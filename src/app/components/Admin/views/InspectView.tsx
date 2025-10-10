@@ -576,7 +576,7 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
 
                       {/* Status Indicators */}
                       <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
+                        {/* <div className="flex items-center gap-1">
                           <div
                             className={`w-2 h-2 rounded-full ${
                               item.status === "active"
@@ -589,16 +589,16 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
                           <span className="capitalize text-gray-700">
                             {item.status}
                           </span>
-                        </div>
+                        </div> */}
 
                         <div className="flex items-center gap-1">
                           <MapPin className="w-4 h-4" />
-                          <span>{item.location || "India"}</span>
+                          <span>{item.location || "Unknown Location"}</span>
                         </div>
 
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          <span>Experience : {formatExperience(item.yearsOfExp) || "9 years"}</span>
+                          <span>Experience : {formatExperience(item.yearsOfExp) || "Not Specified"}</span>
                         </div>
 
                         <div className="flex items-center gap-1 text-xs text-gray-400 ml-auto">

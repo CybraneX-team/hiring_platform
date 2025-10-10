@@ -172,6 +172,7 @@ interface applicantDetail {
     email: string;
   };
   resumeUrl?: string; // Added resume URL
+  bio?: string; // Add bio field
 }
 
 export default function ApplicationDetailView() {
@@ -220,6 +221,7 @@ export default function ApplicationDetailView() {
         email: user.email || "Not provided",
       },
       resumeUrl: profile.resumeUrl || null, // Add resume URL
+      bio: profile.bio || "", // Add bio field
     };
 
     setapplicantDetail(formatted);
@@ -254,9 +256,9 @@ export default function ApplicationDetailView() {
           data={{
             name: applicantDetail.name,
             title: applicantDetail.title,
-            location: applicantDetail.location,
+            location: applicantDetail.location ? applicantDetail.location.split(",").slice(-4).join(", ") : "Unknown Location",
             imageUrl: (profile as any)?.profile_image_url || undefined,
-            available: applicantDetail.available,
+            
             experience: applicantDetail.experience,
             skills: applicantDetail.skills,
             certifications: applicantDetail.certifications,
@@ -375,10 +377,10 @@ export default function ApplicationDetailView() {
 
           {/* Status Indicators */}
           <div className="flex flex-wrap items-center gap-6 mb-8 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-blue-500" />
               <span className="text-blue-600 font-medium">Available</span>
-            </div>
+            </div> */}
 
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4" />
@@ -445,6 +447,15 @@ export default function ApplicationDetailView() {
               )}
             </div>
           </div>
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Bio
+            </h3>
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <p className="text-gray-700 leading-relaxed">{applicantDetail.bio || "No bio available."}</p>
+            </div>
+          </div>
+          
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* Academics Section */}

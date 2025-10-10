@@ -440,7 +440,7 @@ function ApplicationsListContent() {
 
                         {/* Status Indicators */}
                         <div className="flex flex-wrap gap-4 mb-4 text-sm -mx-14 text-gray-600">
-                          <div className="flex items-center gap-1">
+                          {/* <div className="flex items-center gap-1">
                             <div
                               className={`w-2 h-2 rounded-full ${
                                 applicant.available
@@ -459,7 +459,7 @@ function ApplicationsListContent() {
                                 ? "Available"
                                 : "Unavailable"}
                             </span>
-                          </div>
+                          </div> */}
 
                           <div className="flex items-center gap-1">
                             <MapPin className="w-4 h-4" />
@@ -468,7 +468,7 @@ function ApplicationsListContent() {
 
                           <div className="flex items-center gap-1">
                             <Clock className="w-4 h-4" />
-                            <span>Experience : {formatExperience(applicant.experience) || "9 years"}</span>
+                            <span>Experience : {formatExperience(applicant.experience) || "Not Specified"}</span>
                           </div>
                         </div>
                         

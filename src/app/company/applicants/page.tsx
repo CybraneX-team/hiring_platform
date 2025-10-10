@@ -349,7 +349,7 @@ function ApplicationDetailContent() {
 
       const name = p?.name || applicant?.name || 'Unknown';
       const title = p?.openToRoles?.[0] || p?.WorkExperience?.[0]?.title || applicant?.title || 'Professional';
-      const location = p?.locationData?.address || p?.location || applicant?.location || '';
+      const location = applicant.location ? applicant.location.split(",").slice(-4).join(", ") : "Unknown Location";
       const imageUrl = p?.profile_image_url || undefined;
       const available = applicant?.available || false;
       const experience = p?.yearsOfExp ? `${p.yearsOfExp}` : applicant?.experience || '0 Years';
@@ -364,14 +364,14 @@ function ApplicationDetailContent() {
             title,
             location,
             imageUrl,
-            available,
+         
             experience,
             skills,
             certifications,
             experience_details,
             academics,
             languages,
-            contact: { email, phone },
+            
             companyLogo : companyLogoUrl,
           }}
           generatedOn={formattedDate}
@@ -563,21 +563,21 @@ function ApplicationDetailContent() {
           </div>
 
           <div className="flex flex-wrap items-center gap-6 mb-8 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-blue-500" />
               <span className="text-blue-600 font-medium">
                 {applicant.available ? "Available" : "Unavailable"}
               </span>
-            </div>
+            </div> */}
 
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4" />
-              <span>{applicant.location}</span>
+              <span>{applicant.location ? applicant.location.split(",").slice(-4).join(", ") : "Unknown Location"}</span>
             </div>
 
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
-              <span>Experience : {formatExperience(applicant.experience) || "9 years"}</span>
+              <span>Experience : {formatExperience(applicant.experience) || "Not Specified"}</span>
             </div>
           </div>
 
@@ -686,6 +686,14 @@ function ApplicationDetailContent() {
                 </p>
               )}
             </div>
+            <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Bio
+            </h3>
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <p className="text-gray-700 leading-relaxed">{applicant.bio || "No bio available."}</p>
+            </div>
+          </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
