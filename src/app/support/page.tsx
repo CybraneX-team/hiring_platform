@@ -53,8 +53,8 @@ export default function SupportPage() {
     <div className="min-h-screen bg-white">
       <Header />
       
-      <main className="pt-20">
-        <section className="py-16 md:py-24 bg-white">
+      <main className="">
+        <section className="py-16 md:py-6 bg-white">
           <div className="max-w-7xl mx-auto px-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}

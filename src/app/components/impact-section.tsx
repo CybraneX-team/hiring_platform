@@ -5,10 +5,10 @@ import { motion } from "framer-motion";
 
 export default function ImpactSection() {
   return (
-    <section className="bg-white py-8 sm:py-12 md:py-16">
+    <section className="bg-white py-8 sm:py-12 md:py-0">
       <div className="max-w-[100rem] mx-auto px-4 sm:px-6 md:px-6">
         {/* Section heading outside the box */}
-        <div className="mb-6 sm:mb-8 md:mb-10 text-center">
+        <div className="mb-6 sm:mb-8 md:mb-20 text-center">
           <h2 className="text-[#163A33] font-bold tracking-tight text-xl sm:text-2xl md:text-6xl">How it works</h2>
         </div>
         <motion.div

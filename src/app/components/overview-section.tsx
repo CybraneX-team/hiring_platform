@@ -19,7 +19,7 @@ export default function OverviewSection() {
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#163A33] mb-3 sm:mb-4">
               Who We Serve
             </h2>
-            <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-2xl mx-auto px-4">
+            <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-4xl mx-auto px-4">
               Connecting the right talent with the right opportunities in energy and infrastructure
             </p>
           </div>
@@ -127,7 +127,7 @@ export default function OverviewSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="mb-16"
+          className="mb-2"
         >
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-[#163A33] mb-4">

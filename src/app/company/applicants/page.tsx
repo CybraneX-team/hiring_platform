@@ -306,6 +306,7 @@ function ApplicationDetailContent() {
 
       // Use the complete profile from the API response
       const p = applicant.profile;
+      
 
       // Certifications
       const certifications = Array.isArray(p?.certificates)
@@ -354,6 +355,7 @@ function ApplicationDetailContent() {
       const experience = p?.yearsOfExp ? `${p.yearsOfExp} Years` : applicant?.experience || '0 Years';
       const email = applicant?.user?.email || applicant?.contact?.email;
       const phone = p?.phoneNumber || applicant?.contact?.phone;
+      const companyLogoUrl = localStorage.getItem('companyLogo') || profile?.companyLogo || '';
 
       const blob = await pdf(
         <ResumePDF
@@ -370,6 +372,7 @@ function ApplicationDetailContent() {
             academics,
             languages,
             contact: { email, phone },
+            companyLogo : companyLogoUrl,
           }}
           generatedOn={formattedDate}
         />

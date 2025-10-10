@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Document, Page, Text, View, StyleSheet, Font, Svg, Path, Circle } from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet, Font, Svg, Path, Circle, Image } from "@react-pdf/renderer";
 
 // Register a font with good unicode coverage if needed; fallback to Helvetica
 // Font.register({ family: 'Inter', src: '/fonts/Inter-Regular.ttf' });
@@ -19,6 +19,7 @@ export interface ResumeData {
   academics?: Array<{ level?: string; institution?: string; completed?: boolean }>;
   languages?: string[];
   contact?: { phone?: string; email?: string };
+  companyLogo?: string;
 }
 
 const styles = StyleSheet.create({
@@ -88,7 +89,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 4,
     backgroundColor: '#10B981',
-    color: '#10B981',
+    color: 'rgba(0, 0, 0, 2.5)',
     marginRight: 6,
     marginBottom: 6,
   },
@@ -149,18 +150,18 @@ export const ResumePDF: React.FC<{ data: ResumeData; generatedOn?: string }> = (
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <View style={[styles.row, { marginBottom: 8 }]}>
-
-            {/* For Initials of name */}
-              {/* <Text style={styles.avatar}>{initials}</Text> */}
-
+          <View style={[styles.row, styles.spaceBetween, { marginBottom: 8 }]}>
             <View>
               <Text style={styles.name}>{data.name || 'Unknown Name'}</Text>
-            {data.title && (
-              <Text style={styles.subtitle}>{data.title}</Text>
-            )}
-
+              {data.title && (<Text style={styles.subtitle}>{data.title}</Text>)}
             </View>
+
+            {data.companyLogo && (
+              <Image
+                src={data.companyLogo}
+                style={{ width: 90, height: 40, objectFit: 'contain' }}
+              />
+            )}
           </View>
           <View style={styles.metaRow}>
             {data.location ? (
@@ -171,14 +172,14 @@ export const ResumePDF: React.FC<{ data: ResumeData; generatedOn?: string }> = (
                 <Text style={{ ...styles.metaText, marginLeft: 4 }}>{data.location}</Text>
               </View>
             ) : null}
-            {typeof data.available === 'boolean' ? (
+            {/* {typeof data.available === 'boolean' ? (
               <View style={styles.metaItem}>
                 <Svg width={10} height={10} viewBox="0 0 24 24">
                   <Circle cx={12} cy={12} r={5} fill={data.available ? '#10B981' : '#EF4444'} />
                 </Svg>
                 <Text style={{ ...styles.metaText, marginLeft: 4, marginTop: 2 }}>{data.available ? 'Available' : 'Unavailable'}</Text>
               </View>
-            ) : null}
+            ) : null} */}
             {data.experience ? (
               <View style={styles.metaItem}>
                 <Svg width={10} height={10} viewBox="0 0 24 24">

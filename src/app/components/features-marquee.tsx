@@ -97,7 +97,7 @@ export default function FeaturesMarquee() {
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#163A33] mb-3 sm:mb-4">
             Why Choose ProjectMATCH?
           </h2>
-          <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-2xl mx-auto px-4">
+          <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-4xl mx-auto px-4">
             Advanced AI-powered platform with comprehensive features for the energy sector
           </p>
         </motion.div>

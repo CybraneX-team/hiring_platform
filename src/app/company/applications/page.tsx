@@ -20,6 +20,7 @@ interface Applicant {
   skills: string[];
   certifications: string[];
   matchPercentage: number;
+  status: string;
   applicationId: string;
 }
 
@@ -128,7 +129,6 @@ function ApplicationsListContent() {
 
     // Generate avatar from name
     const generateAvatar = (name: string) => {
-      if (!name || name === "Unknown Applicant") return "NA";
       const names = name.split(" ");
       if (names.length >= 2) {
         return `${names[0][0]}${names[1][0]}`.toUpperCase();
@@ -145,33 +145,26 @@ function ApplicationsListContent() {
       return `${years} Year${years !== 1 ? "s" : ""}`;
     };
 
-    // FIX: Check both applicant.name and profile.name
-    const applicantName =
-      profile?.name || "Unknown Applicant";
-
     return {
-      // FIX: Use applicant._id if available, otherwise application._id
-      id: applicant?._id || applicant?.id || application._id || "",
-      name: applicantName,
+      id: applicant._id || applicant.id,
+      name: application.profile.name || "Unknown Applicant",
       title:
         profile.openToRoles?.[0] ||
         profile.WorkExperience?.[0]?.title ||
         "Professional",
-      avatar: generateAvatar(applicantName),
+      avatar: generateAvatar(application.profile.name || "NA"),
       available:
         application.status === "pending" || application.status === "reviewing",
-      location: profile?.locationData?.address || "Location not specified",
-      experience: getExperienceText(profile.yearsOfExp || 0),
-      skills:
-        profile.skills && profile.skills.length > 0
-          ? profile.skills
-          : ["No skills listed"],
+      location: profile.location || "Location not specified",
+      experience: getExperienceText(profile.yearsOfExp),
+      skills: profile.skills || ["No skills listed"],
       certifications: profile.certificates?.map((cert: any) => cert.name) || [
         "No certifications",
       ],
       matchPercentage: Math.round(
         application.matchScore || application.matchDetails?.overallScore || 0
       ),
+      status: application.status || "pending",
       applicationId: application._id,
     };
   };
@@ -258,6 +251,7 @@ function ApplicationsListContent() {
       }
 
       const data = await response.json();
+
       if (data.success) {
         setJobInfo(data.data.job);
 
@@ -416,7 +410,7 @@ function ApplicationsListContent() {
                         {/* Name and Title */}
                         <div className="mb-5 w-full">
                           <h3 className="text-lg font-semibold text-gray-900 mb-1 max-w-[200px]">
-                            {applicant.name || "No name found"}
+                            {applicant.name}
                           </h3>
                           <p className="text-gray-600 text-sm">
                             {applicant.title}
@@ -528,8 +522,7 @@ function ApplicationsListContent() {
                                     setRatingModal({
                                       isOpen: true,
                                       applicationId: applicant.applicationId,
-                                      applicantName:
-                                        applicant.name || "No name found",
+                                      applicantName: applicant.name,
                                       jobTitle: jobInfo?.title || "Position",
                                     })
                                   }
@@ -562,13 +555,26 @@ function ApplicationsListContent() {
                     {/* Right Section - Match Percentage and Action Button */}
                     <div className="flex flex-col items-end justify-between h-full min-h-[200px]">
                       {/* Match Percentage with Progress Circle and Label */}
-                      <div className="flex flex-col items-center gap-1">
-                        <CircularProgress
-                          percentage={applicant.matchPercentage}
-                        />
-                        <span className="text-xs text-gray-500 text-center">
-                          AI match score
-                        </span>
+                      <div className="flex items-center gap-3">
+                        {applicant.status === "shortlisted" && (
+                          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#76FF82] text-black font-medium shadow-sm">
+                            <span className="inline-flex items-center" aria-hidden="true">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4" aria-hidden="true">
+                                <path d="M21.801 10A10 10 0 1 1 17 3.335"></path>
+                                <path d="m9 11 3 3L22 4"></path>
+                              </svg>
+                            </span>
+                            <span>Shortlisted</span>
+                          </div>
+                        )}
+                        <div className="flex flex-col items-center gap-1">
+                          <CircularProgress
+                            percentage={applicant.matchPercentage}
+                          />
+                          <span className="text-xs text-gray-500 text-center">
+                            AI match score
+                          </span>
+                        </div>
                       </div>
 
                       {/* Desktop Open Button */}
@@ -596,9 +602,7 @@ function ApplicationsListContent() {
           <RatingModal
             isOpen={ratingModal.isOpen}
             onClose={() => setRatingModal(null)}
-            onSubmit={(rating) =>
-              submitRating(ratingModal.applicationId, rating)
-            }
+            onSubmit={(rating) => submitRating(ratingModal.applicationId, rating)}
             applicantName={ratingModal.applicantName}
             jobTitle={ratingModal.jobTitle}
             isSubmitting={ratingSubmitting}
