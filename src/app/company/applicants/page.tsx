@@ -157,7 +157,7 @@ function ApplicationDetailContent() {
           location: profile.locationData?.address || profile.location || "Location not specified",
           
           // Experience
-          experience: profile.yearsOfExp ? `${profile.yearsOfExp} Years` : "0 Years",
+          experience: profile.yearsOfExp ? `${profile.yearsOfExp} ` : "0 Years",
           
           // Match percentage
           matchPercentage: Math.round(application.matchDetails?.overallScore || 0),
@@ -352,7 +352,7 @@ function ApplicationDetailContent() {
       const location = p?.locationData?.address || p?.location || applicant?.location || '';
       const imageUrl = p?.profile_image_url || undefined;
       const available = applicant?.available || false;
-      const experience = p?.yearsOfExp ? `${p.yearsOfExp} Years` : applicant?.experience || '0 Years';
+      const experience = p?.yearsOfExp ? `${p.yearsOfExp}` : applicant?.experience || '0 Years';
       const email = applicant?.user?.email || applicant?.contact?.email;
       const phone = p?.phoneNumber || applicant?.contact?.phone;
       const companyLogoUrl = localStorage.getItem('companyLogo') || profile?.companyLogo || '';
