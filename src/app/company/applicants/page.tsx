@@ -410,6 +410,25 @@ function ApplicationDetailContent() {
       />
     );
   }
+  const formatExperience = (years: any) => {
+    if (years === undefined || years === null || years === "") return undefined;
+    if (typeof years === "number") {
+      return `${years} ${years === 1 ? "year" : "years"}`;
+    }
+    if (typeof years === "string") {
+      const s = years.trim();
+      // if the string already mentions year(s), yr, yrs or contains a + (e.g. '9+'), return as-is
+      if (/(year|years|yr|yrs|\+)/i.test(s)) return s;
+      // if it's a numeric string like '9' => convert to number and append years
+      if (/^\d+(?:\.\d+)?$/.test(s)) {
+        const n = Number(s);
+        return `${n} ${n === 1 ? "year" : "years"}`;
+      }
+      //remove +
+      return s.replace(/\+/g, "").trim();
+    }
+    return String(years);
+  };
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] p-4 sm:p-6 lg:p-8">
@@ -558,7 +577,7 @@ function ApplicationDetailContent() {
 
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
-              <span>{applicant.experience}</span>
+              <span>Experience : {formatExperience(applicant.experience) || "9 years"}</span>
             </div>
           </div>
 

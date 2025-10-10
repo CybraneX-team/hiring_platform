@@ -185,7 +185,10 @@ export const ResumePDF: React.FC<{ data: ResumeData; generatedOn?: string }> = (
                 <Svg width={10} height={10} viewBox="0 0 24 24">
                   <Path d="M12 1a11 11 0 100 22 11 11 0 000-22zm0 2a9 9 0 110 18 9 9 0 010-18zm.5 4h-1v6l5 3 .5-.866-4.5-2.634V7z" fill="#6B7280" />
                 </Svg>
-                <Text style={{ ...styles.metaText, marginLeft: 4, marginTop: 3}}>{data.experience}</Text>
+                <Text style={{ ...styles.metaText, marginLeft: 4, marginTop: 3 }}>
+                  <Text style={{ fontWeight: 700 }}>Experience: </Text>
+                  {data.experience}
+                </Text>
               </View>
             ) : null}
           </View>

@@ -408,6 +408,25 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
     setFilteredItems(combinedFilteredItems);
   }, [combinedFilteredItems]);
 
+  const formatExperience = (years: any) => {
+    if (years === undefined || years === null || years === "") return undefined;
+    if (typeof years === "number") {
+      return `${years} ${years === 1 ? "year" : "years"}`;
+    }
+    if (typeof years === "string") {
+      const s = years.trim();
+      // if the string already mentions year(s), yr, yrs or contains a + (e.g. '9+'), return as-is
+      if (/(year|years|yr|yrs|\+)/i.test(s)) return s;
+      // if it's a numeric string like '9' => convert to number and append years
+      if (/^\d+(?:\.\d+)?$/.test(s)) {
+        const n = Number(s);
+        return `${n} ${n === 1 ? "year" : "years"}`;
+      }
+      //remove +
+      return s.replace(/\+/g, "").trim();
+    }
+    return String(years);
+  };
   return (
     <div className="w-full max-w-7xl mx-auto">
       {/* Filter Section and Add More Button */}
@@ -579,7 +598,7 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
 
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          <span>{item.yearsOfExp || "9+ years"}</span>
+                          <span>Experience : {formatExperience(item.yearsOfExp) || "9 years"}</span>
                         </div>
 
                         <div className="flex items-center gap-1 text-xs text-gray-400 ml-auto">

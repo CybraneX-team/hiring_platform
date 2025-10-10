@@ -25,6 +25,29 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
 
   const isAvailable = applicant?.openToRoles && applicant.openToRoles.length > 0;
 
+  // Format yearsOfExp: accept number or string. If it's numeric, append 'year(s)'.
+  // If it's already a readable string (contains 'year' or '+' etc.), leave as-is.
+  const formatExperience = (years: any) => {
+    if (years === undefined || years === null || years === "") return undefined;
+    if (typeof years === "number") {
+      return `${years} ${years === 1 ? "year" : "years"}`;
+    }
+    if (typeof years === "string") {
+      const s = years.trim();
+      // if the string already mentions year(s), yr, yrs or contains a + (e.g. '9+'), return as-is
+      if (/(year|years|yr|yrs|\+)/i.test(s)) return s;
+      // if it's a numeric string like '9' => convert to number and append years
+      if (/^\d+(?:\.\d+)?$/.test(s)) {
+        const n = Number(s);
+        return `${n} ${n === 1 ? "year" : "years"}`;
+      }
+      return s;
+    }
+    return String(years);
+  };
+
+  const formattedExperience = formatExperience(applicant?.yearsOfExp);
+
   const handleDownload = async () => {
     if (!applicant) return;
     setPreparingPdf(true);
@@ -163,10 +186,10 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
               </div>
             )}
 
-            {applicant?.yearsOfExp && (
+            {formattedExperience && (
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
-                <span>{applicant.yearsOfExp}</span>
+                <span>Experience: {formattedExperience}</span>
               </div>
             )}
           </div>
