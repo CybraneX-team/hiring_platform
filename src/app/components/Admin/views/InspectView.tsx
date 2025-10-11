@@ -209,7 +209,7 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
         lastActivity: formatRelative(profile?.updatedAt || profile?.createdAt),
         role: primaryRole,
         email: profile?.user?.email || "",
-        location: profile?.location || "",
+        location: profile?.location ?.split(",").slice(-4).join(", ")  || profile?.locationData?.address.split(",").slice(-4).join(", ")  || "",
         yearsOfExp: profile?.yearsOfExp || "",
         matchScore,
         profile,

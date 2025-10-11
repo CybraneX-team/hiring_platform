@@ -88,7 +88,11 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
           data={{
             name: applicant?.name || 'Unknown',
             title: applicant?.WorkExperience?.[0]?.title || 'Professional',
-            location: applicant.location ? applicant.location.split(",").slice(-4).join(", ") : "Unknown Location",
+            location: applicant.location
+              ? applicant.location.split(",").slice(-4).join(", ")
+              : applicant.locationData && applicant.locationData.address
+                ? applicant.locationData.address.split(",").slice(-4).join(", ")
+                : "Unknown Location",
             imageUrl: applicant?.profile_image_url || applicant?.profilePicture || undefined,
             
             experience: applicant?.yearsOfExp ? `${applicant.yearsOfExp}` : undefined,
@@ -119,6 +123,7 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
       setPreparingPdf(false);
     }
   };
+  const loc = applicant.location ?? applicant.locationData?.address ?? null;
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] p-4 sm:p-6 lg:p-8">
@@ -262,7 +267,7 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
             {/* limit the location to last four words which are seperated by comas if it is not null */}
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4" />
-              <span>{applicant.location ? applicant.location.split(",").slice(-4).join(", ") : "Unknown Location"}</span>
+              <span>{loc ? loc.split(",").slice(-4).join(", ") : "Unknown Location"}</span>
             </div>
 
             <div className="flex items-center gap-2">

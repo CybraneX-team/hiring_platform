@@ -155,7 +155,7 @@ function ApplicationsListContent() {
       avatar: generateAvatar(application.profile.name || "NA"),
       available:
         application.status === "pending" || application.status === "reviewing",
-      location: profile.location || "Location not specified",
+      location: profile.location || profile.locationData?.address || "Location not specified",
       experience: getExperienceText(profile.yearsOfExp),
       skills: profile.skills || ["No skills listed"],
       certifications: profile.certificates?.map((cert: any) => cert.name) || [
@@ -463,7 +463,7 @@ function ApplicationsListContent() {
 
                           <div className="flex items-center gap-1">
                             <MapPin className="w-4 h-4" />
-                            <span>{applicant.location}</span>
+                            <span>{applicant.location.split(",").slice(-4).join(", ")}</span>
                           </div>
 
                           <div className="flex items-center gap-1">

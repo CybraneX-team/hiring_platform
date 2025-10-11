@@ -195,7 +195,7 @@ export default function ApplicationDetailView() {
         "Professional",
       avatar: profile.profile_image_url ? profile.profile_image_url : "",
       available: true,
-      location: profile.location || "Location not specified",
+      location: profile.locationData.address || profile.location || "Location not specified",
       experience:
         profile.yearsOfExp || `${profile.WorkExperience?.length || 0} Roles`,
       matchPercentage: 0,
@@ -256,7 +256,7 @@ export default function ApplicationDetailView() {
           data={{
             name: applicantDetail.name,
             title: applicantDetail.title,
-            location: applicantDetail.location ? applicantDetail.location.split(",").slice(-4).join(", ") : "Unknown Location",
+            location: applicantDetail.location? applicantDetail.location.split(",").slice(-4).join(", ") : "Unknown Location" ,
             imageUrl: (profile as any)?.profile_image_url || undefined,
             
             experience: applicantDetail.experience,
@@ -385,7 +385,7 @@ export default function ApplicationDetailView() {
 
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4" />
-              <span>{applicantDetail.location}</span>
+              <span>{applicantDetail.location ? applicantDetail.location.split(",").slice(-4).join(", ") : "Unknown Location"}</span>
             </div>
 
             <div className="flex items-center gap-2">

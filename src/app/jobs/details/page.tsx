@@ -993,7 +993,7 @@ const formatSalary = () => {
                       {job.jobType && <CustomBadge>{job.jobType}</CustomBadge>}
                       {(job.experienceLevel || job.experience) && (
                         <CustomBadge>
-                          {job.experienceLevel || job.experience}
+                          Required Experience : {job.experienceLevel || job.experience}
                         </CustomBadge>
                       )}
                       {job.department && (
