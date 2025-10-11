@@ -266,6 +266,7 @@ export default function ApplicationDetailView() {
             academics: applicantDetail.academics,
             languages: applicantDetail.languages,
             contact: applicantDetail.contact,
+            bio: applicantDetail.bio || '',
           }}
           generatedOn={formattedDate}
         />

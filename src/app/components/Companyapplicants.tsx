@@ -98,6 +98,7 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
             academics,
             languages: applicant?.languages || [],
             contact: { email: applicant?.user?.email, phone: applicant?.phoneNumber },
+            bio: applicant?.bio || '',
           }}
           generatedOn={formattedDate}
         />

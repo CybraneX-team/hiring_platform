@@ -356,6 +356,7 @@ function ApplicationDetailContent() {
       const email = applicant?.user?.email || applicant?.contact?.email;
       const phone = p?.phoneNumber || applicant?.contact?.phone;
       const companyLogoUrl = localStorage.getItem('companyLogo') || profile?.companyLogo || '';
+      const bio = p?.bio ||applicant?.bio || '';
 
       const blob = await pdf(
         <ResumePDF
@@ -373,7 +374,8 @@ function ApplicationDetailContent() {
             languages,
             
             companyLogo : companyLogoUrl,
-          }}
+            bio
+          }} 
           generatedOn={formattedDate}
         />
       ).toBlob();

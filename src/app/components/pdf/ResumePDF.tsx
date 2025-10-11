@@ -20,6 +20,7 @@ export interface ResumeData {
   languages?: string[];
   contact?: { phone?: string; email?: string };
   companyLogo?: string;
+  bio?: string;
 }
 
 const styles = StyleSheet.create({
@@ -195,6 +196,13 @@ export const ResumePDF: React.FC<{ data: ResumeData; generatedOn?: string }> = (
         </View>
 
         <View style={styles.line} />
+
+        {data.bio && (
+          <View style={styles.section} wrap>
+            <Text style={styles.sectionTitle}>Bio</Text>
+            <Text>{data.bio}</Text>
+          </View>
+        )}
 
         {data.skills && data.skills.length > 0 && (
           <View style={styles.section} wrap>
