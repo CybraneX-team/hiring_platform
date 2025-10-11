@@ -153,8 +153,42 @@ function ApplicationsListContent() {
         profile.WorkExperience?.[0]?.title ||
         "Professional",
       avatar: generateAvatar(application.profile.name || "NA"),
-      available:
-        application.status === "pending" || application.status === "reviewing",
+      available: (() => {
+        try {
+          // determine job start/end (support either application.job or top-level fields)
+          const jobStart = application.job?.startDate
+            ? new Date(application.job.startDate)
+            : application.startDate
+            ? new Date(application.startDate)
+            : null;
+          const jobEnd = application.job?.endDate
+            ? new Date(application.job.endDate)
+            : application.endDate
+            ? new Date(application.endDate)
+            : null;
+
+          // fallback to status-based check if job dates unavailable
+          if (!jobStart || !jobEnd) {
+            return application.status === "pending" || application.status === "reviewing";
+          }
+
+          // gather unavailability slots from profile or application
+          const slots = profile?.unavailability || application.unavailability || [];
+
+          // if any slot overlaps the job date range, applicant is unavailable
+          const hasConflict = Array.isArray(slots) && slots.some((slot: any) => {
+            const s = slot?.startDate ? new Date(slot.startDate) : null;
+            const e = slot?.endDate ? new Date(slot.endDate) : null;
+            if (!s || !e) return false;
+            return s <= jobEnd && e >= jobStart; // overlap condition
+          });
+
+          return !hasConflict;
+        } catch (err) {
+          return application.status === "pending" || application.status === "reviewing";
+        }
+      })(),
+
       location: profile.location || profile.locationData?.address || "Location not specified",
       experience: getExperienceText(profile.yearsOfExp),
       skills: profile.skills || ["No skills listed"],
@@ -440,7 +474,7 @@ function ApplicationsListContent() {
 
                         {/* Status Indicators */}
                         <div className="flex flex-wrap gap-4 mb-4 text-sm -mx-14 text-gray-600">
-                          {/* <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1">
                             <div
                               className={`w-2 h-2 rounded-full ${
                                 applicant.available
@@ -459,7 +493,7 @@ function ApplicationsListContent() {
                                 ? "Available"
                                 : "Unavailable"}
                             </span>
-                          </div> */}
+                          </div>
 
                           <div className="flex items-center gap-1">
                             <MapPin className="w-4 h-4" />

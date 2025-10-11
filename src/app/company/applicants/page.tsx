@@ -149,9 +149,43 @@ function ApplicationDetailContent() {
             "Professional",
           avatar: generateAvatar(profile.name || applicant.name || "NA"),
           
+          //
           // Status
-          available:
-            application.status === "pending" || application.status === "reviewing",
+          available: (() => {
+            try {
+              // determine job start/end (support either application.job or top-level fields)
+              const jobStart = application.job?.startDate
+                ? new Date(application.job.startDate)
+                : application.startDate
+                ? new Date(application.startDate)
+                : null;
+              const jobEnd = application.job?.endDate
+                ? new Date(application.job.endDate)
+                : application.endDate
+                ? new Date(application.endDate)
+                : null;
+
+              // fallback to status-based check if job dates unavailable
+              if (!jobStart || !jobEnd) {
+                return application.status === "pending" || application.status === "reviewing";
+              }
+
+              // gather unavailability slots from profile or application
+              const slots = profile?.unavailability || application.unavailability || [];
+
+              // if any slot overlaps the job date range, applicant is unavailable
+              const hasConflict = Array.isArray(slots) && slots.some((slot: any) => {
+                const s = slot?.startDate ? new Date(slot.startDate) : null;
+                const e = slot?.endDate ? new Date(slot.endDate) : null;
+                if (!s || !e) return false;
+                return s <= jobEnd && e >= jobStart; // overlap condition
+              });
+
+              return !hasConflict;
+            } catch (err) {
+              return application.status === "pending" || application.status === "reviewing";
+            }
+          })(),
           
           // Location
           location: profile.locationData?.address || profile.location || "Location not specified",
@@ -565,12 +599,12 @@ function ApplicationDetailContent() {
           </div>
 
           <div className="flex flex-wrap items-center gap-6 mb-8 text-sm text-gray-600">
-            {/* <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-blue-500" />
               <span className="text-blue-600 font-medium">
                 {applicant.available ? "Available" : "Unavailable"}
               </span>
-            </div> */}
+            </div>
 
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4" />
