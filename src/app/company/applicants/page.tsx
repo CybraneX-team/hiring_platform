@@ -6,6 +6,7 @@ import {
   MapPin,
   Clock,
   CheckCircle,
+  XCircle,
   Download,
   Loader2,
 } from "lucide-react";
@@ -599,9 +600,14 @@ function ApplicationDetailContent() {
           </div>
 
           <div className="flex flex-wrap items-center gap-6 mb-8 text-sm text-gray-600">
+            {/* should be red if unavailable and a cross not the tickmark  green if available */}
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-blue-500" />
-              <span className="text-blue-600 font-medium">
+              {applicant.available ? (
+                <CheckCircle className="w-4 h-4 text-green-500" />
+              ) : (
+                <XCircle className="w-4 h-4 text-red-500" />
+              )}
+              <span className={`font-medium ${applicant.available ? "text-green-600" : "text-red-600"}`}>
                 {applicant.available ? "Available" : "Unavailable"}
               </span>
             </div>

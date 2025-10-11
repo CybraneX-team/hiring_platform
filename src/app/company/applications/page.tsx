@@ -478,14 +478,14 @@ function ApplicationsListContent() {
                             <div
                               className={`w-2 h-2 rounded-full ${
                                 applicant.available
-                                  ? "bg-blue-500"
+                                  ? "bg-green-500"
                                   : "bg-red-500"
                               }`}
                             ></div>
                             <span
                               className={
                                 applicant.available
-                                  ? "text-blue-600"
+                                  ? "text-green-600"
                                   : "text-red-600"
                               }
                             >
