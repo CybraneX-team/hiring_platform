@@ -468,27 +468,27 @@ function ApplicationDetailContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-[#F5F5F5] p-3 sm:p-4 lg:p-6 xl:p-8">
       <div className="sr-only" aria-live="polite">
         {isShortlisted ? "Shortlisted" : ""}
       </div>
-      <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">
+      <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 mb-3 sm:mb-4">
         Compscope
       </h1>
-      <div className="max-w-6xl mx-auto mt-12">
-        <div className="mb-10 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto mt-6 sm:mt-8 lg:mt-12">
+        <div className="mb-6 sm:mb-8 lg:mb-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <motion.button
             onClick={() => router.back()}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
+            className="cursor-pointer flex items-center gap-2 px-3 sm:px-4 py-2 bg-gray-200 rounded-full text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors w-fit"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
             Back
           </motion.button>
 
           <div
-            className="flex items-center gap-3"
+            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto"
             data-html2canvas-ignore="true"
           >
             <motion.button
@@ -496,7 +496,7 @@ function ApplicationDetailContent() {
               onClick={handleShortlist}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="px-4 py-2 rounded-full bg-[#76FF82] cursor-pointer text-black font-medium shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#76FF82]"
+              className="px-3 sm:px-4 py-2 rounded-full bg-[#76FF82] cursor-pointer text-black font-medium shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#76FF82] text-xs sm:text-sm w-full sm:w-auto"
               aria-pressed={isShortlisted}
             >
               <AnimatePresence initial={false} mode="wait">
@@ -548,9 +548,9 @@ function ApplicationDetailContent() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               disabled={preparingPdf}
-              className="px-4 py-2 rounded-full bg-[#76FF82] cursor-pointer text-black font-medium inline-flex items-center gap-2 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#76FF82] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 sm:px-4 py-2 rounded-full bg-[#76FF82] cursor-pointer text-black font-medium inline-flex items-center gap-2 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#76FF82] disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm w-full sm:w-auto"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-3 h-3 sm:w-4 sm:h-4" />
               {preparingPdf ? "Preparing..." : "Download"}
             </motion.button>
           </div>
@@ -560,21 +560,21 @@ function ApplicationDetailContent() {
           ref={contentRef}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl p-6 sm:p-8 shadow-sm"
+          className="bg-white rounded-xl p-4 sm:p-6 lg:p-8 shadow-sm"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-gray-200">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-semibold text-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-gray-200">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-semibold text-sm sm:text-lg">
                   {applicant.avatar}
                 </span>
               </div>
 
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-900 mb-1">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 mb-1 break-words">
                   {applicant.name}
                 </h2>
-                <p className="text-gray-600">{applicant.title}</p>
+                <p className="text-gray-600 text-sm sm:text-base break-words">{applicant.title}</p>
               </div>
             </div>
 
@@ -599,108 +599,108 @@ function ApplicationDetailContent() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-6 mb-8 text-sm text-gray-600">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 text-xs sm:text-sm text-gray-600">
             {/* should be red if unavailable and a cross not the tickmark  green if available */}
             <div className="flex items-center gap-2">
               {applicant.available ? (
-                <CheckCircle className="w-4 h-4 text-green-500" />
+                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
               ) : (
-                <XCircle className="w-4 h-4 text-red-500" />
+                <XCircle className="w-3 h-3 sm:w-4 sm:h-4 text-red-500 flex-shrink-0" />
               )}
-              <span className={`font-medium ${applicant.available ? "text-green-600" : "text-red-600"}`}>
+              <span className={`font-medium ${applicant.available ? "text-green-600" : "text-red-600"} text-xs sm:text-sm`}>
                 {applicant.available ? "Available" : "Unavailable"}
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4" />
-              <span>{applicant.location ? applicant.location.split(",").slice(-4).join(", ") : "Unknown Location"}</span>
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <MapPin className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="break-words">{applicant.location ? applicant.location.split(",").slice(-4).join(", ") : "Unknown Location"}</span>
             </div>
 
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              <span>Experience : {formatExperience(applicant.experience) || "Not Specified"}</span>
+              <Clock className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm">Experience: {formatExperience(applicant.experience) || "Not Specified"}</span>
             </div>
           </div>
 
-          <div className="mb-8">
-            <h3 className="text-base font-medium text-gray-900 mb-3">Skills</h3>
+          <div className="mb-6 sm:mb-8">
+            <h3 className="text-sm sm:text-base font-medium text-gray-900 mb-2 sm:mb-3">Skills</h3>
             <div className="flex flex-wrap gap-2">
               {applicant.skills && applicant.skills.length > 0 ? (
                 applicant.skills.map((skill: string, index: number) => (
                   <span
                     key={index}
-                    className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
+                    className="px-2 sm:px-3 py-1 bg-gray-100 text-gray-700 text-xs sm:text-sm rounded-full break-words"
                   >
                     {skill}
                   </span>
                 ))
               ) : (
-                <span className="text-gray-500 text-sm">No skills listed</span>
+                <span className="text-gray-500 text-xs sm:text-sm">No skills listed</span>
               )}
             </div>
           </div>
 
-          <div className="mb-8">
-            <h3 className="text-base font-medium text-gray-900 mb-3">
+          <div className="mb-6 sm:mb-8">
+            <h3 className="text-sm sm:text-base font-medium text-gray-900 mb-2 sm:mb-3">
               Certifications from Industry
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {applicant.certifications &&
                 applicant.certifications.length > 0 ? (
                 applicant.certifications.map((cert: any, index: number) => (
                   <div
                     key={index}
-                    className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                    className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200"
                   >
-                    <h4 className="font-semibold text-gray-900 mb-1">
+                    <h4 className="font-semibold text-gray-900 mb-1 text-sm sm:text-base break-words">
                       {cert.name}
                     </h4>
-                    <p className="text-sm text-gray-600 mb-1">
+                    <p className="text-xs sm:text-sm text-gray-600 mb-1 break-words">
                       <span className="font-medium">Issuer:</span> {cert.issuer}
                     </p>
-                    <p className="text-sm text-gray-600 mb-2">
+                    <p className="text-xs sm:text-sm text-gray-600 mb-2 break-words">
                       <span className="font-medium">Date:</span> {cert.date}
                     </p>
                     {cert.description && (
-                      <p className="text-sm text-gray-700">
+                      <p className="text-xs sm:text-sm text-gray-700 break-words">
                         {cert.description}
                       </p>
                     )}
                   </div>
                 ))
               ) : (
-                <span className="text-gray-500 text-sm">
+                <span className="text-gray-500 text-xs sm:text-sm">
                   No certifications listed
                 </span>
               )}
             </div>
           </div>
 
-          <div className="mb-8">
-            <h3 className="text-base font-medium text-gray-900 mb-4">
-              Experience
-            </h3>
-            <div className="space-y-4">
-              {applicant.experience_details &&
-                applicant.experience_details.length > 0 ? (
-                applicant.experience_details.map((exp: any, index: number) => (
-                  <div key={index} className="bg-gray-50 p-4 rounded-lg mb-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h4 className="text-base font-semibold text-gray-900 mb-1">
-                          {exp.title}
-                        </h4>
-                        <p className="text-gray-600 font-medium text-sm">{exp.company}</p>
-                      </div>
-                      {exp.period && (
-                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                          {exp.period}
-                        </span>
-                      )}
-                    </div>
-                    
-                    {/* Bullet Points */}
+<div className="mb-6 sm:mb-8">
+            <h3 className="text-sm sm:text-base font-medium text-gray-900 mb-3 sm:mb-4">
+    Experience
+  </h3>
+  <div className="space-y-3 sm:space-y-4">
+    {applicant.experience_details &&
+      applicant.experience_details.length > 0 ? (
+      applicant.experience_details.map((exp: any, index: number) => (
+        <div key={index} className="bg-gray-50 p-3 sm:p-4 rounded-lg mb-3 sm:mb-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-2">
+            <div className="min-w-0 flex-1">
+              <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-1 break-words">
+                {exp.title}
+              </h4>
+              <p className="text-gray-600 font-medium text-xs sm:text-sm break-words">{exp.company}</p>
+            </div>
+            {exp.period && (
+              <span className="bg-blue-100 text-blue-800 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium w-fit">
+                {exp.period}
+              </span>
+            )}
+          </div>
+          
+          {/* Bullet Points */}
                     {(() => {
                       const points: string[] = Array.isArray(exp?.points) && exp.points.length
                         ? exp.points.map((p: any) => (typeof p === 'string' ? p : p?.point)).filter(Boolean)
@@ -708,58 +708,58 @@ function ApplicationDetailContent() {
                           ? [exp.description]
                           : [];
                       return points.length > 0 ? (
-                        <div className="mt-3">
-                          <ul className="space-y-2">
+                        <div className="mt-2 sm:mt-3">
+                          <ul className="space-y-1 sm:space-y-2">
                             {points.map((pt: string, idx: number) => (
                               <li key={idx} className="flex items-start">
-                                <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                                <p className="text-black text-sm leading-relaxed">{pt}</p>
+                                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full mt-1.5 sm:mt-2 mr-2 sm:mr-3 flex-shrink-0"></span>
+                                <p className="text-black text-xs sm:text-sm leading-relaxed break-words">{pt}</p>
                               </li>
                             ))}
                           </ul>
                         </div>
                       ) : null;
                     })()}
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500 text-sm">
-                  No experience details available
-                </p>
-              )}
+        </div>
+      ))
+    ) : (
+      <p className="text-gray-500 text-sm">
+        No experience details available
+      </p>
+    )}
             </div>
-            <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="mb-6 sm:mb-8">
+            <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
               Bio
             </h3>
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <p className="text-gray-700 leading-relaxed">{applicant.bio || "No bio available."}</p>
+            <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
+              <p className="text-gray-700 leading-relaxed text-xs sm:text-sm break-words">{applicant.bio || "No bio available."}</p>
             </div>
           </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
             <div>
-              <h3 className="text-base font-medium text-gray-900 mb-4">
+              <h3 className="text-sm sm:text-base font-medium text-gray-900 mb-3 sm:mb-4">
                 Academics
               </h3>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {applicant.academics && applicant.academics.length > 0 ? (
                   applicant.academics.map((academic: any, index: number) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full bg-[#76FF82] flex-shrink-0"></div>
-                      <div>
-                        <p className="font-medium text-gray-900">
+                    <div key={index} className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#76FF82] flex-shrink-0"></div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-gray-900 text-sm sm:text-base break-words">
                           {academic.level}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-xs sm:text-sm text-gray-600 break-words">
                           {academic.institution}
                         </p>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500 text-sm">
+                  <p className="text-gray-500 text-xs sm:text-sm">
                     No academic information available
                   </p>
                 )}
@@ -767,18 +767,18 @@ function ApplicationDetailContent() {
             </div>
 
             <div>
-              <h3 className="text-base font-medium text-gray-900 mb-4">
+              <h3 className="text-sm sm:text-base font-medium text-gray-900 mb-3 sm:mb-4">
                 Languages
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-1 sm:space-y-2">
                 {applicant.languages && applicant.languages.length > 0 ? (
                   applicant.languages.map((language: string, index: number) => (
-                    <p key={index} className="text-gray-700">
+                    <p key={index} className="text-gray-700 text-xs sm:text-sm break-words">
                       {language}
                     </p>
                   ))
                 ) : (
-                  <p className="text-gray-500 text-sm">
+                  <p className="text-gray-500 text-xs sm:text-sm">
                     No language information available
                   </p>
                 )}

@@ -29,9 +29,9 @@ export default function Footer() {
                   className="h-16 sm:h-20 md:h-24 w-auto"
                   priority
                 />
-                <div className="leading-tight text-[#163A33]">
+                <div className="leading-tight text-[#163A33] text-left">
                   <div className="text-xs sm:text-sm md:text-base lg:text-2xl font-black">ProjectMATCH</div>
-                  <div className="text-[10px] sm:text-xs md:text-sm text-gray-600"><span className="text-[#3EA442] -ml-16 font-bold">by Compscope</span></div>
+                  <div className="text-[10px] sm:text-xs md:text-sm text-gray-600"><span className="text-[#3EA442] font-bold">by Compscope</span></div>
                 </div>
               </div>
             </button>

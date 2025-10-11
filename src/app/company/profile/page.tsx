@@ -572,11 +572,11 @@ const OlaMapComponent = ({
   };
 
   return (
-    <div className="relative bg-gray-900 rounded-lg overflow-hidden h-48 sm:h-64">
+    <div className="relative bg-gray-900 rounded-lg overflow-hidden h-40 sm:h-48 lg:h-64">
       <div
         ref={mapRef}
         className="w-full h-full"
-        style={{ minHeight: "200px" }}
+        style={{ minHeight: "160px" }}
       />
 
       {!isMapLoaded && (
@@ -778,8 +778,8 @@ const LocationInputWithSearch = ({
   };
 
   return (
-    <div className="space-y-3 sm:space-y-4">
-      <div className="flex gap-2">
+    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
+      <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
           <input
             type="text"
@@ -789,7 +789,7 @@ const LocationInputWithSearch = ({
               setShowSuggestions(true);
             }}
             placeholder="Enter address or click on map to select location..."
-            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             onKeyDown={handleKeyPress}
             onFocus={() => {
               setIsInputFocused(true);
@@ -834,7 +834,7 @@ const LocationInputWithSearch = ({
           whileTap={{ scale: 0.95 }}
           onClick={handleSearch}
           disabled={!value.trim() || isSearching}
-          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
+          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors w-full sm:w-auto"
         >
           {isSearching ? "Searching..." : "Search"}
         </motion.button>
@@ -1569,16 +1569,16 @@ export default function ProfileTab() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="space-y-6 sm:space-y-8 text-black p-4 sm:p-6 lg:px-8"
           >
-            <div className="bg-white rounded-lg p-4 sm:p-6 lg:px-8 space-y-4 sm:space-y-6">
+            <div className="bg-white rounded-lg p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8 w-full max-w-full overflow-hidden">
               <motion.div
                 variants={itemVariants}
-                className="text-center py-4 sm:py-8"
+                className="text-center py-4 sm:py-6 lg:py-8"
               >
-                <h3 className="text-xs sm:text-sm text-[#A1A1A1] font-medium mb-4 sm:mb-6">
+                <h3 className="text-xs sm:text-sm text-[#A1A1A1] font-medium mb-3 sm:mb-4 lg:mb-6">
                   Company Logo and Identity According to legal Documentation
                 </h3>
 
-                <div className="flex flex-col items-center space-y-3 sm:space-y-4">
+                <div className="flex flex-col items-center space-y-2 sm:space-y-3 lg:space-y-4 w-full">
                   <div className="relative">
                     <motion.div
                       whileHover={{ scale: 1.05 }}
@@ -1591,27 +1591,29 @@ export default function ProfileTab() {
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={() => setIsLogoUploadOpen(true)}
-                      className="absolute cursor-pointer -bottom-1 -right-1 w-5 h-5 sm:w-5 sm:h-5 p-1 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
+                      className="absolute cursor-pointer -bottom-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 p-1 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
                     >
-                      <Pencil className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                      <Pencil className="w-2 h-2 sm:w-3 sm:h-3 lg:w-4 lg:h-4 text-white" />
                     </motion.button>
                   </div>
 
-                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 truncate">
-                    {formState.companyName || "Company Name"}
-                  </h2>
+                  <div className="w-full max-w-full px-4">
+                    <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 mb-1 break-words text-center w-full overflow-hidden">
+                      {formState.companyName || "Company Name"}
+                    </h2>
+                  </div>
                 </div>
               </motion.div>
 
               {formState.companyDescription?.trim() && (
                 <motion.div
                   variants={itemVariants}
-                  className="space-y-3 sm:space-y-4"
+                  className="space-y-3 sm:space-y-4 mt-6 sm:mt-8"
                 >
                   <h3 className="text-xs sm:text-sm font-medium text-[#A1A1A1]">
                     Company description
                   </h3>
-                  <p className="text-justify text-xs sm:text-sm text-gray-600 leading-relaxed p-3 sm:p-4 rounded-lg">
+                  <p className="text-justify text-xs sm:text-sm text-gray-600 leading-relaxed p-3 sm:p-4 rounded-lg break-words">
                     {formState.companyDescription}
                   </p>
                 </motion.div>
@@ -1620,19 +1622,19 @@ export default function ProfileTab() {
               {formState.orgSize?.trim() && (
                 <motion.div
                   variants={itemVariants}
-                  className="space-y-3 mt-6 sm:mt-10 pb-6 sm:pb-10"
+                  className="space-y-3 mt-6 sm:mt-8"
                 >
                   <h3 className="text-xs sm:text-sm text-[#A1A1A1]">
                     No of People in Organization
                   </h3>
-                  <div className="text-md  max-w-full sm:max-w-sm  text-gray-900 p-3 sm:p-4 rounded-lg">
+                  <div className="text-md max-w-full sm:max-w-sm text-gray-900 p-3 sm:p-4 rounded-lg">
                     {formState.orgSize}
                   </div>
                 </motion.div>
               )}
               <motion.div
                 variants={itemVariants}
-                className="space-y-3 sm:space-y-4"
+                className="space-y-3 sm:space-y-4 mt-6 sm:mt-8"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
                   <h3 className="text-sm sm:text-base font-medium text-gray-700">
@@ -1669,16 +1671,16 @@ export default function ProfileTab() {
               <motion.div
                 variants={cardVariants}
                 whileHover={{ y: -4, scale: 1.02 }}
-                className="bg-white rounded-lg p-6 sm:p-8 flex flex-col items-center justify-center text-center min-h-[200px] sm:min-h-[250px] cursor-pointer"
+                className="bg-white rounded-lg p-4 sm:p-6 lg:p-8 flex flex-col items-center justify-center text-center min-h-[180px] sm:min-h-[200px] lg:min-h-[250px] cursor-pointer"
                 onClick={() => (window.location.href = "/company/new-role")}
               >
                 <motion.div
                   whileHover={{ scale: 1.1 }}
-                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3 sm:mb-4"
+                  className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-full bg-gray-100 flex items-center justify-center mb-2 sm:mb-3 lg:mb-4"
                 >
-                  <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-gray-600" />
                 </motion.div>
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+                <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900">
                   Create a New Post
                 </h3>
               </motion.div>
@@ -1735,10 +1737,10 @@ export default function ProfileTab() {
                       key={job._id || index}
                       variants={cardVariants}
                       whileHover={{ y: -4, scale: 1.02 }}
-                      className="bg-white rounded-lg p-4 sm:p-6 min-h-[200px] sm:min-h-[250px] flex flex-col justify-between relative"
+                      className="bg-white rounded-lg p-3 sm:p-4 lg:p-6 min-h-[180px] sm:min-h-[200px] lg:min-h-[250px] flex flex-col justify-between relative"
                     >
                       {/* 3-dot menu */}
-                      <div className="absolute top-4 right-4 z-10 cursor-pointer">
+                      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 cursor-pointer">
                         <JobOptionsMenu
                           jobId={job._id}
                           onEdit={() => handleEditJob(job._id)}
@@ -1748,8 +1750,8 @@ export default function ProfileTab() {
 
                       <div>
                         {/* Job Title and Status Row */}
-                        <div className="flex items-start justify-between mb-2 pr-8">
-                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 line-clamp-2 flex-1 mr-2">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 pr-8 gap-2">
+                          <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 line-clamp-2 flex-1">
                             {job.title || "Untitled Job"}
                           </h3>
                           <JobStatusDropdown
@@ -1763,25 +1765,25 @@ export default function ProfileTab() {
                         </div>
 
                         {/* Simple Inline Stats */}
-                        <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center gap-6">
+                        <div className="flex items-center justify-between mb-3 sm:mb-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-3 sm:gap-6">
                             <div>
-                              <span className="text-lg font-bold text-gray-900">
+                              <span className="text-base sm:text-lg font-bold text-gray-900">
                                 {job.totalApplications || 0}
                               </span>
-                              <span className="text-sm text-gray-600 ml-2">
+                              <span className="text-xs sm:text-sm text-gray-600 ml-1 sm:ml-2">
                                 Applicants
                               </span>
                             </div>
 
-                            <div className="text-gray-300">•</div>
+                            <div className="text-gray-300 hidden sm:block">•</div>
 
                             <div>
-                              <span className="text-lg font-bold text-gray-900">
+                              <span className="text-base sm:text-lg font-bold text-gray-900">
                                 {job.noOfOpenings || 0}
                               </span>
-                              <span className="text-sm text-gray-600 ml-2">
-                                No Of Openings
+                              <span className="text-xs sm:text-sm text-gray-600 ml-1 sm:ml-2">
+                                Openings
                               </span>
                             </div>
                           </div>
@@ -1816,7 +1818,7 @@ export default function ProfileTab() {
                           <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="px-3 cursor-pointer sm:px-4 py-1.5 sm:py-2 bg-[#76FF82] hover:bg-green-400 text-black text-xs sm:text-sm rounded-full transition-colors order-1 sm:order-2 self-start sm:self-auto"
+                            className="px-3 cursor-pointer sm:px-4 py-1.5 sm:py-2 bg-[#76FF82] hover:bg-green-400 text-black text-xs sm:text-sm rounded-full transition-colors order-1 sm:order-2 self-start sm:self-auto w-full sm:w-auto"
                           >
                             View Applications
                           </motion.button>
@@ -1842,13 +1844,13 @@ export default function ProfileTab() {
         transition={{ duration: 0.5 }}
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
-        <Link href="/" className="flex items-center gap-1">
+        <Link href="/" className="flex items-center gap-2 sm:gap-3">
           <Image
             src="/black_logo.png"
             alt="ProjectMATCH by Compscope"
             width={200}
             height={80}
-            className="h-16 sm:h-16 md:h-16 lg:h-16 xl:h-28 w-auto"
+            className="h-12 sm:h-16 md:h-16 lg:h-16 xl:h-28 w-auto"
             priority
           />
           <div className="leading-tight text-[#163A33]">
@@ -1873,17 +1875,17 @@ export default function ProfileTab() {
         )}
       </motion.div>
 
-      <div className="pt-16 sm:pt-24 pb-8 sm:pb-16">
+      <div className="pt-20 sm:pt-28 pb-6 sm:pb-8 lg:pb-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 sm:mb-12 gap-4 sm:gap-6"
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 sm:mb-10 lg:mb-12 gap-4 sm:gap-6"
           >
-            <div className="flex items-center gap-4 sm:gap-6">
-              <div className="relative">
+            <div className="flex items-center gap-3 sm:gap-4 lg:gap-6">
+              <div className="relative flex-shrink-0">
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   transition={{ duration: 0.2 }}
@@ -1895,23 +1897,23 @@ export default function ProfileTab() {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setIsLogoUploadOpen(true)}
-                  className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-5 sm:h-5 bg-blue-600 p-1 hover:bg-blue-700 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
+                  className="absolute -bottom-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-blue-600 p-1 hover:bg-blue-700 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
                 >
-                  <Pencil className="w-3 h-3 sm:w-3 sm:h-3 text-white" />
+                  <Pencil className="w-2 h-2 sm:w-3 sm:h-3 text-white" />
                 </motion.button>
               </div>
 
-              <div className="min-w-0">
-                <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 truncate">
+              <div className="min-w-0 flex-1 max-w-full overflow-hidden">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 mb-1 break-words w-full">
                   {formState.companyName || "Company Name"}
                 </h2>
-                <p className="text-gray-500 text-sm sm:text-base">
-                  {truncateChars(getLastFourParts(formState.locationText), 50) || "Location"}
+                <p className="text-gray-500 text-xs sm:text-sm lg:text-base break-words w-full">
+                  {truncateChars(getLastFourParts(formState.locationText), 40) || "Location"}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-8">
+            <div className="flex items-center justify-end gap-3 sm:gap-4 lg:gap-8">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -1919,7 +1921,7 @@ export default function ProfileTab() {
                   setActiveTab("profile");
                   setIsEditOpen(true);
                 }}
-                className="cursor-pointer rounded-full px-4 sm:px-6 py-1.5 sm:py-2 border border-[#12372B] text-gray-700 bg-transparent hover:bg-gray-50 transition-colors text-sm sm:text-base whitespace-nowrap"
+                className="cursor-pointer rounded-full px-3 sm:px-4 lg:px-6 py-1.5 sm:py-2 border border-[#12372B] text-gray-700 bg-transparent hover:bg-gray-50 transition-colors text-xs sm:text-sm lg:text-base whitespace-nowrap"
               >
                 {isProfileComplete() ? "Edit Profile" : "Add Profile"}
               </motion.button>
@@ -1930,7 +1932,7 @@ export default function ProfileTab() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="relative mb-8 sm:mb-12"
+            className="relative mb-8 sm:mb-10 lg:mb-12"
           >
             <div className="flex border-b border-gray-200 overflow-x-auto scrollbar-hide justify-center">
               {tabs.map((tab, index) => (
@@ -1942,7 +1944,7 @@ export default function ProfileTab() {
                   onClick={() => setActiveTab(tab.id)}
                   whileHover={{ y: -2 }}
                   whileTap={{ y: 0 }}
-                  className={`px-3 cursor-pointer sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-medium transition-colors relative whitespace-nowrap flex-shrink-0 mx-5 ${
+                  className={`px-4 cursor-pointer sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-medium transition-colors relative whitespace-nowrap flex-shrink-0 mx-2 sm:mx-5 ${
                     activeTab === tab.id
                       ? "text-blue-600"
                       : "text-gray-500 hover:text-gray-700"
@@ -1963,7 +1965,7 @@ export default function ProfileTab() {
             />
           </motion.div>
 
-          <div className="min-h-[300px] sm:min-h-[400px]">
+          <div className="min-h-[250px] sm:min-h-[300px] lg:min-h-[400px]">
             <AnimatePresence mode="wait">{renderTabContent()}</AnimatePresence>
           </div>
         </div>
@@ -1993,7 +1995,7 @@ export default function ProfileTab() {
 
             {/* Dialog */}
             <motion.div
-              className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6"
+              className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-4 sm:p-6"
               initial={{ y: 24, opacity: 0, scale: 0.98 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 24, opacity: 0, scale: 0.98 }}
@@ -2107,15 +2109,15 @@ export default function ProfileTab() {
 
             {/* Dialog */}
             <motion.div
-              className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg sm:max-w-xl p-5 sm:p-6 text-gray-500 max-h-[90vh] overflow-y-auto"
+              className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg sm:max-w-xl p-4 sm:p-5 lg:p-6 text-gray-500 max-h-[90vh] overflow-y-auto"
               initial={{ y: 24, opacity: 0, scale: 0.98 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 24, opacity: 0, scale: 0.98 }}
             >
-              <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4 lg:mb-6">
                 <h2
                   id="edit-profile-title"
-                  className="text-lg sm:text-xl font-semibold text-gray-900 text-balance"
+                  className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 text-balance"
                 >
                   Edit Company Profile
                 </h2>
@@ -2128,9 +2130,9 @@ export default function ProfileTab() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:gap-5">
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">
+              <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:gap-5">
+                <div className="flex flex-col gap-1 sm:gap-2">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700">
                     Company Name
                   </label>
                   <input
@@ -2143,12 +2145,12 @@ export default function ProfileTab() {
                       }))
                     }
                     placeholder="e.g., Riverleaf Inc."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">
+                <div className="flex flex-col gap-1 sm:gap-2">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700">
                     Company Description
                   </label>
                   <textarea
@@ -2160,13 +2162,13 @@ export default function ProfileTab() {
                       }))
                     }
                     placeholder="Describe your company..."
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">
+                <div className="flex flex-col gap-1 sm:gap-2">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700">
                     No. of People in Organization
                   </label>
                   <TeamSizeDropdown
@@ -2178,8 +2180,8 @@ export default function ProfileTab() {
                   />
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">
+                <div className="flex flex-col gap-1 sm:gap-2">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700">
                     Location
                   </label>
                   <LocationInputWithSearch
@@ -2199,9 +2201,9 @@ export default function ProfileTab() {
                 </div>
               </div>
 
-              <div className="mt-5 sm:mt-6 flex items-center justify-end gap-3">
+              <div className="mt-4 sm:mt-5 lg:mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3">
                 <button
-                  className="px-4 py-2 rounded-full border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 rounded-full border border-gray-300 text-xs sm:text-sm text-gray-700 hover:bg-gray-50 order-2 sm:order-1"
                   onClick={() => setIsEditOpen(false)}
                 >
                   Cancel
@@ -2209,7 +2211,7 @@ export default function ProfileTab() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm"
+                  className="px-4 sm:px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm order-1 sm:order-2"
                   onClick={() => {
                     updateProfile();
                   }}
@@ -2241,28 +2243,28 @@ export default function ProfileTab() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="relative bg-white rounded-lg p-6 max-w-md w-full"
+            className="relative bg-white rounded-lg p-4 sm:p-6 max-w-md w-full"
           >
-            <h3 className="text-lg font-semibold mb-4">Delete Job</h3>
-            <p className="text-sm text-gray-600 mb-6">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Delete Job</h3>
+            <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
               Are you sure you want to delete this job? This action cannot be
               undone and will also delete all applications for this job.
             </p>
-            <div className="flex gap-3 justify-end">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-end">
               <button
                 onClick={() => {
                   setShowDeleteConfirm(false);
                   setJobToDelete(null);
                 }}
                 disabled={deletingJobId !== null}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 text-xs sm:text-sm order-2 sm:order-1"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDeleteJob}
                 disabled={deletingJobId !== null}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-xs sm:text-sm order-1 sm:order-2"
               >
                 {deletingJobId ? "Deleting..." : "Delete Job"}
               </button>

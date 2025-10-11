@@ -23,7 +23,7 @@ export default function CTASection() {
                 type="email"
                 required
                 placeholder="Enter your email"
-                className="placeholder-white/70 text-white border-0 flex-1 h-12 md:h-12 px-4 md:px-4 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 backdrop-blur-sm bg-white/20"
+                className="placeholder-white/70 text-white border-0 flex-1 h-12 md:h-12 py-4 px-4 md:px-4 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 backdrop-blur-sm bg-white/20"
               />
               <button
                 type="submit"

@@ -105,6 +105,14 @@ export default function JobComponent() {
     return text.length > max ? `${text.slice(0, max)}...` : text;
   };
 
+  // Mobile-specific location truncation
+  const getMobileLocation = (location: string) => {
+    if (!location || location === "Location unavailable") return location;
+    const parts = location.split(',').map(part => part.trim()).filter(part => part.length > 0);
+    if (parts.length <= 2) return location;
+    return parts.slice(-2).join(', ');
+  };
+
   // Function to format salary and type from API (no hardcoded per/year)
 // Function to format salary and type from API with payoff percentage deduction
 const formatSalary = (salaryRange: any, payRangeType?: string, payoffPercentage?: number) => {
@@ -432,6 +440,7 @@ const mapJobData = (apiJobs: any[]): any => {
               </motion.div>
             </Link>
           </div>
+{/*           
           {token && (
             <button
               className="cursor-pointer relative left-24 ml-2 p-2 text-gray-500 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
@@ -442,7 +451,7 @@ const mapJobData = (apiJobs: any[]): any => {
             >
               <LogOut className="w-5 h-5" />
             </button>
-          )}
+          )} */}
 
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -502,15 +511,15 @@ const mapJobData = (apiJobs: any[]): any => {
         </AnimatePresence>
       </motion.header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-8 md:px-20 py-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-8 md:px-20 py-4 sm:py-8">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8 gap-2">
             <div>
-              <h1 className="text-2xl font-medium text-black">
+              <h1 className="text-xl sm:text-2xl font-medium text-black">
                 {searchQuery ? `Search Results` : "Explore"}
               </h1>
               {searchQuery && (
@@ -531,7 +540,7 @@ const mapJobData = (apiJobs: any[]): any => {
             )}
           </div>
 
-          <div className="flex flex-wrap space-x-0 mb-5">
+          <div className="flex flex-wrap gap-2 mb-5">
             {filterTabs.map((tab, index) => (
               <motion.button
                 key={tab}
@@ -541,7 +550,7 @@ const mapJobData = (apiJobs: any[]): any => {
                 whileHover={{ y: -1 }}
                 onClick={() => handleFilterChange(tab)}
                 disabled={loading}
-                className={`px-6 py-1 text-xs mx-2 mb-2  cursor-pointer font-medium rounded-full transition-all disabled:opacity-50 ${activeFilter === tab
+                className={`px-4 sm:px-6 py-2 text-xs sm:text-sm cursor-pointer font-medium rounded-full transition-all disabled:opacity-50 ${activeFilter === tab
                   ? "bg-[#fff] text-[#32343A] hover:text-gray-700"
                   : " bg-[#EBEBEB] text-[#32343A]"
                   }`}
@@ -618,7 +627,7 @@ const mapJobData = (apiJobs: any[]): any => {
 
           {/* Job Listings */}
           {!loading && !error && jobListings.length > 0 && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {jobListings.map((job: any, index) => (
                 <motion.div
                   key={job.id}
@@ -629,13 +638,13 @@ const mapJobData = (apiJobs: any[]): any => {
                     y: -2,
                     boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
                   }}
-                  className="bg-white rounded-xl p-6"
+                  className="bg-white rounded-xl p-4 sm:p-6"
                 >
                   <div className="flex flex-col lg:flex-row">
                     <div className="flex flex-1">
                       <div className="flex-1">
                         <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <h3 className="text-lg font-medium text-black">
+                          <h3 className="text-base sm:text-lg font-medium text-black">
                             {job.title}
                           </h3>
                           {job.jobType && (
@@ -644,12 +653,12 @@ const mapJobData = (apiJobs: any[]): any => {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500 mb-4">
+                        <p className="text-sm text-gray-500 mb-3 sm:mb-4">
                           {job.company}
                         </p>
 
-                        <div className="flex flex-wrap space-x-3 mb-6">
-                          <div className="flex items-center space-x-2 mb-2">
+                        <div className="flex flex-wrap gap-3 sm:gap-4 mb-4 sm:mb-6">
+                          <div className="flex items-center space-x-2">
                             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                               Applications
                             </span>
@@ -658,7 +667,7 @@ const mapJobData = (apiJobs: any[]): any => {
                             </span>
                           </div>
 
-                          <div className="flex items-center space-x-2 mb-2">
+                          <div className="flex items-center space-x-2">
                             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                               Positions
                             </span>
@@ -668,27 +677,30 @@ const mapJobData = (apiJobs: any[]): any => {
                           </div>
                         </div>
 
-                        <div className="flex items-center space-x-4 text-xs text-gray-400">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-gray-400 mb-4 sm:mb-0">
                           <div className="flex items-center space-x-1">
-                            <MapPin className="w-3 h-3" />
-                            <span title={getLastFourParts(job.location)}>{truncateText(getLastFourParts(job.location), 30)}</span>
+                            <MapPin className="w-3 h-3 flex-shrink-0" />
+                            <span title={getLastFourParts(job.location)} className="truncate">
+                              <span className="sm:hidden">{truncateText(getMobileLocation(job.location), 20)}</span>
+                              <span className="hidden sm:inline">{truncateText(getLastFourParts(job.location), 25)}</span>
+                            </span>
                           </div>
                           <div className="flex items-center space-x-1">
-                            <Clock className="w-3 h-3" />
+                            <Clock className="w-3 h-3 flex-shrink-0" />
                             <span>{job.timePosted}</span>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-between lg:ml-8 mt-4 lg:mt-0">
-                      <div className="">
-                        <div className="text-right mb-0 lg:mb-6">
-                          <div className="text-2xl font-bold text-black">
+                    <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-between lg:ml-8 mt-4 lg:mt-0 gap-4 lg:gap-0">
+                      <div className="flex-shrink-0">
+                        <div className="text-left sm:text-right mb-0 lg:mb-6 md:block flex items-center gap-1 justify-center">
+                          <div className="text-lg sm:text-2xl font-bold text-black">
                             {job.salary}
                           </div>
                           {job.salaryType && (
-                            <div className="text-sm font-normal text-gray-500">{job.salaryType}</div>
+                            <div className="text-xs sm:text-sm font-normal text-gray-500">{job.salaryType}</div>
                           )}
                         </div>
                       </div>
@@ -699,7 +711,7 @@ const mapJobData = (apiJobs: any[]): any => {
                             boxShadow: "0 4px 12px rgba(118, 255, 130, 0.3)",
                           }}
                           whileTap={{ scale: 0.98 }}
-                          className="bg-[#76FF82] text-black font-medium cursor-pointer px-6 py-2 rounded-full text-sm"
+                          className="bg-[#76FF82] text-black font-medium cursor-pointer px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm whitespace-nowrap"
                         >
                           View Role
                         </motion.button>

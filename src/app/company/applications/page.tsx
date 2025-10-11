@@ -384,26 +384,26 @@ function ApplicationsListContent() {
   const filterTabs = getFilterTabs();
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] p-4 sm:p-6 lg:p-8">
-      <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">
+    <div className="min-h-screen bg-[#F5F5F5] p-3 sm:p-4 lg:p-6 xl:p-8">
+      <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 mb-3 sm:mb-4">
         {jobInfo?.title || "Job Applications"}
       </h1>
-      <div className="max-w-4xl mx-auto mt-12">
+      <div className="max-w-4xl mx-auto mt-6 sm:mt-8 lg:mt-12">
         {/* Header */}
-        <div className="mb-10">
+        <div className="mb-6 sm:mb-8 lg:mb-10">
           <motion.button
             onClick={() => router.back()}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
+            className="flex cursor-pointer items-center gap-2 px-3 sm:px-4 py-2 bg-gray-200 rounded-full text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-300 transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
             Back
           </motion.button>
         </div>
 
         {/* Filter Tabs */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <div className="flex flex-wrap gap-2">
             {filterTabs.map((tab) => (
               <motion.button
@@ -411,7 +411,7 @@ function ApplicationsListContent() {
                 onClick={() => setActiveFilter(tab.id)}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
                   activeFilter === tab.id
                     ? "bg-[#D0FFD4] text-[#2E9977]"
                     : "bg-white text-gray-600 hover:bg-gray-50"
@@ -425,8 +425,8 @@ function ApplicationsListContent() {
 
         {/* No Applicants Message */}
         {filteredApplicants.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">
+          <div className="text-center py-8 sm:py-12">
+            <p className="text-gray-600 text-sm sm:text-base lg:text-lg">
               {activeFilter === "all"
                 ? "No applicants found for this job."
                 : "No applicants match the selected filter."}
@@ -435,7 +435,7 @@ function ApplicationsListContent() {
         )}
 
         {/* Applications List */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <AnimatePresence>
             {filteredApplicants.map((applicant, index) => {
               return (
@@ -445,49 +445,49 @@ function ApplicationsListContent() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow"
+                  className="bg-white rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                     {/* Left Section - Profile Info */}
-                    <div className="flex items-start gap-4 flex-1">
+                    <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
                       {/* Avatar */}
-                      <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                        <span className="text-white font-semibold text-sm">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-semibold text-xs sm:text-sm">
                           {applicant.avatar}
                         </span>
                       </div>
 
                       {/* Profile Details */}
-                      <div className="flex-1 min-w-full w-full">
+                      <div className="flex-1 min-w-0 w-full">
                         {/* Name and Title */}
-                        <div className="mb-5 w-full">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1 max-w-[200px]">
+                        <div className="mb-3 sm:mb-4 w-full">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1 break-words">
                             {applicant.name}
                           </h3>
-                          <p className="text-gray-600 text-sm">
+                          <p className="text-gray-600 text-xs sm:text-sm break-words">
                             {applicant.title}
                           </p>
                         </div>
 
                         {/* Divider line after name section */}
-                        <div className="border-t border-gray-100 mb-4 w-[115%] -mx-14"></div>
+                        <div className="border-t border-gray-100 mb-3 sm:mb-4"></div>
 
                         {/* Status Indicators */}
-                        <div className="flex flex-wrap gap-4 mb-4 text-sm -mx-14 text-gray-600">
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4 mb-3 sm:mb-4 text-xs sm:text-sm text-gray-600">
                           <div className="flex items-center gap-1">
                             <div
-                              className={`w-2 h-2 rounded-full ${
+                              className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
                                 applicant.available
                                   ? "bg-green-500"
                                   : "bg-red-500"
                               }`}
                             ></div>
                             <span
-                              className={
+                              className={`text-xs sm:text-sm ${
                                 applicant.available
                                   ? "text-green-600"
                                   : "text-red-600"
-                              }
+                              }`}
                             >
                               {applicant.available
                                 ? "Available"
@@ -495,19 +495,19 @@ function ApplicationsListContent() {
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-4 h-4" />
-                            <span>{applicant.location.split(",").slice(-4).join(", ")}</span>
+                          <div className="flex items-center gap-1 min-w-0 flex-1">
+                            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                            <span className="break-words">{applicant.location.split(",").slice(-4).join(", ")}</span>
                           </div>
 
                           <div className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            <span>Experience : {formatExperience(applicant.experience) || "Not Specified"}</span>
+                            <Clock className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                            <span className="text-xs sm:text-sm">Experience: {formatExperience(applicant.experience) || "Not Specified"}</span>
                           </div>
                         </div>
                         
                         {/* Skills */}
-                        <div className="mb-6 -mx-14">
+                        <div className="mb-4 sm:mb-6">
                           <p className="text-xs text-gray-500 mb-2">Skills</p>
                           <div className="flex flex-wrap gap-2">
                             {applicant.skills
@@ -515,13 +515,13 @@ function ApplicationsListContent() {
                               .map((skill, skillIndex) => (
                                 <span
                                   key={skillIndex}
-                                  className="px-3 py-1 bg-[#F5F5F5] text-gray-700 text-xs rounded-full"
+                                  className="px-2 sm:px-3 py-1 bg-[#F5F5F5] text-gray-700 text-xs rounded-full break-words"
                                 >
                                   {skill}
                                 </span>
                               ))}
                             {applicant.skills.length > 4 && (
-                              <span className="px-3 py-1 bg-[#F5F5F5] text-gray-700 text-xs rounded-full">
+                              <span className="px-2 sm:px-3 py-1 bg-[#F5F5F5] text-gray-700 text-xs rounded-full">
                                 +{applicant.skills.length - 4} more
                               </span>
                             )}
@@ -529,7 +529,7 @@ function ApplicationsListContent() {
                         </div>
 
                         {/* Certifications */}
-                        <div className="-mx-14">
+                        <div className="mb-4 sm:mb-6">
                           <p className="text-xs text-gray-500 mb-2">
                             Certifications from Industry
                           </p>
@@ -539,13 +539,13 @@ function ApplicationsListContent() {
                               .map((cert, certIndex) => (
                                 <span
                                   key={certIndex}
-                                  className="px-3 py-1 bg-[#F5F5F5] text-gray-700 text-xs rounded-full"
+                                  className="px-2 sm:px-3 py-1 bg-[#F5F5F5] text-gray-700 text-xs rounded-full break-words"
                                 >
                                   {cert}
                                 </span>
                               ))}
                             {applicant.certifications.length > 3 && (
-                              <span className="px-3 py-1 bg-[#F5F5F5] text-gray-700 text-xs rounded-full">
+                              <span className="px-2 sm:px-3 py-1 bg-[#F5F5F5] text-gray-700 text-xs rounded-full">
                                 +{applicant.certifications.length - 3} more
                               </span>
                             )}
@@ -553,10 +553,10 @@ function ApplicationsListContent() {
 
                           {/* **FIX: Rating Section - Moved to better position** */}
                           {ratings[applicant.applicationId]?.canRate && (
-                            <div className="mt-4 pt-4 border-t border-gray-100">
+                            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-100">
                               {ratings[applicant.applicationId]?.hasRating ? (
                                 <div className="flex items-center justify-between">
-                                  <span className="text-sm text-gray-600">
+                                  <span className="text-xs sm:text-sm text-gray-600">
                                     Your Rating:
                                   </span>
                                   <StarRating
@@ -578,9 +578,9 @@ function ApplicationsListContent() {
                                       jobTitle: jobInfo?.title || "Position",
                                     })
                                   }
-                                  className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                                  className="flex items-center gap-2 text-xs sm:text-sm text-blue-600 hover:text-blue-800 transition-colors"
                                 >
-                                  <Star className="w-4 h-4" />
+                                  <Star className="w-3 h-3 sm:w-4 sm:h-4" />
                                   Rate Applicant
                                 </button>
                               )}
@@ -590,12 +590,12 @@ function ApplicationsListContent() {
                           {/* Mobile Open Button */}
                           <Link
                             href={`/company/applicants?id=${applicant.applicationId}`}
-                            className="flex justify-end"
+                            className="flex justify-end mt-3 sm:mt-4"
                           >
                             <motion.button
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
-                              className="px-8 py-2 bg-[#76FF82] hover:bg-green-400 text-black font-medium rounded-full transition-colors w-40 mr-10 mt-5 md:hidden"
+                              className="px-4 sm:px-6 py-2 bg-[#76FF82] hover:bg-green-400 text-black font-medium rounded-full transition-colors text-xs sm:text-sm lg:hidden"
                             >
                               Open
                             </motion.button>
@@ -605,13 +605,13 @@ function ApplicationsListContent() {
                     </div>
 
                     {/* Right Section - Match Percentage and Action Button */}
-                    <div className="flex flex-col items-end justify-between h-full min-h-[200px]">
+                    <div className="flex flex-col items-center lg:items-end justify-between gap-4 lg:gap-0 lg:min-h-[200px]">
                       {/* Match Percentage with Progress Circle and Label */}
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-col sm:flex-row items-center gap-3">
                         {applicant.status === "shortlisted" && (
-                          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#76FF82] text-black font-medium shadow-sm">
+                          <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#76FF82] text-black font-medium shadow-sm text-xs sm:text-sm">
                             <span className="inline-flex items-center" aria-hidden="true">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4" aria-hidden="true">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 sm:w-4 sm:h-4" aria-hidden="true">
                                 <path d="M21.801 10A10 10 0 1 1 17 3.335"></path>
                                 <path d="m9 11 3 3L22 4"></path>
                               </svg>
@@ -632,11 +632,12 @@ function ApplicationsListContent() {
                       {/* Desktop Open Button */}
                       <Link
                         href={`/company/applicants?id=${applicant.applicationId}`}
+                        className="hidden lg:block"
                       >
                         <motion.button
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          className="px-8 py-2 bg-[#76FF82] hover:bg-green-400 text-black font-medium rounded-full transition-colors w-40 hidden md:mt-44 md:block"
+                          className="px-6 sm:px-8 py-2 bg-[#76FF82] hover:bg-green-400 text-black font-medium rounded-full transition-colors text-sm"
                         >
                           Open
                         </motion.button>

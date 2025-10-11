@@ -430,17 +430,17 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
   return (
     <div className="w-full max-w-7xl mx-auto">
       {/* Filter Section and Add More Button */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-0">
         <div className="relative inline-block">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="bg-[#D1D5DB] hover:bg-[#C1C5CB] text-[#374151] px-6 py-3 rounded-lg font-medium text-sm flex items-center space-x-2 min-w-[120px] justify-center transition-colors"
+            className="bg-[#D1D5DB] hover:bg-[#C1C5CB] text-[#374151] px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium text-xs sm:text-sm flex items-center space-x-2 min-w-[100px] sm:min-w-[120px] justify-center transition-colors w-full sm:w-auto"
           >
             <span>Filter</span>
             <ChevronDown
-              className={`w-4 h-4 transition-transform ${
+              className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${
                 isFilterOpen ? "rotate-180" : ""
               }`}
             />
@@ -451,21 +451,21 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[200px] z-10"
+              className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[180px] sm:min-w-[200px] z-10"
             >
               {filters.map((filter) => (
                 <motion.button
                   key={filter.id}
                   whileHover={{ backgroundColor: "#F9FAFB" }}
                   onClick={() => handleFilterChange(filter.id)}
-                  className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between ${
+                  className={`w-full text-left px-3 sm:px-4 py-2 text-xs sm:text-sm flex items-center justify-between ${
                     activeFilter === filter.id
                       ? "text-[#76FF82] font-medium"
                       : "text-gray-700"
                   }`}
                 >
-                  <span>{filter.label}</span>
-                  <span className="text-xs text-gray-500">
+                  <span className="truncate">{filter.label}</span>
+                  <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
                     ({filter.count})
                   </span>
                 </motion.button>
@@ -478,9 +478,9 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setIsUploadModalOpen(true)}
-          className="bg-[#76FF82] hover:bg-green-400 cursor-pointer text-black font-medium px-6 py-3 rounded-full flex items-center gap-2 transition-colors"
+          className="bg-[#76FF82] hover:bg-green-400 cursor-pointer text-black font-medium px-4 sm:px-6 py-2 sm:py-3 rounded-full flex items-center gap-2 transition-colors text-xs sm:text-sm w-full sm:w-auto justify-center"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
           Add More
         </motion.button>
       </div>
@@ -507,16 +507,16 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ delay: index * 0.05 }}
-                className="bg-white rounded-xl p-7 shadow-sm hover:shadow-md transition-shadow cursor-pointer relative"
+                className="bg-white rounded-xl p-4 sm:p-6 lg:p-7 shadow-sm hover:shadow-md transition-shadow cursor-pointer relative"
                 onClick={() => onItemSelect(item.profile ?? item)}
               >
                 {/* Three Dots Menu Button */}
-                <div className="absolute top-4 right-4">
+                <div className="absolute top-3 sm:top-4 right-3 sm:right-4">
                   <button
                     onClick={(e) => handleMenuToggle(item.id, e)}
-                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 transition-colors"
                   >
-                    <MoreVertical className="w-4 h-4 text-gray-500" />
+                    <MoreVertical className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
                   </button>
                   
                   <ThreeDotsMenu
@@ -526,12 +526,12 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
                   />
                 </div>
 
-                <div className="flex items-start justify-between pr-8">
+                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between pr-6 sm:pr-8">
                   {/* Left Section - Profile Info */}
-                  <div className="flex items-start gap-4 flex-1">
+                  <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
                     {/* Avatar */}
-                    <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                      <span className="text-white font-semibold text-sm">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-semibold text-xs sm:text-sm">
                         {item.name
                           .split(" ")
                           .map((n: any) => n[0])
@@ -540,29 +540,27 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
                     </div>
 
                     {/* Profile Details */}
-                    <div className="flex-1 min-w-0">
-                      {/* Name and Title in one line with proper spacing */}
-                      <div className="flex items-center gap-4 mb-5">
-                        <h3 className="text-lg font-semibold text-gray-900 flex-shrink-0">
+                    <div className="flex-1 min-w-0 w-full">
+                      {/* Name and Title - Mobile Stacked, Desktop Inline */}
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3 sm:mb-4 lg:mb-5">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 break-words">
                           {item.name}
                         </h3>
 
-                        <div className="flex-1"></div>
-
-                        {/* Role and Company positioned at the end */}
-                        <div className="flex items-center gap-3 text-sm text-gray-500 max-w-[60%] min-w-0">
-                          <span className="font-medium text-gray-700 truncate">
+                        {/* Role and Company - Mobile Stacked, Desktop Inline */}
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm text-gray-500 min-w-0">
+                          <span className="font-medium text-gray-700 break-words">
                             {item.role || "Role not specified"}
                           </span>
-                          <span className="text-gray-300 flex-shrink-0">•</span>
-                          <span className="truncate">
+                          <span className="hidden sm:inline text-gray-300 flex-shrink-0">•</span>
+                          <span className="break-words">
                             {item.company || "Not Assigned"}
                           </span>
                         </div>
 
-                        {/* Match Score */}
+                        {/* Match Score - Mobile Full Width, Desktop Inline */}
                         {typeof item.matchScore === "number" && (
-                          <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                          <div className="flex items-center gap-2 mt-2 sm:mt-0 sm:ml-4 flex-shrink-0">
                             <CircularProgress percentage={item.matchScore} />
                             <span className="text-xs text-gray-500">
                               Match Score
@@ -572,38 +570,23 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
                       </div>
 
                       {/* Divider line */}
-                      <div className="border-t border-gray-100 mb-4"></div>
+                      <div className="border-t border-gray-100 mb-3 sm:mb-4"></div>
 
-                      {/* Status Indicators */}
-                      <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                        {/* <div className="flex items-center gap-1">
-                          <div
-                            className={`w-2 h-2 rounded-full ${
-                              item.status === "active"
-                                ? "bg-green-500"
-                                : item.status === "completed"
-                                ? "bg-green-500"
-                                : "bg-yellow-500"
-                            }`}
-                          />
-                          <span className="capitalize text-gray-700">
-                            {item.status}
-                          </span>
-                        </div> */}
-
+                      {/* Status Indicators - Mobile Stacked, Desktop Flex */}
+                      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                         <div className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          <span>{item.location || "Unknown Location"}</span>
+                          <MapPin className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span className="break-words">{item.location || "Unknown Location"}</span>
                         </div>
 
                         <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          <span>Experience : {formatExperience(item.yearsOfExp) || "Not Specified"}</span>
+                          <Clock className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span className="break-words">Experience: {formatExperience(item.yearsOfExp) || "Not Specified"}</span>
                         </div>
 
-                        <div className="flex items-center gap-1 text-xs text-gray-400 ml-auto">
-                          <Clock className="w-3 h-3" />
-                          <span>{item.lastActivity || "18 hours ago"}</span>
+                        <div className="flex items-center gap-1 text-xs text-gray-400 sm:ml-auto">
+                          <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                          <span className="break-words">{item.lastActivity || "18 hours ago"}</span>
                         </div>
                       </div>
                     </div>

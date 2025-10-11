@@ -198,7 +198,7 @@ const ApplicationPopup: React.FC<{
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 text-black"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 text-black"
           onClick={onClose}
         >
           <motion.div
@@ -206,26 +206,26 @@ const ApplicationPopup: React.FC<{
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ type: "spring", duration: 0.3 }}
-            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6 border-b border-gray-100">
+            <div className="p-4 sm:p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-[#1F2937]">
+                <h2 className="text-lg sm:text-xl font-semibold text-[#1F2937] pr-2">
                   {showCustomQuestions
                     ? `Apply for ${job?.title}`
                     : "Apply for Software Development Engineer"}
                 </h2>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
                 >
                   <X className="h-5 w-5 text-[#6B7280]" />
                 </button>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {showCustomQuestions ? (
                 // Custom Questions Form
                 <div className="space-y-6">
@@ -282,7 +282,7 @@ const ApplicationPopup: React.FC<{
               ) : (
                 // Full Application Form (your existing form)
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-[#1F2937] mb-2">
                         Full Name *
@@ -293,7 +293,7 @@ const ApplicationPopup: React.FC<{
                         required
                         value={formData.fullName}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all text-sm"
                         placeholder="Enter your full name"
                       />
                     </div>
@@ -307,13 +307,13 @@ const ApplicationPopup: React.FC<{
                         required
                         value={formData.email}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all text-sm"
                         placeholder="your.email@example.com"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-[#1F2937] mb-2">
                         Phone Number *
@@ -324,7 +324,7 @@ const ApplicationPopup: React.FC<{
                         required
                         value={formData.phone}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all text-sm"
                         placeholder="+1 (555) 123-4567"
                       />
                     </div>
@@ -337,7 +337,7 @@ const ApplicationPopup: React.FC<{
                         required
                         value={formData.experience}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all text-sm"
                       >
                         <option value="">Select experience</option>
                         <option value="0-6months">0-6 months</option>
@@ -444,7 +444,7 @@ const ApplicationPopup: React.FC<{
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-[#1F2937] mb-2">
                             Remote Work Experience *
@@ -454,7 +454,7 @@ const ApplicationPopup: React.FC<{
                             required
                             value={formData.remoteWorkExperience}
                             onChange={handleInputChange}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all"
+                            className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#76FF82] focus:border-transparent outline-none transition-all text-sm"
                           >
                             <option value="">Select experience</option>
                             <option value="no-experience">
@@ -568,7 +568,7 @@ const SuccessPopup: React.FC<{
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: 20 }}
             transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center"
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center"
             onClick={(e) => e.stopPropagation()}
           >
             <motion.div
@@ -963,9 +963,9 @@ const formatSalary = () => {
         pauseOnHover
         theme="light"
       />
-      <div className="px-0 py-6 sm:px-4 md:px-8 md:py-8 lg:px-12 lg:py-10">
+      <div className="px-4 py-4 sm:px-4 md:px-8 md:py-8 lg:px-12 lg:py-10">
         <motion.div
-          className="mx-auto max-w-7xl space-y-6"
+          className="mx-auto max-w-7xl space-y-4 sm:space-y-6"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
@@ -974,33 +974,33 @@ const formatSalary = () => {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Header Card - full width on desktop to avoid empty space */}
             <motion.div
-              className="lg:col-span-4 bg-white rounded-xl shadow-sm border border-gray-100 p-5 lg:p-6 flex flex-col"
+              className="lg:col-span-4 bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5 lg:p-6 flex flex-col"
               variants={itemVariants}
             >
               <div className="flex flex-col lg:flex-row items-start justify-between gap-3">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <CustomAvatar className="w-12 h-12 bg-[#7C3AED] text-white font-semibold text-lg">
+                  <CustomAvatar className="w-10 h-10 sm:w-12 sm:h-12 bg-[#7C3AED] text-white font-semibold text-sm sm:text-lg">
                     {job.company.companyName.charAt(0).toUpperCase()}
                   </CustomAvatar>
-                  <div className="flex-1">
-                    <h1 className="text-[20px] sm:text-2xl font-semibold sm:font-extrabold text-[#111827] leading-snug truncate">
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold sm:font-extrabold text-[#111827] leading-snug">
                       {job.title}
                     </h1>
                     <div className="text-xs sm:text-sm text-[#6B7280]">
                       @{job.company.companyName.toLowerCase()}
                     </div>
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {job.jobType && <CustomBadge>{job.jobType}</CustomBadge>}
+                    <div className="flex flex-wrap gap-1 sm:gap-1.5 mt-2">
+                      {job.jobType && <CustomBadge className="text-xs">{job.jobType}</CustomBadge>}
                       {(job.experienceLevel || job.experience) && (
-                        <CustomBadge>
-                          Required Experience : {job.experienceLevel || job.experience}
+                        <CustomBadge className="text-xs">
+                          {job.experienceLevel || job.experience}
                         </CustomBadge>
                       )}
                       {job.department && (
-                        <CustomBadge>{job.department}</CustomBadge>
+                        <CustomBadge className="text-xs">{job.department}</CustomBadge>
                       )}
                       {job.location && (
-                        <CustomBadge>
+                        <CustomBadge className="text-xs">
                           {getLastFourParts(
                             typeof job.location === "string"
                               ? job.location
@@ -1015,22 +1015,22 @@ const formatSalary = () => {
                 {/* Right side - Pay and Apply */}
                 <div className="flex flex-col items-stretch lg:items-end gap-2 mt-1 lg:mt-0 lg:ml-6 w-full lg:w-auto">
                   <div className="text-left lg:text-right w-full">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5">
-                      <span className="text-base sm:text-xl font-bold text-[#111827] leading-tight">
+                    <div className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5">
+                      <span className="text-sm sm:text-base lg:text-xl font-bold text-[#111827] leading-tight">
                         {formatSalary()}
                       </span>
-                      
                     </div>
                   </div>
                   <CustomButton
-                    className="w-full lg:w-auto font-semibold px-6 py-2 focus:outline-none cursor-pointer rounded-full shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-[#76FF82] to-[#8BFFA1]"
+                    className="w-full lg:w-auto font-semibold px-4 sm:px-6 py-2 text-xs sm:text-sm focus:outline-none cursor-pointer rounded-full shadow-md hover:shadow-lg transition-shadow bg-gradient-to-r from-[#76FF82] to-[#8BFFA1]"
                     disabled={!job.isActive || isApplying || hasApplied}
                     onClick={handleApplyClick}
                   >
                     {isApplying ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Applying...
+                        <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">Applying...</span>
+                        <span className="sm:hidden">Applying</span>
                       </>
                     ) : hasApplied ? (
                       "Applied ✓"
@@ -1038,7 +1038,9 @@ const formatSalary = () => {
                       "Position Closed"
                     ) : (
                       <span className="inline-flex items-center gap-1">
-                        Apply <ExternalLink className="w-4 h-4" />
+                        <span className="hidden sm:inline">Apply</span>
+                        <span className="sm:hidden">Apply</span>
+                        <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
                       </span>
                     )}
                   </CustomButton>
@@ -1046,7 +1048,7 @@ const formatSalary = () => {
               </div>
 
               {/* Quick stats row to utilize width */}
-              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-6 text-sm border-t border-gray-100 pt-4 justify-center items-center text-center">
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 text-xs sm:text-sm border-t border-gray-100 pt-3 sm:pt-4 justify-center items-center text-center">
                 <div>
                   <div className="text-[#A1A1A1]">Openings</div>
                   <div className="text-[#32343A] font-medium">
@@ -1077,11 +1079,11 @@ const formatSalary = () => {
 
           {/* Main Content Card */}
           <motion.div
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:p-8"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 lg:p-8"
             variants={itemVariants}
           >
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-              <div className="lg:col-span-2 space-y-8 lg:pr-10">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
+              <div className="lg:col-span-2 space-y-6 sm:space-y-8 lg:pr-10">
                 {/* Job Description */}
                 <div className="">
                   <h2 className="text-lg font-semibold text-[#1F2937] mb-3">
@@ -1208,9 +1210,9 @@ const formatSalary = () => {
               </div>
 
               {/* Secondary column: About company and additional meta (no duplicates) */}
-              <div className="space-y-8 border-t lg:border-t-0 mt-8 lg:mt-0 pt-8 lg:pt-0 lg:-ml-10">
+              <div className="space-y-6 sm:space-y-8 border-t lg:border-t-0 mt-6 sm:mt-8 lg:mt-0 pt-6 sm:pt-8 lg:pt-0 lg:-ml-10">
                 <div className="lg:border-l border-gray-200 lg:pl-10">
-                  <h2 className="text-lg font-semibold text-[#1F2937] mb-3">
+                  <h2 className="text-base sm:text-lg font-semibold text-[#1F2937] mb-3">
                     About Company
                   </h2>
                   <div className="space-y-4 text-justify text-sm text-[#4B5563] leading-relaxed">
@@ -1222,7 +1224,7 @@ const formatSalary = () => {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-gray-100 p-5 bg-white lg:ml-10">
+                <div className="rounded-xl border border-gray-100 p-4 sm:p-5 bg-white lg:ml-10">
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <div className="text-[#A1A1A1]">Status</div>
@@ -1321,10 +1323,10 @@ const formatSalary = () => {
         {/* Scroll to Top Button */}
         <CustomButton
           variant="secondary"
-          className="fixed bottom-8 right-8 w-12 h-12 rounded-full shadow-lg p-0"
+          className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 w-10 h-10 sm:w-12 sm:h-12 rounded-full shadow-lg p-0"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         >
-          <ArrowUp className="h-5 w-5" />
+          <ArrowUp className="h-4 w-4 sm:h-5 sm:w-5" />
         </CustomButton>
       </div>
 
