@@ -3378,7 +3378,7 @@ const submitTextDocument = async (applicationId: string, docId: number, value: a
         transition={{ duration: 0.5 }}
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
-        <Link href="/" className="flex items-center gap-1 -mt-10">
+        <Link href="/" className="flex items-center gap-1 -mt-4 md:-mt-10 ">
           <Image
             src="/black_logo.png"
             alt="ProjectMATCH by Compscope"
@@ -3603,7 +3603,7 @@ const submitTextDocument = async (applicationId: string, docId: number, value: a
             </button>
           )}
 
-          <div className="mb-10 flex items-center justify-between">
+          <div className="mb-10 flex items-center justify-between mt-10">
             <motion.button
               onClick={() => router.back()}
               whileHover={{ scale: 1.02 }}
@@ -3692,7 +3692,7 @@ const submitTextDocument = async (applicationId: string, docId: number, value: a
             </div>
 
             <motion.div
-              className="absolute bottom-0 h-0.5 bg-blue-600"
+              className="absolute bottom-0 h-0.5 bg-blue-600 hidden md:block"
               animate={{
                 left: indicatorStyle.left,
                 width: indicatorStyle.width,

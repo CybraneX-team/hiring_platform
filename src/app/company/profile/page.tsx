@@ -1956,7 +1956,7 @@ export default function ProfileTab() {
             </div>
 
             <motion.div
-              className="absolute bottom-0 h-0.5 bg-blue-600 "
+              className="absolute bottom-0 h-0.5 bg-blue-600 hidden md:block"
               animate={{
                 left: indicatorStyle.left,
                 width: indicatorStyle.width,
