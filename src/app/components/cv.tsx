@@ -195,7 +195,7 @@ export default function ApplicationDetailView() {
         "Professional",
       avatar: profile.profile_image_url ? profile.profile_image_url : "",
       available: true,
-      location: profile.location ||profile.locationData.address ||  "Location not specified",
+      location: profile?.location ||profile?.locationData?.address ||  "Location not specified",
       experience:
         profile.yearsOfExp || `${profile.WorkExperience?.length || 0} Roles`,
       matchPercentage: 0,
