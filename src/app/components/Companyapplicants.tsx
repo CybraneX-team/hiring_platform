@@ -130,9 +130,7 @@ export default function Companyapplicants({ itemId, onBack }: CompanyApplicantsP
       {/* <div className="sr-only" aria-live="polite">
         {isShortlisted ? "Shortlisted" : ""}
       </div> */}
-      <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">
-        Compscope
-      </h1>
+     
       <div className="max-w-6xl mx-auto mt-12">
         <div className="mb-10 flex items-center justify-between">
           <motion.button
