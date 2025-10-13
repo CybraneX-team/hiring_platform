@@ -25,7 +25,7 @@ interface OlaMapsPlace {
 }
 interface PageProps {
   params?: Promise<{ [key: string]: string | string[] }>;
-  searchParams?: Promise<{ 
+  searchParams?: Promise<{
     initialData?: string;
     isEditMode?: string;
     jobId?: string;
@@ -83,113 +83,125 @@ const OlaMapComponent = ({
   const [isSearching, setIsSearching] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>("");
 
-useEffect(() => {
-  const loadMap = async () => {
-    await initializeOlaMaps();
+  useEffect(() => {
+    const loadMap = async () => {
+      await initializeOlaMaps();
 
-    if (mapRef.current && olaMaps && !mapInstanceRef.current) {
-      try {
-        let mapCenter = { lat: 12.9716, lng: 77.5946 };
-
-        // Check if location has valid coordinates
-        if (location) {
-          if (
-            typeof location.lat === "number" &&
-            typeof location.lng === "number" &&
-            !isNaN(location.lat) &&
-            !isNaN(location.lng) &&
-            isFinite(location.lat) &&
-            isFinite(location.lng)
-          ) {
-            mapCenter = { lat: location.lat, lng: location.lng };
-          } else {
-            console.warn("Invalid location coordinates provided:", location);
-            setDebugInfo("Invalid location coordinates, using default location");
-          }
-        }
-
-        // Use 2D-only style to avoid 3D layer errors
+      if (mapRef.current && olaMaps && !mapInstanceRef.current) {
         try {
-          // Try default light style first
-          mapInstanceRef.current = olaMaps.init({
-            style: "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
-            container: mapRef.current,
-            center: [mapCenter.lng, mapCenter.lat],
-            zoom: 12,
-            pitch: 0,
-            bearing: 0,
-            maxPitch: 0, // Force 2D mode
+          let mapCenter = { lat: 12.9716, lng: 77.5946 };
+
+          // Check if location has valid coordinates
+          if (location) {
+            if (
+              typeof location.lat === "number" &&
+              typeof location.lng === "number" &&
+              !isNaN(location.lat) &&
+              !isNaN(location.lng) &&
+              isFinite(location.lat) &&
+              isFinite(location.lng)
+            ) {
+              mapCenter = { lat: location.lat, lng: location.lng };
+            } else {
+              console.warn("Invalid location coordinates provided:", location);
+              setDebugInfo(
+                "Invalid location coordinates, using default location"
+              );
+            }
+          }
+
+          // Use 2D-only style to avoid 3D layer errors
+          try {
+            // Try default light style first
+            mapInstanceRef.current = olaMaps.init({
+              style:
+                "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
+              container: mapRef.current,
+              center: [mapCenter.lng, mapCenter.lat],
+              zoom: 12,
+              pitch: 0,
+              bearing: 0,
+              maxPitch: 0, // Force 2D mode
+            });
+          } catch (styleError) {
+            console.warn(
+              "Failed to load default style, trying basic config:",
+              styleError
+            );
+            // Fallback with minimal configuration
+            mapInstanceRef.current = olaMaps.init({
+              container: mapRef.current,
+              center: [mapCenter.lng, mapCenter.lat],
+              zoom: 12,
+              pitch: 0,
+              bearing: 0,
+              maxPitch: 0,
+            });
+          }
+
+          mapInstanceRef.current.on("load", () => {
+            console.log("Map loaded successfully");
+            setIsMapLoaded(true);
+            setDebugInfo("");
+
+            // Add marker if valid location exists
+            if (
+              location &&
+              typeof location.lat === "number" &&
+              typeof location.lng === "number" &&
+              !isNaN(location.lat) &&
+              !isNaN(location.lng)
+            ) {
+              addMarker(
+                location.lat,
+                location.lng,
+                location.address || "Selected Location"
+              );
+            }
           });
-        } catch (styleError) {
-          console.warn("Failed to load default style, trying basic config:", styleError);
-          // Fallback with minimal configuration
-          mapInstanceRef.current = olaMaps.init({
-            container: mapRef.current,
-            center: [mapCenter.lng, mapCenter.lat],
-            zoom: 12,
-            pitch: 0,
-            bearing: 0,
-            maxPitch: 0,
+
+          // Add click event listener
+          mapInstanceRef.current.on("click", (e: any) => {
+            const { lat, lng } = e.lngLat;
+            reverseGeocode(lat, lng);
           });
+
+          // Add error handling with 3D model error filtering
+          mapInstanceRef.current.on("error", (e: any) => {
+            // Suppress 3D model layer errors as they're expected when using 2D mode
+            if (
+              e.error &&
+              e.error.message &&
+              (e.error.message.includes("3dmodel") ||
+                e.error.message.includes("Source layer") ||
+                e.error.message.includes("does not exist"))
+            ) {
+              console.warn(
+                "Suppressing 3D model layer error (expected in 2D mode):",
+                e.error.message
+              );
+              return;
+            }
+            console.error("Map error:", e);
+            setDebugInfo("Map loading error");
+          });
+        } catch (error) {
+          console.error("Error initializing map:", error);
+          setDebugInfo("Failed to initialize map: " + (error as Error).message);
         }
-
-        mapInstanceRef.current.on("load", () => {
-          console.log("Map loaded successfully");
-          setIsMapLoaded(true);
-          setDebugInfo("");
-
-          // Add marker if valid location exists
-          if (
-            location &&
-            typeof location.lat === "number" &&
-            typeof location.lng === "number" &&
-            !isNaN(location.lat) &&
-            !isNaN(location.lng)
-          ) {
-            addMarker(location.lat, location.lng, location.address || "Selected Location");
-          }
-        });
-
-        // Add click event listener
-        mapInstanceRef.current.on("click", (e: any) => {
-          const { lat, lng } = e.lngLat;
-          reverseGeocode(lat, lng);
-        });
-
-        // Add error handling with 3D model error filtering
-        mapInstanceRef.current.on("error", (e: any) => {
-          // Suppress 3D model layer errors as they're expected when using 2D mode
-          if (
-            e.error &&
-            e.error.message &&
-            (e.error.message.includes("3dmodel") ||
-              e.error.message.includes("Source layer") ||
-              e.error.message.includes("does not exist"))
-          ) {
-            console.warn("Suppressing 3D model layer error (expected in 2D mode):", e.error.message);
-            return;
-          }
-          console.error("Map error:", e);
-          setDebugInfo("Map loading error");
-        });
-      } catch (error) {
-        console.error("Error initializing map:", error);
-        setDebugInfo("Failed to initialize map: " + (error as Error).message);
       }
-    }
-  };
+    };
 
-  loadMap();
+    loadMap();
 
-  // Cleanup
-  return () => {
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.remove();
-      mapInstanceRef.current = null;
-    }
-  };
-}, []); // Empty dependency array - only run once on mount
-
+    // Cleanup
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []); // Empty dependency array - only run once on mount
 
   // Handle location updates separately
   useEffect(() => {
@@ -766,7 +778,7 @@ export default function PostRole({
   initialData = null,
   isEditMode = false,
   jobId = null,
-}:any) {
+}: any) {
   const [activePayRange, setActivePayRange] = useState("Daily");
   const [companyPerksInput, setCompanyPerksInput] = useState("");
   const [companyPerks, setCompanyPerks] = useState<string[]>([]);
@@ -778,7 +790,7 @@ export default function PostRole({
     []
   );
 
-  const [payRange, setPayRange] = useState("₹12,000-60,000");
+  const [payRange, setPayRange] = useState("₹30,000-45,000");
   const [aboutJob, setAboutJob] = useState("");
   const [jobTittle, setjobTittle] = useState("");
   // Removed experience level toggle; use mandatory experience text instead
@@ -976,6 +988,7 @@ export default function PostRole({
       }
     }
   };
+
 
   const confirmSplitQualifications = () => {
     const newQualifications = pendingQualifications.filter(
@@ -1180,7 +1193,7 @@ export default function PostRole({
         workEndDate,
         workLocation,
         description: aboutJob,
-        customQuestions, 
+        customQuestions,
         locationCoordinates: selectedLocation,
         fatIncluded: fatAdded,
       };
@@ -1254,6 +1267,30 @@ export default function PostRole({
     try {
       setIsAnalyzing(true);
 
+      // Prepare existing data to send to AI
+      const existingData = {
+        jobTitle: jobTittle.trim(),
+        location: workLocation.trim(),
+        companyPerks: companyPerks.length > 0 ? companyPerks : undefined,
+        requiredSkillset:
+          requiredSkillset.length > 0 ? requiredSkillset : undefined,
+        mandatoryCertificates:
+          mandatoryCertificates.length > 0 ? mandatoryCertificates : undefined,
+        educationQualifications:
+          educationQualifications.length > 0
+            ? educationQualifications
+            : undefined,
+        responsibilities:
+          responsibilities.length > 0 ? responsibilities : undefined,
+        experience: experience.trim(),
+        payRange: payRange !== "₹12,000-60,000" ? payRange : undefined,
+        payRangeType: activePayRange,
+        workStartDate: workStartDate,
+        workEndDate: workEndDate,
+        aboutJob: aboutJob,
+        fatAdded: fatAdded,
+      };
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/jobs/ai-assist`,
         {
@@ -1264,6 +1301,7 @@ export default function PostRole({
           body: JSON.stringify({
             description: aboutJob.trim(),
             jobTitle: jobTittle.trim(),
+            existingData: existingData, // Send existing form data
           }),
         }
       );
@@ -1273,22 +1311,23 @@ export default function PostRole({
       if (response.ok && result.success) {
         const { data } = result;
 
-        // Auto-fill job title if not already filled
+        // Auto-fill job title ONLY if not already filled
         if (data.jobTitle && !jobTittle.trim()) {
           setjobTittle(data.jobTitle);
         }
 
+        // Auto-fill location ONLY if not already filled
         if (data.location && !workLocation.trim()) {
           setWorkLocation(data.location);
           setLocationSearchQuery(data.location);
         }
 
-        // Set the clean job description - THIS IS THE KEY FIX
+        // Set the clean job description
         if (data.cleanJobDescription) {
           setAboutJob(data.cleanJobDescription);
         }
 
-        // Auto-fill form fields with extracted data
+        // Merge arrays (add new items to existing)
         if (data.companyPerks.length > 0) {
           setCompanyPerks((prev) => [
             ...new Set([...prev, ...data.companyPerks]),
@@ -1323,32 +1362,28 @@ export default function PostRole({
           setFatAdded(data.fatIncluded);
         }
 
+        // Only update pay range if not already customized
         if (data.suggestedPayRange) {
           if (payRange === "₹12,000-60,000" || !payRange.trim()) {
             setPayRange(data.suggestedPayRange);
           }
         }
 
-        // Set pay range type (Daily/Monthly) - NEW FIX
-        if (data.payRangeType) {
+        // Set pay range type ONLY if not already set
+        if (data.payRangeType && !activePayRange) {
           setActivePayRange(data.payRangeType);
         }
 
-         if (data.experienceRequired) {
+        // Set experience ONLY if not already filled
+        if (data.experienceRequired && !experience.trim()) {
           setExperience(data.experienceRequired);
         }
 
-
-        // Experience level removed; keep only experience text if provided
-        if (data.experience) {
-          setExperience(data.experience);
-        }
-
-        // Set work duration dates - NEW FIX
-        if (data.workStartDate) {
+        // Set work dates ONLY if not already filled
+        if (data.workStartDate && !workStartDate) {
           setWorkStartDate(data.workStartDate);
         }
-        if (data.workEndDate) {
+        if (data.workEndDate && !workEndDate) {
           setWorkEndDate(data.workEndDate);
         }
 
@@ -1364,10 +1399,33 @@ export default function PostRole({
           extractedItems.push("job title");
         if (data.location && !workLocation.trim())
           extractedItems.push("location");
-        if (data.suggestedPayRange) extractedItems.push("pay range");
+        if (
+          data.suggestedPayRange &&
+          (payRange === "₹12,000-60,000" || !payRange.trim())
+        )
+          extractedItems.push("pay range");
         if (data.cleanJobDescription)
           extractedItems.push("clean job description");
-        if (data.payRangeType) extractedItems.push("pay range type");
+        if (data.payRangeType && !activePayRange)
+          extractedItems.push("pay range type");
+
+        const newItemsCount = {
+          perks: data.companyPerks.filter(
+            (p: string) => !companyPerks.includes(p)
+          ).length,
+          skills: data.requiredSkillset.filter(
+            (s: string) => !requiredSkillset.includes(s)
+          ).length,
+          certs: data.mandatoryCertificates.filter(
+            (c: string) => !mandatoryCertificates.includes(c)
+          ).length,
+          quals: data.educationQualifications.filter(
+            (q: string) => !educationQualifications.includes(q)
+          ).length,
+          resps: data.responsibilities.filter(
+            (r: string) => !responsibilities.includes(r)
+          ).length,
+        };
 
         const autoFillMessage =
           extractedItems.length > 0
@@ -1378,7 +1436,7 @@ export default function PostRole({
           : "";
 
         toast.success(
-          ` AI Analysis Complete! Added ${data.companyPerks.length} perks, ${data.requiredSkillset.length} skills, ${data.educationQualifications.length} qualifications, and ${data.responsibilities.length} responsibilities.${autoFillMessage}${fatMessage}`
+          ` AI Analysis Complete! Added ${newItemsCount.perks} perks, ${newItemsCount.skills} skills, ${newItemsCount.quals} qualifications, and ${newItemsCount.resps} responsibilities.${autoFillMessage}${fatMessage}`
         );
       } else {
         toast.error(result.message || "Failed to analyze job description");

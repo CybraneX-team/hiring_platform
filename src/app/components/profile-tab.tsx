@@ -949,12 +949,8 @@ export default function ProfileTab() {
       { id: "certifications", label: "Certifications" },
       { id: "schedule", label: "Schedule" },
       { id: "resume", label: "Resume & Jobs" },
+      { id: "jobsApplied", label: "Jobs Applied" }
     ];
-
-    // Only add "Jobs Applied" tab if there are applications with requested documents
-    if (hasApplicationsWithDocuments) {
-      baseTabs.push({ id: "jobsApplied", label: "Jobs Applied" });
-    }
 
     return baseTabs;
   }, [hasApplicationsWithDocuments]);
@@ -996,47 +992,54 @@ export default function ProfileTab() {
       setLoadingApplications(false);
     }
   };
-  
+
   const updateDocumentValue = (docId: number, field: string, value: string) => {
-  setDocumentValues(prev => ({
-    ...prev,
-    [docId]: {
-      ...prev[docId],
-      [field]: value
-    }
-  }));
-};
+    setDocumentValues((prev) => ({
+      ...prev,
+      [docId]: {
+        ...prev[docId],
+        [field]: value,
+      },
+    }));
+  };
 
-const submitTextDocument = async (applicationId: string, docId: number, value: any) => {
-  setUploadingDocument(true);
-  try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/application/${applicationId}/documents/${docId}/text`,
-      {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(
-          docId === 6 ? { bankDetails: value } : { value }
-        ),
+  const submitTextDocument = async (
+    applicationId: string,
+    docId: number,
+    value: any
+  ) => {
+    setUploadingDocument(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/application/${applicationId}/documents/${docId}/text`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            docId === 6 ? { bankDetails: value } : { value }
+          ),
+        }
+      );
+
+      if (response.ok) {
+        toast.success("Document submitted successfully!");
+        fetchUserApplications();
+        setDocumentUploadModal({
+          isOpen: false,
+          applicationId: "",
+          documents: [],
+        });
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || "Failed to submit document");
       }
-    );
-
-    if (response.ok) {
-      toast.success("Document submitted successfully!");
-      fetchUserApplications();
-      setDocumentUploadModal({ isOpen: false, applicationId: "", documents: [] });
-    } else {
-      const errorData = await response.json();
-      toast.error(errorData.message || "Failed to submit document");
+    } catch (error) {
+      console.error("Error submitting document:", error);
+      toast.error("Error submitting document");
+    } finally {
+      setUploadingDocument(false);
     }
-  } catch (error) {
-    console.error("Error submitting document:", error);
-    toast.error("Error submitting document");
-  } finally {
-    setUploadingDocument(false);
-  }
-};
-
+  };
 
   useEffect(() => {
     if (activeTab === "jobsApplied") {
@@ -2024,7 +2027,7 @@ const submitTextDocument = async (applicationId: string, docId: number, value: a
   }, [user, router]);
 
   const renderStars = () => {
-    console.log('profile', profile)
+    console.log("profile", profile);
     const rating = profile?.averageRating || 0;
 
     return (
@@ -3299,7 +3302,7 @@ const submitTextDocument = async (applicationId: string, docId: number, value: a
                 <div className="bg-white rounded-xl p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-semibold text-gray-900">
-                      AI Profile Creation 
+                      AI Profile Creation
                     </h3>
                     {currentResumeId && (
                       <button
@@ -3448,136 +3451,188 @@ const submitTextDocument = async (applicationId: string, docId: number, value: a
                 </button>
               </div>
 
-<div className="space-y-4">
-  {documentUploadModal.documents.map((doc) => (
-    <div key={doc.docId} className="border rounded-lg p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h4 className="font-medium text-gray-900">{doc.name}</h4>
-              <span
-                className={`text-xs px-2 py-1 rounded-full ${
-                  doc.status === "requested"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : doc.status === "submitted"
-                    ? "bg-blue-100 text-blue-800"
-                    : doc.status === "approved"
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }`}
-              >
-                {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
-              </span>
+              <div className="space-y-4">
+                {documentUploadModal.documents.map((doc) => (
+                  <div key={doc.docId} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="font-medium text-gray-900">
+                          {doc.name}
+                        </h4>
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            doc.status === "requested"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : doc.status === "submitted"
+                              ? "bg-blue-100 text-blue-800"
+                              : doc.status === "approved"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {doc.status.charAt(0).toUpperCase() +
+                            doc.status.slice(1)}
+                        </span>
+                      </div>
+                    </div>
 
-        </div>
-      </div>
+                    {doc.status === "requested" && (
+                      <div className="mt-3">
+                        {doc.inputType === "file" ? (
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                uploadDocument(
+                                  documentUploadModal.applicationId,
+                                  doc.docId,
+                                  file
+                                );
+                              }
+                            }}
+                            className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            disabled={uploadingDocument}
+                          />
+                        ) : doc.inputType === "text" &&
+                          doc.name === "Bank Details" ? (
+                          <div className="space-y-3">
+                            <input
+                              type="text"
+                              placeholder="Account Holder Name"
+                              value={
+                                documentValues[doc.docId]?.accountHolderName ||
+                                ""
+                              }
+                              onChange={(e) =>
+                                updateDocumentValue(
+                                  doc.docId,
+                                  "accountHolderName",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Account Number"
+                              value={
+                                documentValues[doc.docId]?.accountNumber || ""
+                              }
+                              onChange={(e) =>
+                                updateDocumentValue(
+                                  doc.docId,
+                                  "accountNumber",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <input
+                              type="text"
+                              placeholder="IFSC Code"
+                              value={documentValues[doc.docId]?.ifscCode || ""}
+                              onChange={(e) =>
+                                updateDocumentValue(
+                                  doc.docId,
+                                  "ifscCode",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Bank Name"
+                              value={documentValues[doc.docId]?.bankName || ""}
+                              onChange={(e) =>
+                                updateDocumentValue(
+                                  doc.docId,
+                                  "bankName",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Branch"
+                              value={documentValues[doc.docId]?.branch || ""}
+                              onChange={(e) =>
+                                updateDocumentValue(
+                                  doc.docId,
+                                  "branch",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <button
+                              onClick={() =>
+                                submitTextDocument(
+                                  documentUploadModal.applicationId,
+                                  doc.docId,
+                                  documentValues[doc.docId]
+                                )
+                              }
+                              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              disabled={uploadingDocument}
+                            >
+                              {uploadingDocument
+                                ? "Submitting..."
+                                : "Submit Bank Details"}
+                            </button>
+                          </div>
+                        ) : doc.inputType === "text" ? (
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              placeholder={`Enter ${doc.name}`}
+                              value={documentValues[doc.docId]?.value || ""}
+                              onChange={(e) =>
+                                updateDocumentValue(
+                                  doc.docId,
+                                  "value",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <button
+                              onClick={() =>
+                                submitTextDocument(
+                                  documentUploadModal.applicationId,
+                                  doc.docId,
+                                  documentValues[doc.docId]?.value
+                                )
+                              }
+                              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              disabled={uploadingDocument}
+                            >
+                              {uploadingDocument ? "Submitting..." : "Submit"}
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
 
-    {doc.status === "requested" && (
-  <div className="mt-3">
-    {doc.inputType === "file" ? (
-      <input
-        type="file"
-        accept=".pdf,.jpg,.jpeg,.png"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) {
-            uploadDocument(documentUploadModal.applicationId, doc.docId, file);
-          }
-        }}
-        className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-        disabled={uploadingDocument}
-      />
-    ) : doc.inputType === "text" && doc.name === "Bank Details" ? (
-      <div className="space-y-3">
-        <input
-          type="text"
-          placeholder="Account Holder Name"
-          value={documentValues[doc.docId]?.accountHolderName || ""}
-          onChange={(e) => updateDocumentValue(doc.docId, "accountHolderName", e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <input
-          type="text"
-          placeholder="Account Number"
-          value={documentValues[doc.docId]?.accountNumber || ""}
-          onChange={(e) => updateDocumentValue(doc.docId, "accountNumber", e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <input
-          type="text"
-          placeholder="IFSC Code"
-          value={documentValues[doc.docId]?.ifscCode || ""}
-          onChange={(e) => updateDocumentValue(doc.docId, "ifscCode", e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <input
-          type="text"
-          placeholder="Bank Name"
-          value={documentValues[doc.docId]?.bankName || ""}
-          onChange={(e) => updateDocumentValue(doc.docId, "bankName", e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <input
-          type="text"
-          placeholder="Branch"
-          value={documentValues[doc.docId]?.branch || ""}
-          onChange={(e) => updateDocumentValue(doc.docId, "branch", e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          onClick={() => submitTextDocument(
-            documentUploadModal.applicationId,
-            doc.docId,
-            documentValues[doc.docId]
-          )}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          disabled={uploadingDocument}
-        >
-          {uploadingDocument ? "Submitting..." : "Submit Bank Details"}
-        </button>
-      </div>
-    ) : doc.inputType === "text" ? (
-      <div className="space-y-2">
-        <input
-          type="text"
-          placeholder={`Enter ${doc.name}`}
-          value={documentValues[doc.docId]?.value || ""}
-          onChange={(e) => updateDocumentValue(doc.docId, "value", e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          onClick={() => submitTextDocument(
-            documentUploadModal.applicationId,
-            doc.docId,
-            documentValues[doc.docId]?.value
-          )}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          disabled={uploadingDocument}
-        >
-          {uploadingDocument ? "Submitting..." : "Submit"}
-        </button>
-      </div>
-    ) : null}
-  </div>
-)}
-
-
-      {doc.fileUrl && (
-        <div className="mt-3">
-          <a
-            href={doc.fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100"
-          >
-            <FileText className="w-4 h-4" />
-            View Uploaded
-          </a>
-        </div>
-      )}
-    </div>
-  ))}
-</div>
-
+                    {doc.fileUrl && (
+                      <div className="mt-3">
+                        <a
+                          href={doc.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100"
+                        >
+                          <FileText className="w-4 h-4" />
+                          View Uploaded
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
 
               {uploadingDocument && (
                 <div className="mt-6 flex justify-center">

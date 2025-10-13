@@ -4,7 +4,18 @@ import type React from "react";
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Upload, FileText, Check, Eye, Loader2, Sparkles, FileSearch, Brain, Database } from "lucide-react";
+import {
+  X,
+  Upload,
+  FileText,
+  Check,
+  Eye,
+  Loader2,
+  Sparkles,
+  FileSearch,
+  Brain,
+  Database,
+} from "lucide-react";
 import { toast } from "react-toastify";
 import { useUser } from "@/app/context/UserContext";
 import { usePathname } from "next/navigation";
@@ -85,13 +96,28 @@ export default function FileUploadModal({
   };
 
   const handleFiles = (files: File[]) => {
-    const validFiles = files.filter(
-      (file) =>
-        file.type === "application/pdf" ||
-        file.type === "application/msword" ||
-        file.type ===
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    );
+    const allowedTypes = [
+      "application/pdf",
+    ];
+
+    const validFiles: File[] = [];
+    const invalidFiles: File[] = [];
+
+    files.forEach((file) => {
+      if (allowedTypes.includes(file.type)) {
+        validFiles.push(file);
+      } else {
+        invalidFiles.push(file);
+      }
+    });
+
+    // Show toast notification for invalid files
+    if (invalidFiles.length > 0) {
+      const fileNames = invalidFiles.map((f) => f.name).join(", ");
+      toast.info(
+        `File type not allowed. Only PDF files are accepted.`
+      );
+    }
 
     validFiles.forEach(async (file) => {
       const newFile: UploadedFile = {
@@ -178,6 +204,7 @@ export default function FileUploadModal({
           toast.success("Profile created successfully");
         }, 1000);
       } catch (err) {
+        console.log("err", err)
         console.error("Upload failed", err);
         clearInterval(progressInterval);
         setUploadedFiles((prev) =>
@@ -452,7 +479,9 @@ export default function FileUploadModal({
                                     <motion.div
                                       className="bg-[#76FF82] h-2 rounded-full"
                                       initial={{ width: "0%" }}
-                                      animate={{ width: `${file.uploadProgress}%` }}
+                                      animate={{
+                                        width: `${file.uploadProgress}%`,
+                                      }}
                                       transition={{ duration: 0.3 }}
                                     />
                                   </div>
