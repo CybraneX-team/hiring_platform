@@ -3382,7 +3382,7 @@ export default function ProfileTab() {
         transition={{ duration: 0.5 }}
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
-        <Link href="/" className="flex items-center gap-1 -mt-10">
+        <Link href="/" className="flex items-center gap-1 -mt-4 md:-mt-10 mb-20">
           <Image
             src="/black_logo.png"
             alt="ProjectMATCH by Compscope"
@@ -3659,13 +3659,13 @@ export default function ProfileTab() {
             </button>
           )}
 
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="absolute top-4 sm:top-8 left-4 sm:left-8"
           >
-            <Link href="/" className="flex items-center gap-1 -mt-10">
+            <Link href="/" className="flex items-center gap-1 ">
               <Image
                 src="/black_logo.png"
                 alt="ProjectMATCH by Compscope"
@@ -3683,7 +3683,7 @@ export default function ProfileTab() {
                 </div>
               </div>
             </Link>
-          </motion.div>
+          </motion.div> */}
 
           <div className="mb-10 flex items-center justify-between">
             <motion.button
@@ -3774,7 +3774,7 @@ export default function ProfileTab() {
             </div>
 
             <motion.div
-              className="absolute bottom-0 h-0.5 bg-blue-600"
+              className="absolute bottom-0 h-0.5 bg-blue-600 hidden md:block"
               animate={{
                 left: indicatorStyle.left,
                 width: indicatorStyle.width,
@@ -3909,233 +3909,232 @@ export default function ProfileTab() {
       </AnimatePresence>
 
       {/* Profile Edit Modal */}
-      <AnimatePresence>
-        {isProfileEditOpen && (
-          <motion.div
-            key="profile-edit-modal"
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            aria-modal="true"
-            role="dialog"
-            aria-labelledby="profile-edit-title"
+<AnimatePresence>
+  {isProfileEditOpen && (
+    <motion.div
+      key="profile-edit-modal"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      aria-modal="true"
+      role="dialog"
+      aria-labelledby="profile-edit-title"
+    >
+      <motion.div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={() => setIsProfileEditOpen(false)}
+      />
+
+      <motion.div
+        className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg my-8 text-gray-500 max-h-[calc(100vh-4rem)] overflow-y-auto"
+        initial={{ y: 24, opacity: 0, scale: 0.98 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        exit={{ y: 24, opacity: 0, scale: 0.98 }}
+      >
+        <div className="sticky top-0 bg-white z-10 flex items-center justify-between mb-6 p-6 border-b border-gray-200">
+          <h2
+            id="profile-edit-title"
+            className="text-xl font-semibold text-gray-900"
           >
-            <motion.div
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsProfileEditOpen(false)}
+            {isProfileComplete()
+              ? "Edit Profile"
+              : "Add Profile Information"}
+          </h2>
+          <button
+            onClick={() => setIsProfileEditOpen(false)}
+            aria-label="Close"
+            className="p-2 rounded-full hover:bg-gray-100 flex-shrink-0"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        <div className="px-6 pb-6 space-y-5">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-gray-700">
+              Full Name
+            </label>
+            <input
+              type="text"
+              value={profileFormData.name}
+              onChange={(e) =>
+                setProfileFormData((prev) => ({
+                  ...prev,
+                  name: e.target.value,
+                }))
+              }
+              placeholder="e.g., John Doe"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
 
-            <motion.div
-              className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 text-gray-500"
-              initial={{ y: 24, opacity: 0, scale: 0.98 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: 24, opacity: 0, scale: 0.98 }}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2
-                  id="profile-edit-title"
-                  className="text-xl font-semibold text-gray-900"
-                >
-                  {isProfileComplete()
-                    ? "Edit Profile"
-                    : "Add Profile Information"}
-                </h2>
-                <button
-                  onClick={() => setIsProfileEditOpen(false)}
-                  aria-label="Close"
-                  className="p-2 rounded-full hover:bg-gray-100"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-gray-700">
+              Location
+            </label>
+            <div className="space-y-3">
+              <LocationInputWithSearch
+                value={profileFormData.location}
+                onChange={(value) => {
+                  setProfileFormData((prev) => ({
+                    ...prev,
+                    location: value,
+                  }));
+                }}
+                onLocationSelect={handleMapLocationSelect}
+                selectedLocation={
+                  profileFormData.locationData || undefined
+                }
+              />
+            </div>
+          </div>
 
-              <div className="space-y-5">
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    value={profileFormData.name}
-                    onChange={(e) =>
-                      setProfileFormData((prev) => ({
-                        ...prev,
-                        name: e.target.value,
-                      }))
-                    }
-                    placeholder="e.g., John Doe"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-gray-700">
+              About
+            </label>
+            <textarea
+              value={profileFormData.bio}
+              onChange={(e) =>
+                setProfileFormData((prev) => ({
+                  ...prev,
+                  bio: e.target.value,
+                }))
+              }
+              placeholder="Tell us about yourself..."
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            />
+          </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Location
-                  </label>
-                  <div className="space-y-3">
-                    <LocationInputWithSearch
-                      value={profileFormData.location}
-                      onChange={(value) => {
-                        setProfileFormData((prev) => ({
-                          ...prev,
-                          location: value,
-                        }));
-                      }}
-                      onLocationSelect={handleMapLocationSelect}
-                      selectedLocation={
-                        profileFormData.locationData || undefined
-                      }
-                    />
-                  </div>
-                </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-gray-700">
+              Skills
+            </label>
+            <input
+              type="text"
+              value={profileFormData.skills}
+              onChange={(e) =>
+                setProfileFormData((prev) => ({
+                  ...prev,
+                  skills: e.target.value,
+                }))
+              }
+              placeholder="e.g., JavaScript, React, Python (comma separated)"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    About
-                  </label>
-                  <textarea
-                    value={profileFormData.bio}
-                    onChange={(e) =>
-                      setProfileFormData((prev) => ({
-                        ...prev,
-                        bio: e.target.value,
-                      }))
-                    }
-                    placeholder="Tell us about yourself..."
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-gray-700">
+              Languages
+            </label>
+            <input
+              type="text"
+              value={profileFormData.languages}
+              onChange={(e) =>
+                setProfileFormData((prev) => ({
+                  ...prev,
+                  languages: e.target.value,
+                }))
+              }
+              placeholder="e.g., English (Native), Spanish (Intermediate) (comma separated)"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Skills
-                  </label>
-                  <input
-                    type="text"
-                    value={profileFormData.skills}
-                    onChange={(e) =>
-                      setProfileFormData((prev) => ({
-                        ...prev,
-                        skills: e.target.value,
-                      }))
-                    }
-                    placeholder="e.g., JavaScript, React, Python (comma separated)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-gray-700">
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              value={profileFormData.phone}
+              onChange={(e) =>
+                setProfileFormData((prev) => ({
+                  ...prev,
+                  phone: e.target.value,
+                }))
+              }
+              placeholder="e.g., +1 (555) 123-4567"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Languages
-                  </label>
-                  <input
-                    type="text"
-                    value={profileFormData.languages}
-                    onChange={(e) =>
-                      setProfileFormData((prev) => ({
-                        ...prev,
-                        languages: e.target.value,
-                      }))
-                    }
-                    placeholder="e.g., English (Native), Spanish (Intermediate) (comma separated)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+          {/* Availability Section */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-gray-700">
+                Unavailability
+              </label>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowAvailabilityModal(true)}
+                className="flex cursor-pointer items-center gap-1 px-3 py-1 bg-blue-50 text-blue-600 rounded-md text-sm hover:bg-blue-100 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add Slot
+              </motion.button>
+            </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    value={profileFormData.phone}
-                    onChange={(e) =>
-                      setProfileFormData((prev) => ({
-                        ...prev,
-                        phone: e.target.value,
-                      }))
-                    }
-                    placeholder="e.g., +1 (555) 123-4567"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Availability Section */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700">
-                      Unavailability
-                    </label>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setShowAvailabilityModal(true)}
-                      className="flex cursor-pointer items-center gap-1 px-3 py-1 bg-blue-50 text-blue-600 rounded-md text-sm hover:bg-blue-100 transition-colors"
+            {/* Display current availability slots */}
+            {availabilitySlots.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {availabilitySlots.map((slot, index) => (
+                  <motion.div
+                    key={index}
+                    whileHover={{ scale: 1.05 }}
+                    className="flex items-center gap-2 px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium"
+                  >
+                    <Calendar className="w-3 h-3" />
+                    <span>{slot.description}</span>
+                    <button
+                      onClick={() => removeAvailabilitySlot(slot)}
+                      className="ml-1 p-0.5 rounded-full hover:bg-red-200 transition-colors"
+                      aria-label="Remove slot"
                     >
-                      <Plus className="w-4 h-4" />
-                      Add Slot
-                    </motion.button>
-                  </div>
-
-                  {/* Display current availability slots */}
-                  {availabilitySlots.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {availabilitySlots.map((slot, index) => (
-                        <motion.div
-                          key={index}
-                          whileHover={{ scale: 1.05 }}
-                          className="flex items-center gap-2 px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium"
-                        >
-                          <Calendar className="w-3 h-3" />
-                          <span>{slot.description}</span>{" "}
-                          {/* ✅ Render specific property */}
-                          <button
-                            onClick={() => removeAvailabilitySlot(slot)}
-                            className="ml-1 p-0.5 rounded-full hover:bg-red-200 transition-colors"
-                            aria-label="Remove slot"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </motion.div>
-                      ))}
-                    </div>
-                  )}
-
-                  {availabilitySlots.length === 0 && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      No unavailability slots added yet. Click "Add Slot" to get
-                      started.
-                    </p>
-                  )}
-                </div>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.div>
+                ))}
               </div>
+            )}
 
-              <div className="mt-6 flex items-center justify-end gap-3">
-                <button
-                  className="px-4 py-2 rounded-full cursor-pointer border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"
-                  onClick={() => setIsProfileEditOpen(false)}
-                >
-                  Cancel
-                </button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="px-5 py-2 rounded-full cursor-pointer bg-blue-600 hover:bg-blue-700 text-white text-sm"
-                  onClick={handleProfileSave}
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Saving..." : "Save"}
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {availabilitySlots.length === 0 && (
+              <p className="text-sm text-gray-500 mt-1">
+                No unavailability slots added yet. Click "Add Slot" to get
+                started.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex items-center justify-end gap-3">
+          <button
+            className="px-4 py-2 rounded-full cursor-pointer border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            onClick={() => setIsProfileEditOpen(false)}
+          >
+            Cancel
+          </button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="px-5 py-2 rounded-full cursor-pointer bg-blue-600 hover:bg-blue-700 text-white text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleProfileSave}
+            disabled={isLoading}
+          >
+            {isLoading ? "Saving..." : "Save"}
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
 
       {/* Availability Slot Modal */}
       <AnimatePresence>
