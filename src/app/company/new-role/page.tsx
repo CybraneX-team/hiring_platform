@@ -140,7 +140,6 @@ const OlaMapComponent = ({
           }
 
           mapInstanceRef.current.on("load", () => {
-            console.log("Map loaded successfully");
             setIsMapLoaded(true);
             setDebugInfo("");
 
@@ -587,18 +586,15 @@ const LocationInputWithSearch = ({
 
       if (response.ok) {
         const data = await response.json();
-        console.log("Ola Maps API response:", data);
         // Handle different response structures from Ola Maps API
         const predictions =
           data.predictions || data.suggestions || data.results || [];
-        console.log("Processed predictions:", predictions);
 
         if (predictions.length > 0) {
           setSuggestions(predictions);
           setShowSuggestions(true);
           setSelectedIndex(-1);
         } else {
-          console.log("No predictions found, hiding suggestions");
           setSuggestions([]);
           setShowSuggestions(false);
         }
@@ -1072,7 +1068,6 @@ export default function PostRole({
   const { user } = useUser();
   useEffect(() => {
     if (isEditMode && initialData) {
-      console.log("Initializing edit mode with data:", initialData);
 
       // Populate all form fields with initial data
       setjobTittle(initialData.title || "");
@@ -1203,10 +1198,6 @@ export default function PostRole({
 
       const method = isEditMode ? "PUT" : "POST";
 
-      console.log(
-        `${isEditMode ? "Updating" : "Creating"} job:`,
-        previewJobData
-      );
 
       const response = await fetch(url, {
         method: method,

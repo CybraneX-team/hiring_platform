@@ -19,7 +19,6 @@ export default function Otp() {
   const [enteredOtp, setenteredOtp] = useState("");
   const { userCreds, setuser, setUserCreds, mode, loginCreds, setprofile } = useUser();
   const [loggingIn, setloggingIn] = useState(false);
-  console.log("userCreds", userCreds)
   const finalMode = mode
   const handleOtpChange = (index: number, value: string) => {
     if (value.length <= 1) {

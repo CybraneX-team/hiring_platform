@@ -82,19 +82,25 @@ export default function AdminPanel() {
   const [authError, setAuthError] = useState<string | null>(null);
   const bootstrapAttemptedRef = useRef(false);
 
-const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
-  return docs.map((doc: any) => ({
-    id: Number(doc.id),
-    name: String(doc.name || `Document ${doc.id}`),
-    status: (doc.status || "requested") as SubmittedDocument["status"],
-    file: doc.file ?? null,
-    fileUrl: doc.fileUrl ?? null,
-    inputType: doc.inputType || "file",  // ✅ ADD THIS LINE
-    value: doc.value ?? null,             // ✅ ADD THIS LINE
-  }));
-}, []);
+  const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
+    return docs.map((doc: any) => ({
+      id: Number(doc.id),
+      name: String(doc.name || `Document ${doc.id}`),
+      status: (doc.status || "requested") as SubmittedDocument["status"],
+      file: doc.file ?? null,
+      fileUrl: doc.fileUrl ?? null,
+      inputType: doc.inputType || "file", // ✅ ADD THIS LINE
+      value: doc.value ?? null, // ✅ ADD THIS LINE
+    }));
+  }, []);
 
+  const handleProfileUpdate = useCallback((updatedProfile: any) => {
+    // Update the selectedInspectItem with new data
+    setSelectedInspectItem(updatedProfile);
 
+    // Or refetch the specific profile
+    // fetchProfileData(profileId);
+  }, []);
   const fetchAnalytics = useCallback(
     async (passwordOverride?: string) => {
       setAnalyticsLoading(true);
@@ -430,7 +436,6 @@ const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
       const result = await response.json();
       try {
         // eslint-disable-next-line no-console
-        console.log("[Admin][fetchRoles] API result:", result);
       } catch {}
       const rawRoles = Array.isArray(result?.roles)
         ? result.roles
@@ -439,7 +444,7 @@ const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
         : [];
       try {
         // eslint-disable-next-line no-console
-        console.log("[Admin][fetchRoles] rawRoles (count):", rawRoles.length, rawRoles[0]);
+      
       } catch {}
 
       const normalizedRoles: Role[] = rawRoles.map(
@@ -488,7 +493,7 @@ const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
               typeof role?.payoffAmountPercentage === "number"
                 ? role.payoffAmountPercentage
                 : 25, // ✅ ADD THIS LINE
-            payRangeType :  role.payRangeType ?  role.payRangeType : ""
+            payRangeType: role.payRangeType ? role.payRangeType : "",
           };
         }
       );
@@ -645,7 +650,6 @@ const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
           process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         const deleteUrl = `${baseUrl}/company/delete/${companyId}`;
 
-
         const response = await fetch(deleteUrl, {
           method: "DELETE",
           headers: {
@@ -664,7 +668,6 @@ const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
         }
 
         const result = await response.json();
-        console.log("Delete response:", result);
 
         // Remove the company from the local state
         setCompaniesData((prev) =>
@@ -949,7 +952,6 @@ const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
     }
 
     return applicationsData.filter((application) => {
-      console.log("application is", application)
       const name = application.name.toLowerCase();
       const email = application.email.toLowerCase();
       const role = application.currentRole?.toLowerCase() ?? "";
@@ -1232,6 +1234,7 @@ const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
           <Companyapplicants
             itemId={selectedInspectItem}
             onBack={() => setCurrentView("inspect")}
+            onUpdate={handleProfileUpdate} // ADD THIS
           />
         );
 

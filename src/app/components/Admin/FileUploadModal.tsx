@@ -96,9 +96,7 @@ export default function FileUploadModal({
   };
 
   const handleFiles = (files: File[]) => {
-    const allowedTypes = [
-      "application/pdf",
-    ];
+    const allowedTypes = ["application/pdf"];
 
     const validFiles: File[] = [];
     const invalidFiles: File[] = [];
@@ -114,9 +112,7 @@ export default function FileUploadModal({
     // Show toast notification for invalid files
     if (invalidFiles.length > 0) {
       const fileNames = invalidFiles.map((f) => f.name).join(", ");
-      toast.info(
-        `File type not allowed. Only PDF files are accepted.`
-      );
+      toast.info(`File type not allowed. Only PDF files are accepted.`);
     }
 
     validFiles.forEach(async (file) => {
@@ -204,7 +200,6 @@ export default function FileUploadModal({
           toast.success("Profile created successfully");
         }, 1000);
       } catch (err) {
-        console.log("err", err)
         console.error("Upload failed", err);
         clearInterval(progressInterval);
         setUploadedFiles((prev) =>
@@ -434,7 +429,7 @@ export default function FileUploadModal({
                   Drop files here or click to browse
                 </p>
                 <p className="text-sm text-gray-500 mb-4">
-                  Only PDF and DOC files are allowed
+                  Only PDF files are allowed
                 </p>
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -445,7 +440,7 @@ export default function FileUploadModal({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".pdf,.doc,.docx"
+                  accept=".pdf"
                   onChange={handleFileInput}
                   className="hidden"
                 />

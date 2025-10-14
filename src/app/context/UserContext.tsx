@@ -63,7 +63,6 @@ export const UserProvider = ({ children }: UserProviderProps): JSX.Element => {
 
   // FIXED: Update profile and localStorage in one place
   const updateProfile = (newProfile: any) => {
-    console.log("Updating profile in context:", newProfile);
     
     // Update state
     setprofile(newProfile);
@@ -73,10 +72,8 @@ export const UserProvider = ({ children }: UserProviderProps): JSX.Element => {
       try {
         if (newProfile) {
           localStorage.setItem("profile", JSON.stringify(newProfile));
-          console.log("Profile saved to localStorage");
         } else {
           localStorage.removeItem("profile");
-          console.log("Profile removed from localStorage");
         }
       } catch (error) {
         console.error("Failed to update localStorage:", error);

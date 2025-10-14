@@ -19,7 +19,6 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const { userCreds, setUserCreds, setmode, mode } = useUser();
-  console.log("mode", mode);
   // Animation variants
   const containerVariants: Variants = {
     hidden: { opacity: 0 },

@@ -30,7 +30,6 @@ export default function RoleCard({ role, index, onSelect, onPayoffUpdate }: Role
   const experienceLabel = role.experienceLevel?.trim();
   const payoffPercentage = role.payoffAmountPercentage ?? 25;
   const payRangeType = role.payRangeType ;
-  console.log("payRangeType", payRangeType)
   const handlePayoffUpdate = async () => {
     const newValue = parseFloat(payoffValue);
     

@@ -693,12 +693,7 @@ function JobListingContent() {
   const handleActualApply = async (
     customAnswersData?: Record<string, string>
   ) => {
-    console.log(
-      "jobId !user?.id || !profile?.id",
-      jobId,
-      user?.id,
-      profile?._id
-    );
+
 
     if (!jobId || !user?.id || !profile?._id) {
       toast.error(
@@ -808,7 +803,6 @@ function JobListingContent() {
 
   // Replace the existing handleApplicationSubmit function with this:
   const handleApplicationSubmit = (data: any) => {
-    console.log("Application submitted", data);
     setShowApplicationPopup(false);
 
     // If this was custom questions, call the actual API with the answers

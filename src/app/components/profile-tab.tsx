@@ -1662,11 +1662,7 @@ export default function ProfileTab() {
         }
       }
 
-      // Debug: Log what we're actually sending
-      console.log("FormData entries being sent:");
-      for (const pair of formData.entries()) {
-        console.log(pair[0], pair[1]);
-      }
+     
 
       // Only make API call if we have data to send (besides userId)
       let hasDataToSend = false;
@@ -1930,11 +1926,7 @@ export default function ProfileTab() {
         }
       }
 
-      // Debug: Log what we're actually sending
-      console.log("FormData entries being sent:");
-      for (const pair of fd.entries()) {
-        console.log(pair[0], pair[1]);
-      }
+
 
       // API call
       const res = await fetch(
@@ -1973,7 +1965,6 @@ export default function ProfileTab() {
   }, [user, router]);
 
   const renderStars = () => {
-    console.log("profile", profile);
     const rating = profile?.averageRating || 0;
 
     return (
