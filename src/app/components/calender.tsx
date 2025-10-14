@@ -32,7 +32,7 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
     presentDays: [] as number[],
     absentDays: [] as number[],
     holidayDays: [] as number[],
-    eventDays: [] as number[], // Days with activity logs
+    eventDays: [] as number[],
     totalAttended: 0,
     totalHolidays: 0,
   })
@@ -65,7 +65,6 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
       return
     }
 
-    // Helper function to recalculate event days from current records
     const recalculateEventDays = (records: AttendanceRecord[]): number[] => {
       const eventDays: number[] = []
       
@@ -74,7 +73,6 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
           const recordDate = new Date(record.date)
           const dayOfMonth = recordDate.getUTCDate()
           
-          // Check if this record is for the current month/year being displayed
           if (recordDate.getUTCFullYear() === currentDate.getFullYear() && 
               recordDate.getUTCMonth() === currentDate.getMonth()) {
             eventDays.push(dayOfMonth)
@@ -91,23 +89,19 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
     try {
       const response = await attendanceAPI.getAttendance(
         profileId,
-        currentDate.getMonth() + 1, // API expects 1-based month
+        currentDate.getMonth() + 1,
         currentDate.getFullYear()
       )
 
       setAttendanceRecords(response.data.records)
       
-      // Recalculate event days from the actual records for verification
       const recalculatedEventDays = recalculateEventDays(response.data.records)
-      
 
-      
-      // Use recalculated event days to ensure accuracy
       setAttendanceData({
         presentDays: response.data.presentDays,
         absentDays: response.data.absentDays,
         holidayDays: response.data.holidayDays,
-        eventDays: recalculatedEventDays, // Use our own calculation
+        eventDays: recalculatedEventDays,
         totalAttended: response.data.summary.totalPresent,
         totalHolidays: response.data.summary.totalHolidays,
       })
@@ -119,7 +113,6 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
     }
   }, [profileId, currentDate])
 
-  // Fetch hired companies when component mounts
   const fetchHiredCompanies = useCallback(async () => {
     if (!userId) return
     
@@ -128,33 +121,28 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
       const response = await attendanceAPI.getHiredCompanies(userId)
       setHiredCompanies(response.data)
       
-      // If user has hired companies, auto-select the first one
       if (response.data.length > 0 && !companyName) {
         setCompanyName(response.data[0].company.name)
       }
     } catch (err: any) {
       console.error('Error fetching hired companies:', err)
-      // Don't show error - user might not have any hired positions yet
     } finally {
       setCompaniesLoading(false)
     }
   }, [userId, companyName])
 
-  // Load attendance data when component mounts or date changes
   useEffect(() => {
     if (profileId) {
       fetchAttendanceData()
     }
   }, [fetchAttendanceData, profileId])
 
-  // Load hired companies when component mounts
   useEffect(() => {
     if (userId) {
       fetchHiredCompanies()
     }
   }, [fetchHiredCompanies, userId])
 
-  // Click outside handler for company dropdown
   const companyDropdownRef = useRef<HTMLDivElement>(null)
   
   useEffect(() => {
@@ -177,34 +165,25 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
     return `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${String(selectedDate).padStart(2, '0')}`
   }
 
-  // Helper function to create UTC date for selected day to avoid timezone issues
   const createSelectedDateUTC = (): Date => {
     return new Date(Date.UTC(currentDate.getFullYear(), currentDate.getMonth(), selectedDate))
   }
 
-  // Helper function to create ISO string for selected day in UTC
   const getSelectedDateISOString = (): string => {
     return createSelectedDateUTC().toISOString()
   }
 
   const getCurrentDayLogs = (): AttendanceLog[] => {
     const targetDate = createSelectedDateUTC()
-    const targetDateString = targetDate.toISOString().split('T')[0] // YYYY-MM-DD format
-    
-
+    const targetDateString = targetDate.toISOString().split('T')[0]
     
     const currentRecord = attendanceRecords.find(record => {
       const recordDate = new Date(record.date)
-      const recordDateString = recordDate.toISOString().split('T')[0] // YYYY-MM-DD format
-      const matches = recordDateString === targetDateString
-      
-      
-      
-      return matches
+      const recordDateString = recordDate.toISOString().split('T')[0]
+      return recordDateString === targetDateString
     })
     
-    const logs = currentRecord?.logs || []
-    return logs
+    return currentRecord?.logs || []
   }
 
   const isSelectedDatePresent = (): boolean => {
@@ -219,7 +198,7 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
     try {
       setIsSaving(true)
       await attendanceAPI.setAttendanceStatus(profileId, dateStr, 'present')
-      await fetchAttendanceData() // Refresh data
+      await fetchAttendanceData()
     } catch (err: any) {
       setError(err.message || "Failed to mark as present")
     } finally {
@@ -234,12 +213,11 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
 
     try {
       setIsSaving(true)
-      // Set status to 'none' and clear all logs to delete all records for this date
       await attendanceAPI.updateAttendance(profileId, dateStr, { 
         status: 'none', 
         logs: [] 
       })
-      await fetchAttendanceData() // Refresh data
+      await fetchAttendanceData()
     } catch (err: any) {
       setError(err.message || "Failed to unmark as present")
     } finally {
@@ -279,21 +257,16 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
     const firstDay = getFirstDayOfMonth(currentDate)
     const days = []
 
-    // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="h-16"></div>)
     }
 
-    // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const isSelected = day === selectedDate
       const isPresent = attendanceData.presentDays.includes(day)
       const isAbsent = attendanceData.absentDays.includes(day)
       const hasEvent = attendanceData.eventDays.includes(day)
       const isSunday = (firstDay + day - 1) % 7 === 0
-      
-      // Debug logging for event indicators
-     
 
       let cellClasses =
         "h-16 flex items-center justify-center text-sm font-medium cursor-pointer relative rounded-md transition-colors duration-150 "
@@ -329,37 +302,23 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
   }
 
   const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
   ]
 
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
   const openUpdateModal = () => {
-    // Check if the person is marked as present for the selected date
     if (!isSelectedDatePresent()) {
       setError("You must mark yourself as present first before logging daily activities")
       return
     }
     
-    // Clear any previous editing state
     setEditingRecords([])
     setError(null)
     
-    // Get fresh logs for the currently selected date
     const currentLogs = getCurrentDayLogs()
     
-    // Deep copy to avoid reference issues
     const logsToEdit = currentLogs.map(log => ({
       ...log,
       id: log.id || Date.now().toString() + Math.random().toString(36).substring(2)
@@ -386,10 +345,7 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
       activity: "",
       notes: ""
     }
-    setEditingRecords((prev) => {
-      const updated = [...prev, newRecord]
-      return updated
-    })
+    setEditingRecords((prev) => [...prev, newRecord])
   }
 
   const cancelEdit = () => {
@@ -400,19 +356,16 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
     if (!profileId) return
 
     const dateStr = getSelectedDateISOString()
-    
 
     try {
       setIsSaving(true)
       
-      // Filter out empty records
       const validRecords = editingRecords.filter(record => 
         record.time.trim() && record.activity.trim()
       )
       
       await attendanceAPI.updateActivityLogs(profileId, dateStr, validRecords)
       
-      // Immediately update local state to show the dot indicator
       if (validRecords.length > 0) {
         setAttendanceData(prev => ({
           ...prev,
@@ -421,28 +374,23 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
             : [...prev.eventDays, selectedDate]
         }))
       } else {
-        // Remove the day from eventDays if no valid records
         setAttendanceData(prev => ({
           ...prev,
           eventDays: prev.eventDays.filter(day => day !== selectedDate)
         }))
       }
       
-      // Refresh data to get updated state from server
       await fetchAttendanceData()
-      
-      // Close modal and clear editing state
       setShowUpdateModal(false)
       setEditingRecords([])
     } catch (err: any) {
-      console.error('❌ Failed to save records:', err)
+      console.error('Failed to save records:', err)
       setError(err.message || "Failed to save records")
     } finally {
       setIsSaving(false)
     }
   }
 
-  // Company selection handlers
   const handleCompanySelect = (company: HiredCompany) => {
     setCompanyName(company.company.name)
     setShowCompanyDropdown(false)
@@ -456,14 +404,12 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
   }
 
   const openDownloadModal = () => {
-    // Set default date range to current monthly view
     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
     const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
     
     setDownloadStartDate(startOfMonth.toISOString().split('T')[0])
     setDownloadEndDate(endOfMonth.toISOString().split('T')[0])
     
-    // Don't reset company name - keep the selected company
     if (!companyName && hiredCompanies.length > 0) {
       setCompanyName(hiredCompanies[0].company.name)
     }
@@ -490,7 +436,6 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
     try {
       setIsSaving(true)
       
-      // Filter attendance records for the selected date range
       const startDate = new Date(downloadStartDate)
       const endDate = new Date(downloadEndDate)
       
@@ -499,52 +444,39 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
         return recordDate >= startDate && recordDate <= endDate
       })
 
-      // Create new PDF document
       const doc = new jsPDF()
       const pageWidth = doc.internal.pageSize.getWidth()
       const pageHeight = doc.internal.pageSize.getHeight()
 
-      // Find the selected company's logo from hired companies
       const selectedCompany = hiredCompanies.find(company => 
         company.company.name === companyName.trim()
       )
       const companyLogo = selectedCompany?.company.logo
 
-      // Header with blue background bar
-      doc.setFillColor(0, 82, 180) // Blue color matching the image
+      doc.setFillColor(0, 82, 180)
       doc.rect(0, 0, pageWidth, 30, 'F')
 
-      // Add company logo in top-left corner if available
       if (companyLogo) {
         try {
-          // Create an image element to load the logo
           const img = new Image()
           img.crossOrigin = 'anonymous'
           
           await new Promise<void>((resolve) => {
             img.onload = () => {
               try {
-                // Create canvas to convert image to base64
                 const canvas = document.createElement('canvas')
                 const ctx = canvas.getContext('2d')
                 
-                // Set canvas size for logo (20x20 pixels for nice fit)
                 const logoSize = 20
                 canvas.width = logoSize
                 canvas.height = logoSize
                 
                 if (ctx) {
-                  // Fill with white background for transparency
                   ctx.fillStyle = 'white'
                   ctx.fillRect(0, 0, logoSize, logoSize)
-                  
-                  // Draw the image scaled to fit
                   ctx.drawImage(img, 0, 0, logoSize, logoSize)
                   
-                  // Convert to base64
                   const base64Image = canvas.toDataURL('image/PNG')
-                  
-                  // Add logo to PDF (positioned in top-left corner with white background)
                   doc.addImage(base64Image, 'PNG', 6, 5, 20, 20)
                 }
                 resolve()
@@ -559,7 +491,6 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
               resolve()
             }
             
-            // Add timeout to prevent hanging
             setTimeout(() => {
               console.warn('Logo loading timeout')
               resolve()
@@ -571,16 +502,13 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
           console.warn('Error adding company logo to PDF:', error)
         }
       } else if (selectedCompany) {
-        // If no logo but we have company info, add company initial in a circle
         try {
           const companyInitial = selectedCompany.company.name.charAt(0).toUpperCase()
           
-          // Draw circle background
-          doc.setFillColor(59, 130, 246) // Blue background
+          doc.setFillColor(59, 130, 246)
           doc.circle(16, 15, 10, 'F')
           
-          // Add company initial
-          doc.setTextColor(255, 255, 255) // White text
+          doc.setTextColor(255, 255, 255)
           doc.setFontSize(12)
           doc.setFont('helvetica', 'bold')
           doc.text(companyInitial, 13, 18)
@@ -589,43 +517,35 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
         }
       }
 
-      // "COMPSCOPE" in green, centered vertically in blue section
-      doc.setTextColor(0, 255, 0) // Green color
+      doc.setTextColor(0, 255, 0)
       doc.setFontSize(28)
       doc.setFont('helvetica', 'bold')
       const compscopeText = "ProjectMATCH by Compscope "
       const compscopeWidth = doc.getTextWidth(compscopeText)
       doc.text(compscopeText, (pageWidth - compscopeWidth) / 2, 16)
 
-      // "Work Report" in white below COMPSCOPE, centered in blue section
-      doc.setTextColor(255, 255, 255) // White
+      doc.setTextColor(255, 255, 255)
       doc.setFontSize(16)
       const workReportText = "Work Report"
       const workReportWidth = doc.getTextWidth(workReportText)
       doc.text(workReportText, (pageWidth - workReportWidth) / 2, 24)
 
-      // Reset text color for body
       doc.setTextColor(0, 0, 0)
       doc.setFontSize(11)
 
       const startY = 40
-
-      // Define consistent x-coordinate for all values
       const valueStartX = 65
       
-      // Vendor Name - Bold heading, normal value
       doc.setFont('helvetica', 'bold')
       doc.text('Vendor Name -', 20, startY)
       doc.setFont('helvetica', 'normal')
       doc.text(companyName.trim(), valueStartX, startY)
 
-      // Project Name - Bold heading, normal value
       doc.setFont('helvetica', 'bold')
       doc.text('Project Name -', 20, startY + 8)
       doc.setFont('helvetica', 'normal')
       doc.text(projectName.trim(), valueStartX, startY + 8)
 
-      // Report Period - Bold heading, normal value
       doc.setFont('helvetica', 'bold')
       doc.text('Report Period -', 20, startY + 16)
       doc.setFont('helvetica', 'normal')
@@ -633,17 +553,15 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
       const formattedEndDate = new Date(downloadEndDate).toLocaleDateString('en-GB')
       doc.text(`${formattedStartDate} to ${formattedEndDate}`, valueStartX, startY + 16)
 
-      // Prepare table data
       const tableData: any[] = []
 
       if (filteredRecords.length > 0) {
         filteredRecords.forEach(record => {
           const recordDate = new Date(record.date)
-          const formattedDate = recordDate.toLocaleDateString('en-GB') // dd/mm/yyyy format
+          const formattedDate = recordDate.toLocaleDateString('en-GB')
           const attendanceStatus = record.status === 'present' ? 'Present' : 
                                  record.status === 'absent' ? 'Absent' : 'Not Marked'
 
-          // Only include records that have attendance status (present/absent) OR have activity logs
           const hasAttendanceStatus = record.status === 'present' || record.status === 'absent'
           const hasActivities = record.logs && record.logs.length > 0
 
@@ -658,7 +576,6 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
                 ])
               })
             } else {
-              // Only add "No activities recorded" row if person was marked present/absent
               if (hasAttendanceStatus) {
                 tableData.push([
                   formattedDate, 
@@ -672,17 +589,15 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
         })
       }
       
-      // If no valid records found, add a message
       if (tableData.length === 0) {
         tableData.push(["No records", "No records found for the selected period", "", ""])
       }
 
-      // Professional table styling
       autoTable(doc, {
         head: [["Date", "Activity", "Attendance (Present / Absent)", "Timing of Work"]],
         body: tableData,
-        startY: 68, // Adjusted for new header height with project name
-        theme: "grid", // Changed to grid to match image
+        startY: 68,
+        theme: "grid",
         styles: {
           fontSize: 9,
           cellPadding: 5,
@@ -691,8 +606,8 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
           lineWidth: 0.5,
         },
         headStyles: {
-          fillColor: [255, 255, 255], // White background
-          textColor: [0, 0, 0], // Black text
+          fillColor: [255, 255, 255],
+          textColor: [0, 0, 0],
           fontStyle: "bold",
           fontSize: 10,
           halign: 'center',
@@ -703,26 +618,20 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
           valign: 'middle',
         },
         columnStyles: {
-          0: { cellWidth: 35, halign: 'center' }, // Date
-          1: { cellWidth: 60, halign: 'left' },   // Activity
-          2: { cellWidth: 45, halign: 'center' }, // Attendance
-          3: { cellWidth: 35, halign: 'center' }, // Timing
+          0: { cellWidth: 35, halign: 'center' },
+          1: { cellWidth: 60, halign: 'left' },
+          2: { cellWidth: 45, halign: 'center' },
+          3: { cellWidth: 35, halign: 'center' },
         },
         margin: { left: 15, right: 15 },
       })
 
-
-
-      // Add signature sections to the last page only
       const totalPages = doc.getNumberOfPages()
       const lastPage = totalPages
       
       doc.setPage(lastPage)
+      const signatureY = pageHeight - 40
       
-      // Add signature sections above footer on last page
-      const signatureY = pageHeight - 40 // Position above footer
-      
-      // Surveyor Sign & Seal (left side)
       doc.setFontSize(10)
       doc.setTextColor(0, 0, 0)
       doc.setFont('helvetica', 'bold')
@@ -730,18 +639,15 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
       doc.setFont('helvetica', 'normal')
       doc.text('Surveyor Name -', 20, signatureY + 8)
       
-      // Client / Mail Sign & Seal (right side)
       doc.setFont('helvetica', 'bold')
       doc.text('Client / Mail Sign & Seal', pageWidth - 80, signatureY)
       
-      // Add footer to every page
-      const currentDate = new Date()
-      const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}/${currentDate.getFullYear()}`
+      const currentDateObj = new Date()
+      const formattedDate = `${String(currentDateObj.getDate()).padStart(2, '0')}/${String(currentDateObj.getMonth() + 1).padStart(2, '0')}/${currentDateObj.getFullYear()}`
       
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i)
         
-        // Footer text
         doc.setFontSize(9)
         doc.setTextColor(100, 100, 100)
         doc.setFont('helvetica', 'normal')
@@ -750,14 +656,10 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
         doc.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10)
       }
 
-      // Generate filename with company name
       const sanitizedCompanyName = companyName.trim().replace(/[^a-zA-Z0-9]/g, '_')
       const filename = `${sanitizedCompanyName}_Attendance_${downloadStartDate}_to_${downloadEndDate}.pdf`
 
-      // Download the PDF file
       doc.save(filename)
-      
-      // Close modal
       setShowDownloadModal(false)
       
     } catch (err: any) {
@@ -768,7 +670,6 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
     }
   }
 
-  // Show error state
   if (error && !profileId) {
     return (
       <div className="bg-white w-full shadow-sm rounded-lg overflow-hidden p-8">
@@ -783,7 +684,6 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
   return (
     <>
       <div className="bg-white w-full shadow-sm rounded-lg overflow-hidden">
-        {/* Error banner */}
         {error && (
           <div className="bg-red-50 border-l-4 border-red-400 p-4">
             <div className="flex items-center">
@@ -799,8 +699,8 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
           </div>
         )}
 
-        {/* Header with navigation and Mark as Present button */}
-        <div className="flex items-center justify-between p-8 bg-white border-b border-gray-200">
+        {/* Header with navigation - Desktop layout */}
+        <div className="hidden md:flex items-center justify-between p-8 bg-white border-b border-gray-200">
           <div className="flex items-center space-x-6">
             <button onClick={() => navigateMonth(-1)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
               <ChevronLeft className="w-5 h-5 text-gray-600" />
@@ -853,6 +753,57 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
           </div>
         </div>
 
+        {/* Mobile header - Navigation only */}
+        <div className="md:hidden flex items-center justify-between p-4 bg-white border-b border-gray-200">
+          <button onClick={() => navigateMonth(-1)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <ChevronLeft className="w-5 h-5 text-gray-600" />
+          </button>
+
+          <div className="flex items-center space-x-2">
+            <span className="text-lg font-semibold text-gray-900">{selectedDate}</span>
+            <button
+              onClick={openDatePicker}
+              className="flex items-center space-x-1 px-2 py-1 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <span className="text-lg font-semibold text-gray-900">{months[currentDate.getMonth()]}</span>
+              <span className="text-sm font-semibold text-gray-900">{currentDate.getFullYear()}</span>
+              <Calendar className="w-3.5 h-3.5 text-gray-500" />
+            </button>
+          </div>
+
+          <button onClick={() => navigateMonth(1)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <ChevronRight className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+{/* Top action buttons - Mobile first, stacked */}
+        <div className="p-4 md:p-0 md:hidden bg-white border-b border-gray-200 flex  gap-2">
+          <button
+            onClick={openDownloadModal}
+            className="flex items-center justify-center gap-2 px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-medium rounded-lg transition-colors w-full"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Download
+          </button>
+          {isSelectedDatePresent() ? (
+            <button
+              onClick={unmarkAsPresent}
+              disabled={isSaving}
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors w-full"
+            >
+              {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>Unmark Present</span>
+            </button>
+          ) : (
+            <button
+              onClick={markAsPresent}
+              disabled={isSaving}
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors w-full"
+            >
+              {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>Mark Present</span>
+            </button>
+          )}
+        </div>
         {/* Days of week header */}
         <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
           {daysOfWeek.map((day, index) => (
@@ -867,12 +818,12 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
           ))}
         </div>
 
-        <div className="relative grid grid-cols-7 gap-3 p-8 border-b border-gray-200">
+        <div className="relative grid grid-cols-7 gap-3 p-4 md:p-8 border-b border-gray-200">
           {isLoading && (
             <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
               <div className="flex items-center space-x-2">
                 <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-                <span className="text-gray-600">Loading attendance data...</span>
+                <span className="text-gray-600">Loading...</span>
               </div>
             </div>
           )}
@@ -880,8 +831,8 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
         </div>
 
         {/* Attendance statistics section */}
-        <div className="px-8 py-6 border-b border-gray-200">
-          <div className="flex items-center justify-between text-sm text-gray-600">
+        <div className="px-4 md:px-8 py-4 md:py-6 border-b border-gray-200">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-sm text-gray-600">
             <span>
               Total Attended days : <span className="font-semibold text-gray-900">{attendanceData.totalAttended}</span>
             </span>
@@ -894,19 +845,20 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
           </div>
         </div>
 
-        <div className="p-8">
-          <div className="bg-gray-100 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-6">
+        <div className="p-4 md:p-8">
+          <div className="bg-gray-100 rounded-lg p-4 md:p-6">
+            <div className="flex  md:flex-row md:items-center justify-between gap-4 mb-6">
               <h3 className="text-lg font-semibold text-gray-900">Daily Record</h3>
-              <div className="flex items-center gap-4">
-                <span className="text-xs text-gray-500">
+              <div className="flex flex-col md:flex-row md:items-center gap-4">
+                <span className="text-xs text-gray-500 hidden md:inline-block">
                   Updated on {selectedDate.toString().padStart(2, "0")}-
                   {(currentDate.getMonth() + 1).toString().padStart(2, "0")}-{currentDate.getFullYear()}
                 </span>
+                <div className="flex flex-col items-center justify-center">
                 <button
                   onClick={openUpdateModal}
                   disabled={!isSelectedDatePresent()}
-                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  className={`flex items-center gap-2 px-3 md:px-4 py-2 text-xs md:text-sm font-medium rounded-lg transition-colors ${
                     isSelectedDatePresent() 
                       ? 'bg-gray-200 hover:bg-gray-300 text-gray-700' 
                       : 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -915,7 +867,13 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
                 >
                   <Pencil className="w-4 h-4" />
                   Update Record
+                  
                 </button>
+                <span className="text-[10px] text-gray-500 md:hidden mt-1">
+                  Updated on {selectedDate.toString().padStart(2, "0")}-
+                  {(currentDate.getMonth() + 1).toString().padStart(2, "0")}-{currentDate.getFullYear()}
+                </span>
+                </div>
               </div>
             </div>
 
@@ -944,8 +902,8 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
 
       {/* Date picker dialog */}
       {showDatePicker && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-80">
+        <div className="fixed inset-0 bg-[#00000063] bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Date</h3>
 
             <div className="space-y-4">
@@ -1005,8 +963,9 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
         </div>
       )}
 
+      {/* Update modal */}
       {showUpdateModal && (
-        <div className="fixed inset-0 bg-[#00000057]  flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-[#00000057] flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[80vh] overflow-hidden">
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">Update Daily Records</h3>
@@ -1134,7 +1093,7 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
                           <div className="p-3 text-center text-gray-500">Loading hired companies...</div>
                         ) : hiredCompanies.length > 0 ? (
                           <>
-                            {hiredCompanies.map((company, index) => (
+                            {hiredCompanies.map((company) => (
                               <button
                                 key={company.applicationId}
                                 type="button"
@@ -1235,7 +1194,7 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
               )}
             </div>
 
-            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+            <div className="p-6 border-t border-gray-200 flex flex-col md:flex-row justify-end gap-3">
               <button
                 onClick={() => {
                   setShowDownloadModal(false)
@@ -1250,7 +1209,7 @@ const CalendarSection = ({ profileId, userId }: CalendarSectionProps) => {
               <button
                 onClick={downloadAttendanceData}
                 disabled={isSaving || !downloadStartDate || !downloadEndDate || !companyName.trim() || !projectName.trim()}
-                className="px-4 py-2 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-medium rounded-lg transition-colors flex items-center space-x-2"
+                className="px-4 py-2 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-medium rounded-lg transition-colors flex items-center justify-center space-x-2"
               >
                 {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
                 <Download className="w-4 h-4" />

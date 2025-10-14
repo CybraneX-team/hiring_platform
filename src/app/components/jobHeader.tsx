@@ -28,7 +28,7 @@ function JobHeader() {
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-4"
         >
-          <div className="flex items-center w-full">
+          <div className="flex items-center w-full justify-between">
           <Link href="/" className="flex items-center gap-1">
               <Image
                 src="/black_logo.png"
