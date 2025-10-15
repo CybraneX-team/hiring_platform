@@ -922,6 +922,17 @@ export default function ProfileTab() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   // Add these state variables
   const [documentValues, setDocumentValues] = useState<Record<number, any>>({});
+  const [certificates, setCertificates] = useState([
+    {
+      clientId: uuidv4(),
+      name: "",
+      issuer: "",
+      date: "",
+      description: "",
+      file: null,
+    },
+  ]);
+
   const [loadingApplications, setLoadingApplications] = useState(false);
   const [documentUploadModal, setDocumentUploadModal] = useState<{
     isOpen: boolean;
@@ -1112,7 +1123,7 @@ export default function ProfileTab() {
     return "";
   };
 
-  const [profileData, setProfileData] = useState(() => {
+  const [profileData, setProfileData] = useState<any>(() => {
     try {
       if (profile && profile._id && profile.name) {
         const transformedProfile = {
@@ -1624,13 +1635,16 @@ export default function ProfileTab() {
       }
 
       // Handle availability only if changed
-      if (availabilitySlots && availabilitySlots.length > 0) {
-        const currentAvailability = JSON.stringify(profile?.availability || []);
-        const newAvailability = JSON.stringify(availabilitySlots);
-        if (currentAvailability !== newAvailability) {
-          formData.append("availability", newAvailability);
-        }
-      }
+      // Handle availability only if changed
+// Around line 2200 in handleProfileSave
+if (availabilitySlots && availabilitySlots.length > 0) {
+  const currentAvailability = JSON.stringify(profile?.unavailability || []);
+  const newAvailability = JSON.stringify(availabilitySlots);
+  if (currentAvailability !== newAvailability) {
+    formData.append("unavailability", newAvailability); // ✅ Changed from "availability"
+  }
+}
+
 
       // Handle location data properly
       if (
@@ -1853,6 +1867,8 @@ export default function ProfileTab() {
   };
 
   const openProfileEditModal = () => {
+    console.log("profileData is :", profileData);
+
     // Correctly sync internal state with current profile data
     setProfileFormData({
       name: profile?.name || user?.name || "",
@@ -1865,10 +1881,10 @@ export default function ProfileTab() {
       locationData: profileData.profile.location || null,
     });
 
-    // Initialize availability slots
+    // ✅ FIXED: Don't wrap in extra array!
     setAvailabilitySlots(profileData.profile.unavailability || []);
 
-    // FIXED: Clear certificate states to prevent duplication
+    // Clear certificate states to prevent duplication
     setNewCertificatesFiles([]);
     setNewCertificatesMeta([]);
 
@@ -2162,6 +2178,8 @@ export default function ProfileTab() {
     setIsEditMode(false);
     setFormData({});
     setPreviewCert(null);
+    setNewCertificatesFiles([]);
+    setNewCertificatesMeta([]);
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -2200,7 +2218,17 @@ export default function ProfileTab() {
 
         formData.append("WorkExperience", JSON.stringify(validExperiences));
       }
-
+      if (sectionType === "unavailability") {
+  const validSlots = sectionData
+    .filter((slot: any) => slot.startDate && slot.endDate)
+    .map((slot: any) => ({
+      startDate: slot.startDate,
+      endDate: slot.endDate,
+      description: slot.description || "",
+    }));
+  
+  formData.append("unavailability", JSON.stringify(validSlots));
+}
       /********* 2) EDUCATION *********/
       if (sectionType === "education") {
         const validEducation = sectionData
@@ -2219,28 +2247,29 @@ export default function ProfileTab() {
       }
 
       if (sectionType === "certificate") {
-        // Handle certificates with files properly
-        const allCertificateDetails = sectionData.map(
-          (c: any, index: number) => ({
-            name: c.name || "Certificate",
-            issuer: c.issuer || "Not Specified",
-            date: c.date || new Date().toISOString().split("T")[0],
-            description: c.description || "",
-            // Don't include file data in JSON - will be appended separately
-          })
-        );
+        // ✅ FIXED: Only append NEW files that are File objects
+        const allCertificateDetails = sectionData.map((c: any) => ({
+          _id: c.id || c._id, // Preserve existing IDs
+          name: c.name || "Certificate",
+          issuer: c.issuer || "Not Specified",
+          date: c.date || new Date().toISOString().split("T")[0],
+          description: c.description || "",
+          // Keep existing file info
+          fileUrl: c.certificateUrl || c.fileUrl || "",
+          fileName: c.certificateFileName || c.fileName || "",
+          mimeType: c.certificateMime || c.mimeType || "",
+        }));
 
         formData.append("certificates", JSON.stringify(allCertificateDetails));
 
-        // Append certificate files separately
-        sectionData.forEach((cert: any, index: any) => {
-          if (cert.file) {
+        // ✅ CRITICAL FIX: Only append files that are NEW File objects
+        // Do NOT append if cert.file is undefined, null, or a string URL
+        sectionData.forEach((cert: any, index: number) => {
+          if (cert.file && cert.file instanceof File && cert.file.size > 0) {
             const renamedFile = new File(
               [cert.file],
               `${index}__${cert.file.name}`,
-              {
-                type: cert.file.type,
-              }
+              { type: cert.file.type }
             );
             formData.append("certificateFiles", renamedFile);
           }
@@ -2306,19 +2335,31 @@ export default function ProfileTab() {
           const newItem = { ...educationData, id: Date.now() };
           updatedSection = [...profileData.education, newItem];
         }
-      } else if (modalType === "certificate") {
+      } // In your handleSubmit function (around line 2590), replace the certificate handling section:
+      else if (modalType === "certificate") {
         // Handle certificate with file
         const certificateData = { ...formData };
 
-        // If there's a new file from the file input, add it
+        // ✅ FIXED: Only attach file if a NEW file was selected
         if (newCertificatesFiles.length > 0) {
-          certificateData.file =
+          const latestFile =
             newCertificatesFiles[newCertificatesFiles.length - 1];
+          // Double-check it's actually a File object
+          if (latestFile instanceof File) {
+            certificateData.file = latestFile;
+          }
+        }
+
+        // ✅ CRITICAL: Remove file property if no new file selected
+        if (!certificateData.file || !(certificateData.file instanceof File)) {
+          delete certificateData.file;
         }
 
         if (isEditMode && editingItem) {
           updatedSection = profileData.certifications.map((item: any) =>
-            item.id === editingItem.id ? { ...item, ...certificateData } : item
+            item.id === editingItem.id
+              ? { ...item, ...certificateData, file: certificateData.file }
+              : item
           );
         } else {
           const newItem = { ...certificateData, id: Date.now() };
@@ -2339,6 +2380,8 @@ export default function ProfileTab() {
 
         // Call API
         await updateSpecificSectionAPI(modalType!, updatedSection);
+        setNewCertificatesFiles([]);
+        setNewCertificatesMeta([]);
         toast.success(`${modalType} updated successfully!`);
         closeModal();
       }
@@ -2545,11 +2588,11 @@ export default function ProfileTab() {
                   className="space-y-2"
                 >
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Certificate File (PDF or image)
+                    Certificate File (image)
                   </label>
                   <input
                     type="file"
-                    accept="application/pdf,image/*"
+                    accept="image/*"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
@@ -2758,13 +2801,14 @@ export default function ProfileTab() {
           ? "education"
           : "experiences";
 
-      // Keep a snapshot for potential revert
-      const prevSnapshot = profileData;
+      // ✅ FIXED: Store the previous snapshot properly
+      const prevSnapshot : any  = { ...profileData };
 
       // Optimistic update
       const updatedSection = (profileData as any)[sectionKey].filter(
         (it: any) => it.id !== item.id
       );
+
       setProfileData((prev: any) => ({
         ...prev,
         [sectionKey]: updatedSection,
@@ -2775,8 +2819,11 @@ export default function ProfileTab() {
       toast.success(`${type} deleted successfully!`);
     } catch (error: any) {
       console.error("Failed to delete:", error);
-      // Revert on error
-      setProfileData((prev: any) => prev);
+      const prevSnapshot : any  = { ...profileData };
+
+      // ✅ FIXED: Properly revert using the stored snapshot
+      setProfileData(prevSnapshot );
+
       toast.error(error?.message || "Failed to delete. Please try again.");
     }
   };

@@ -65,15 +65,32 @@ export const processExperiences = (arr: any[]) =>
         : x.description ?? "",
     }));
 
-export const processCerts = (arr: any[]) =>
-  arr
-    .filter(c => c.name?.trim())
-    .map(c => ({
-      name: c.name,
-      issuer: c.issuer ?? "Unknown Issuer",
-      date: c.date ?? "Unknown Date",
-      description: c.description ?? "",
-    }));
+export const processCerts = (certs: any[]): { data: any[]; files: File[] } => {
+  const data: any[] = [];
+  const files: File[] = [];
+
+  certs.forEach((cert) => {
+    // ✅ Mark if this cert has a NEW file
+    const hasNewFile = cert.file && cert.file instanceof File;
+    
+    data.push({
+      name: cert.name || "",
+      issuer: cert.issuer || "",
+      date: cert.date || "",
+      description: cert.description || "",
+      fileUrl: cert.certificateUrl || "",
+      fileName: cert.certificateFileName || "",
+      mimeType: cert.certificateMime || "",
+    });
+
+    if (hasNewFile) {
+      files.push(cert.file);
+    }
+  });
+
+  return { data, files };
+};
+
 // Helper function to transform API profile data into component state format
   export const convertDescriptionToPoints = (description: string): string[] => {
     if (!description) return [""];
