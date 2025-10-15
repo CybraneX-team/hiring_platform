@@ -247,6 +247,9 @@ export default function AdminPanel() {
             id: String(identifier),
             name,
             logo: logoValue,
+            companyDescription : company?.companyDescription ? company?.companyDescription : "",
+            businessEmail : company?.businessEmail ? company?.businessEmail : "",
+            gstNumber : company?.gstNumber ? company?.gstNumber : "",
             logoUrl:
               typeof company?.logoUrl === "string" &&
               company.logoUrl.trim().length > 0

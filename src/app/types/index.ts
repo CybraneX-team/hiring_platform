@@ -8,6 +8,9 @@ export interface Company {
   location?: string;
   industry?: string;
   orgSize?: string;
+  companyDescription : string;
+  businessEmail : string;
+  gstNumber : string;
   createdAt?: string | null;
 }
 

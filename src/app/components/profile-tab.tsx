@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import type React from "react"
-import Image from "next/image"
-import { useState, useRef, useEffect, useMemo } from "react"
+import type React from "react";
+import Image from "next/image";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Star,
   Upload,
@@ -21,38 +21,45 @@ import {
   Plus,
   Phone,
   Trash2,
-} from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
-import CalendarSection from "./calender"
-import { useRouter, useSearchParams } from "next/navigation"
-import ResumeUpload from "./ResumeUpload"
-import JobMatching from "./JobMatching"
-import { useUser } from "../context/UserContext"
-import { toast } from "react-toastify"
-import ApplicationDetailView from "./cv"
-import Link from "next/link"
-import { processCerts, processEducation, processExperiences, type UpdatedData } from "../Helper/profile-helper"
-import { handleLogout } from "../Helper/logout"
+  ArrowUpRight,
+} from "lucide-react";
+import { v4 as uuidv4 } from "uuid";
+import { motion, AnimatePresence } from "framer-motion";
+import CalendarSection from "./calender";
+import { useRouter, useSearchParams } from "next/navigation";
+import ResumeUpload from "./ResumeUpload";
+import JobMatching from "./JobMatching";
+import { useUser } from "../context/UserContext";
+import { toast } from "react-toastify";
+import ApplicationDetailView from "./cv";
+import Link from "next/link";
+import {
+  processCerts,
+  processEducation,
+  processExperiences,
+  type UpdatedData,
+} from "../Helper/profile-helper";
+import { handleLogout } from "../Helper/logout";
 
 // OlaMaps integration
-let OlaMaps: any = null
-let olaMaps: any = null
+let OlaMaps: any = null;
+let olaMaps: any = null;
 
 const initializeOlaMaps = async () => {
   if (typeof window !== "undefined" && !OlaMaps) {
     try {
-      const module = await import("olamaps-web-sdk")
-      OlaMaps = module.OlaMaps
+      const module = await import("olamaps-web-sdk");
+      OlaMaps = module.OlaMaps;
       olaMaps = new OlaMaps({
         apiKey: process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY || "",
-      })
+      });
 
       // Ensure Marker and Popup constructors are available
       if (!olaMaps.Marker) {
-        olaMaps.Marker = (module as any).Marker || (OlaMaps as any).Marker
+        olaMaps.Marker = (module as any).Marker || (OlaMaps as any).Marker;
       }
       if (!olaMaps.Popup) {
-        olaMaps.Popup = (module as any).Popup || (OlaMaps as any).Popup
+        olaMaps.Popup = (module as any).Popup || (OlaMaps as any).Popup;
       }
 
       // console.log("OlaMaps initialized successfully with constructors:", {
@@ -60,10 +67,10 @@ const initializeOlaMaps = async () => {
       //   hasPopup: !!olaMaps.Popup,
       // });
     } catch (error) {
-      console.error("Failed to initialize OlaMaps:", error)
+      console.error("Failed to initialize OlaMaps:", error);
     }
   }
-}
+};
 
 const OlaMapComponent = ({
   location,
@@ -71,30 +78,30 @@ const OlaMapComponent = ({
   searchQuery,
   showAutoDetect = true,
 }: {
-  location?: { lat: number; lng: number; address?: string }
+  location?: { lat: number; lng: number; address?: string };
   onLocationSelect?: (location: {
-    lat: number
-    lng: number
-    address: string
-  }) => void
-  searchQuery?: string
-  showAutoDetect?: boolean
+    lat: number;
+    lng: number;
+    address: string;
+  }) => void;
+  searchQuery?: string;
+  showAutoDetect?: boolean;
 }) => {
-  const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<any>(null)
-  const markerRef = useRef<any>(null)
-  const [isMapLoaded, setIsMapLoaded] = useState(false)
-  const [isDetecting, setIsDetecting] = useState(false)
-  const [isSearching, setIsSearching] = useState(false)
-  const [debugInfo, setDebugInfo] = useState<string>("")
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>("");
 
   useEffect(() => {
     const loadMap = async () => {
-      await initializeOlaMaps()
+      await initializeOlaMaps();
 
       if (mapRef.current && olaMaps && !mapInstanceRef.current) {
         try {
-          let mapCenter = { lat: 12.9716, lng: 77.5946 }
+          let mapCenter = { lat: 12.9716, lng: 77.5946 };
 
           if (location) {
             // Check if location has valid coordinates
@@ -106,10 +113,12 @@ const OlaMapComponent = ({
               isFinite(location.lat) &&
               isFinite(location.lng)
             ) {
-              mapCenter = { lat: location.lat, lng: location.lng }
+              mapCenter = { lat: location.lat, lng: location.lng };
             } else {
-              console.warn("Invalid location coordinates provided:", location)
-              setDebugInfo("Invalid location coordinates, using default location")
+              console.warn("Invalid location coordinates provided:", location);
+              setDebugInfo(
+                "Invalid location coordinates, using default location"
+              );
             }
           }
 
@@ -117,29 +126,37 @@ const OlaMapComponent = ({
           try {
             // Try default light style first
             mapInstanceRef.current = olaMaps.init({
-              style: "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
+              style:
+                "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json",
               container: mapRef.current,
               center: [mapCenter.lng, mapCenter.lat],
               zoom: 12,
               pitch: 0,
               bearing: 0,
               maxPitch: 0, // Force 2D mode
-            })
+            });
           } catch (styleError) {
-            console.warn("Failed to load default style, trying satellite style:", styleError)
+            console.warn(
+              "Failed to load default style, trying satellite style:",
+              styleError
+            );
             try {
               // Try satellite style as fallback
               mapInstanceRef.current = olaMaps.init({
-                style: "https://api.olamaps.io/tiles/vector/v1/styles/satellite/style.json",
+                style:
+                  "https://api.olamaps.io/tiles/vector/v1/styles/satellite/style.json",
                 container: mapRef.current,
                 center: [mapCenter.lng, mapCenter.lat],
                 zoom: 12,
                 pitch: 0,
                 bearing: 0,
                 maxPitch: 0,
-              })
+              });
             } catch (satelliteError) {
-              console.warn("Failed to load satellite style, using minimal config:", satelliteError)
+              console.warn(
+                "Failed to load satellite style, using minimal config:",
+                satelliteError
+              );
               // Final fallback with minimal configuration
               mapInstanceRef.current = olaMaps.init({
                 container: mapRef.current,
@@ -148,13 +165,13 @@ const OlaMapComponent = ({
                 pitch: 0,
                 bearing: 0,
                 maxPitch: 0,
-              })
+              });
             }
           }
 
           mapInstanceRef.current.on("load", () => {
-            setIsMapLoaded(true)
-            setDebugInfo("")
+            setIsMapLoaded(true);
+            setDebugInfo("");
 
             // Add marker if valid location exists
             if (
@@ -164,15 +181,19 @@ const OlaMapComponent = ({
               !isNaN(location.lat) &&
               !isNaN(location.lng)
             ) {
-              addMarker(location.lat, location.lng, location.address || "Selected Location")
+              addMarker(
+                location.lat,
+                location.lng,
+                location.address || "Selected Location"
+              );
             }
-          })
+          });
 
           // Add click event listener
           mapInstanceRef.current.on("click", (e: any) => {
-            const { lat, lng } = e.lngLat
-            reverseGeocode(lat, lng)
-          })
+            const { lat, lng } = e.lngLat;
+            reverseGeocode(lat, lng);
+          });
 
           // Add error handling with 3D model error filtering
           mapInstanceRef.current.on("error", (e: any) => {
@@ -181,30 +202,34 @@ const OlaMapComponent = ({
               e.error &&
               e.error.message &&
               (e.error.message.includes("3d_model") ||
-                (e.error.message.includes("Source layer") && e.error.message.includes("does not exist")))
+                (e.error.message.includes("Source layer") &&
+                  e.error.message.includes("does not exist")))
             ) {
-              console.warn("Suppressing 3D model layer error (expected in 2D mode):", e.error.message)
-              return
+              console.warn(
+                "Suppressing 3D model layer error (expected in 2D mode):",
+                e.error.message
+              );
+              return;
             }
-            console.error("Map error:", e)
-            setDebugInfo("Map loading error")
-          })
+            console.error("Map error:", e);
+            setDebugInfo("Map loading error");
+          });
         } catch (error) {
-          console.error("Error initializing map:", error)
-          setDebugInfo("Failed to initialize map")
+          console.error("Error initializing map:", error);
+          setDebugInfo("Failed to initialize map");
         }
       }
-    }
+    };
 
-    loadMap()
+    loadMap();
 
     return () => {
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove()
-        mapInstanceRef.current = null
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
       }
-    }
-  }, [])
+    };
+  }, []);
 
   // Handle location updates separately
   useEffect(() => {
@@ -221,38 +246,42 @@ const OlaMapComponent = ({
         center: [location.lng, location.lat],
         zoom: 15,
         duration: 1000,
-      })
+      });
 
       // Add marker
       setTimeout(() => {
-        addMarker(location.lat, location.lng, location.address || "Selected Location")
-      }, 200)
+        addMarker(
+          location.lat,
+          location.lng,
+          location.address || "Selected Location"
+        );
+      }, 200);
     }
-  }, [location])
+  }, [location]);
 
   // Handle search when searchQuery changes
   useEffect(() => {
     if (searchQuery && searchQuery.trim() && isMapLoaded) {
-      handleAddressSearch(searchQuery)
+      handleAddressSearch(searchQuery);
     }
-  }, [searchQuery, isMapLoaded])
+  }, [searchQuery, isMapLoaded]);
 
   const geocodeAddress = async (address: string) => {
-    if (!address.trim()) return
+    if (!address.trim()) return;
 
     try {
       const response = await fetch(
         `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(
-          address,
-        )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`,
-      )
+          address
+        )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
+      );
 
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
 
         if (data.geocodingResults && data.geocodingResults.length > 0) {
-          const result = data.geocodingResults[0]
-          const { lat, lng } = result.geometry.location
+          const result = data.geocodingResults[0];
+          const { lat, lng } = result.geometry.location;
 
           // Validate coordinates before using them
           if (
@@ -263,7 +292,7 @@ const OlaMapComponent = ({
             isFinite(lat) &&
             isFinite(lng)
           ) {
-            const formattedAddress = result.formatted_address || address
+            const formattedAddress = result.formatted_address || address;
 
             // Update map center and add marker
             if (mapInstanceRef.current) {
@@ -271,61 +300,61 @@ const OlaMapComponent = ({
                 center: [lng, lat],
                 zoom: 15,
                 duration: 2000,
-              })
+              });
             }
 
             // Add marker with delay to ensure map has moved
             setTimeout(() => {
-              addMarker(lat, lng, formattedAddress)
-            }, 500)
+              addMarker(lat, lng, formattedAddress);
+            }, 500);
 
             if (onLocationSelect) {
-              onLocationSelect({ lat, lng, address: formattedAddress })
+              onLocationSelect({ lat, lng, address: formattedAddress });
             }
 
-            return { lat, lng, address: formattedAddress }
+            return { lat, lng, address: formattedAddress };
           } else {
-            console.error("Invalid coordinates from geocoding:", lat, lng)
-            throw new Error("Invalid coordinates received")
+            console.error("Invalid coordinates from geocoding:", lat, lng);
+            throw new Error("Invalid coordinates received");
           }
         } else {
-          throw new Error("Location not found")
+          throw new Error("Location not found");
         }
       } else {
-        const errorText = await response.text()
-        console.error("Geocoding API error:", response.status, errorText)
-        throw new Error(`Geocoding failed: ${response.status}`)
+        const errorText = await response.text();
+        console.error("Geocoding API error:", response.status, errorText);
+        throw new Error(`Geocoding failed: ${response.status}`);
       }
     } catch (error) {
-      console.error("Geocoding failed:", error)
-      setDebugInfo("Search failed - please try a different location")
-      throw error
+      console.error("Geocoding failed:", error);
+      setDebugInfo("Search failed - please try a different location");
+      throw error;
     }
-  }
+  };
 
   const handleAddressSearch = async (address: string) => {
-    setIsSearching(true)
-    setDebugInfo("Searching...")
+    setIsSearching(true);
+    setDebugInfo("Searching...");
     try {
-      await geocodeAddress(address)
-      setDebugInfo("")
+      await geocodeAddress(address);
+      setDebugInfo("");
     } catch (error) {
-      console.error("Address search failed:", error)
+      console.error("Address search failed:", error);
     } finally {
-      setIsSearching(false)
+      setIsSearching(false);
     }
-  }
+  };
 
   const addMarker = (lat: number, lng: number, title: string) => {
     if (!mapInstanceRef.current) {
-      console.error("Cannot add marker: map not initialized")
-      return
+      console.error("Cannot add marker: map not initialized");
+      return;
     }
 
     if (!isMapLoaded) {
-      console.warn("Map not fully loaded, delaying marker creation")
-      setTimeout(() => addMarker(lat, lng, title), 500)
-      return
+      console.warn("Map not fully loaded, delaying marker creation");
+      setTimeout(() => addMarker(lat, lng, title), 500);
+      return;
     }
 
     // Validate coordinates
@@ -337,8 +366,8 @@ const OlaMapComponent = ({
       !isFinite(lat) ||
       !isFinite(lng)
     ) {
-      console.error("Invalid coordinates for marker:", lat, lng)
-      return
+      console.error("Invalid coordinates for marker:", lat, lng);
+      return;
     }
 
     // console.log("Adding marker at:", lat, lng, title);
@@ -346,13 +375,13 @@ const OlaMapComponent = ({
     try {
       // Remove existing marker
       if (markerRef.current) {
-        markerRef.current.remove()
-        markerRef.current = null
+        markerRef.current.remove();
+        markerRef.current = null;
       }
 
       // Create custom location pin marker element
-      const markerElement = document.createElement("div")
-      markerElement.className = "custom-marker"
+      const markerElement = document.createElement("div");
+      markerElement.className = "custom-marker";
       markerElement.innerHTML = `
         <svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M16 0C7.163 0 0 7.163 0 16C0 24.837 16 40 16 40S32 24.837 32 16C32 7.163 24.837 0 16 0Z" fill="#3b82f6"/>
@@ -360,7 +389,7 @@ const OlaMapComponent = ({
           <circle cx="16" cy="16" r="6" fill="#3b82f6"/>
           <circle cx="16" cy="16" r="3" fill="#ffffff"/>
         </svg>
-      `
+      `;
       markerElement.style.cssText = `
         width: 32px;
         height: 40px;
@@ -369,18 +398,18 @@ const OlaMapComponent = ({
         position: relative;
         filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
         transform: translate(-50%, -100%);
-      `
+      `;
 
       // Wait for OlaMaps to be fully available
       if (!olaMaps) {
-        console.error("OlaMaps not initialized")
-        return
+        console.error("OlaMaps not initialized");
+        return;
       }
 
       // Import and check for Marker constructor
       if (!olaMaps.Marker) {
-        console.error("OlaMaps.Marker constructor not available")
-        return
+        console.error("OlaMaps.Marker constructor not available");
+        return;
       }
 
       // Add marker to map
@@ -388,7 +417,7 @@ const OlaMapComponent = ({
         element: markerElement,
       })
         .setLngLat([lng, lat])
-        .addTo(mapInstanceRef.current)
+        .addTo(mapInstanceRef.current);
 
       // Add info window/popup
       if (olaMaps.Popup) {
@@ -396,16 +425,18 @@ const OlaMapComponent = ({
           offset: 25,
           closeButton: true,
           closeOnClick: false,
-        }).setHTML(`<div style="padding: 8px; font-size: 14px; font-weight: 500; color: #333;">${title}</div>`)
+        }).setHTML(
+          `<div style="padding: 8px; font-size: 14px; font-weight: 500; color: #333;">${title}</div>`
+        );
 
-        markerRef.current.setPopup(popup)
+        markerRef.current.setPopup(popup);
       }
     } catch (error) {
-      console.error("Error adding marker:", error)
-      console.error("OlaMaps object:", olaMaps)
-      setDebugInfo("Error adding marker")
+      console.error("Error adding marker:", error);
+      console.error("OlaMaps object:", olaMaps);
+      setDebugInfo("Error adding marker");
     }
-  }
+  };
 
   const reverseGeocode = async (lat: number, lng: number) => {
     // Validate coordinates
@@ -417,56 +448,58 @@ const OlaMapComponent = ({
       !isFinite(lat) ||
       !isFinite(lng)
     ) {
-      console.error("Invalid coordinates for reverse geocoding:", lat, lng)
-      return
+      console.error("Invalid coordinates for reverse geocoding:", lat, lng);
+      return;
     }
 
     try {
       const response = await fetch(
-        `https://api.olamaps.io/places/v1/reverse-geocode?latlng=${lat},${lng}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`,
-      )
+        `https://api.olamaps.io/places/v1/reverse-geocode?latlng=${lat},${lng}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
+      );
 
       if (response.ok) {
-        const data = await response.json()
-        const address = data.results?.[0]?.formatted_address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+        const data = await response.json();
+        const address =
+          data.results?.[0]?.formatted_address ||
+          `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
-        addMarker(lat, lng, address)
+        addMarker(lat, lng, address);
 
         if (onLocationSelect) {
-          onLocationSelect({ lat, lng, address })
+          onLocationSelect({ lat, lng, address });
         }
       } else {
-        console.error("Reverse geocoding failed:", response.status)
-        const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
-        addMarker(lat, lng, address)
+        console.error("Reverse geocoding failed:", response.status);
+        const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        addMarker(lat, lng, address);
 
         if (onLocationSelect) {
-          onLocationSelect({ lat, lng, address })
+          onLocationSelect({ lat, lng, address });
         }
       }
     } catch (error) {
-      console.error("Reverse geocoding failed:", error)
-      const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
-      addMarker(lat, lng, address)
+      console.error("Reverse geocoding failed:", error);
+      const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      addMarker(lat, lng, address);
 
       if (onLocationSelect) {
-        onLocationSelect({ lat, lng, address })
+        onLocationSelect({ lat, lng, address });
       }
     }
-  }
+  };
 
   const autoDetectLocation = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by this browser.")
-      return
+      alert("Geolocation is not supported by this browser.");
+      return;
     }
 
-    setIsDetecting(true)
+    setIsDetecting(true);
     // console.log("Starting geolocation detection");
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const { latitude, longitude } = position.coords
+        const { latitude, longitude } = position.coords;
         // console.log("Geolocation detected:", latitude, longitude);
 
         // Validate detected coordinates
@@ -484,34 +517,44 @@ const OlaMapComponent = ({
               center: [longitude, latitude],
               zoom: 15,
               duration: 2000,
-            })
+            });
           }
 
-          reverseGeocode(latitude, longitude)
-          setDebugInfo("")
+          reverseGeocode(latitude, longitude);
+          setDebugInfo("");
         } else {
-          console.error("Invalid coordinates from geolocation:", latitude, longitude)
-          setDebugInfo("Invalid location detected")
+          console.error(
+            "Invalid coordinates from geolocation:",
+            latitude,
+            longitude
+          );
+          setDebugInfo("Invalid location detected");
         }
-        setIsDetecting(false)
+        setIsDetecting(false);
       },
       (error) => {
-        console.error("Geolocation error:", error)
-        setDebugInfo("Location detection failed")
-        alert("Unable to detect location. Please try again or select manually.")
-        setIsDetecting(false)
+        console.error("Geolocation error:", error);
+        setDebugInfo("Location detection failed");
+        alert(
+          "Unable to detect location. Please try again or select manually."
+        );
+        setIsDetecting(false);
       },
       {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 0,
-      },
-    )
-  }
+      }
+    );
+  };
 
   return (
     <div className="relative bg-gray-900 rounded-lg overflow-hidden h-48 sm:h-64">
-      <div ref={mapRef} className="w-full h-full" style={{ minHeight: "200px" }} />
+      <div
+        ref={mapRef}
+        className="w-full h-full"
+        style={{ minHeight: "200px" }}
+      />
 
       {!isMapLoaded && (
         <div className="absolute inset-0 bg-gradient-to-b from-blue-900 to-gray-900 flex items-center justify-center">
@@ -523,7 +566,9 @@ const OlaMapComponent = ({
       )}
 
       {isSearching && (
-        <div className="absolute top-2 left-2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs">Searching...</div>
+        <div className="absolute top-2 left-2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs">
+          Searching...
+        </div>
       )}
 
       {/* Debug info */}
@@ -557,8 +602,8 @@ const OlaMapComponent = ({
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
 // Enhanced location input field component
 const LocationInputWithSearch = ({
@@ -567,84 +612,84 @@ const LocationInputWithSearch = ({
   onLocationSelect,
   selectedLocation,
 }: {
-  value: string
-  onChange: (value: string) => void
+  value: string;
+  onChange: (value: string) => void;
   onLocationSelect: (location: {
-    lat: number
-    lng: number
-    address: string
-  }) => void
-  selectedLocation?: { lat: number; lng: number; address?: string }
+    lat: number;
+    lng: number;
+    address: string;
+  }) => void;
+  selectedLocation?: { lat: number; lng: number; address?: string };
 }) => {
-  const [searchTrigger, setSearchTrigger] = useState("")
-  const [isSearching, setIsSearching] = useState(false)
-  const [suggestions, setSuggestions] = useState<any[]>([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [highlightIndex, setHighlightIndex] = useState<number>(-1)
-  const [isInputFocused, setIsInputFocused] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [searchTrigger, setSearchTrigger] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightIndex, setHighlightIndex] = useState<number>(-1);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Debounced autocomplete suggestions
   useEffect(() => {
     if (!isInputFocused) {
       // If input is not focused, keep suggestions hidden
-      setShowSuggestions(false)
-      return
+      setShowSuggestions(false);
+      return;
     }
-    const controller = new AbortController()
+    const controller = new AbortController();
     const fetchSuggestions = async () => {
       try {
-        const query = value.trim()
+        const query = value.trim();
         if (!query) {
-          setSuggestions([])
-          setShowSuggestions(false)
-          setHighlightIndex(-1)
-          return
+          setSuggestions([]);
+          setShowSuggestions(false);
+          setHighlightIndex(-1);
+          return;
         }
 
         // small delay for debounce
-        await new Promise((r) => setTimeout(r, 300))
-        if (controller.signal.aborted) return
+        await new Promise((r) => setTimeout(r, 300));
+        if (controller.signal.aborted) return;
 
         const resp = await fetch(
           `https://api.olamaps.io/places/v1/autocomplete?input=${encodeURIComponent(
-            query,
+            query
           )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`,
-          { signal: controller.signal },
-        )
-        if (!resp.ok) throw new Error("Failed to fetch suggestions")
-        const data = await resp.json()
+          { signal: controller.signal }
+        );
+        if (!resp.ok) throw new Error("Failed to fetch suggestions");
+        const data = await resp.json();
         // Normalize results; Ola Maps returns predictions similar to Google
-        const preds = data.predictions || data.suggestions || []
-        setSuggestions(preds.slice(0, 8))
-        setShowSuggestions(true)
-        setHighlightIndex(-1)
+        const preds = data.predictions || data.suggestions || [];
+        setSuggestions(preds.slice(0, 8));
+        setShowSuggestions(true);
+        setHighlightIndex(-1);
       } catch (err) {
         if ((err as any).name !== "AbortError") {
-          setSuggestions([])
-          setShowSuggestions(false)
+          setSuggestions([]);
+          setShowSuggestions(false);
         }
       }
-    }
+    };
 
-    fetchSuggestions()
-    return () => controller.abort()
-  }, [value, isInputFocused])
+    fetchSuggestions();
+    return () => controller.abort();
+  }, [value, isInputFocused]);
 
   const geocodeAndSelect = async (address: string) => {
     try {
-      setIsSearching(true)
+      setIsSearching(true);
       const response = await fetch(
         `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(
-          address,
-        )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`,
-      )
+          address
+        )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
+      );
       if (response.ok) {
-        const data = await response.json()
-        const result = data.geocodingResults?.[0]
-        const lat = result?.geometry?.location?.lat
-        const lng = result?.geometry?.location?.lng
-        const formattedAddress = result?.formatted_address || address
+        const data = await response.json();
+        const result = data.geocodingResults?.[0];
+        const lat = result?.geometry?.location?.lat;
+        const lng = result?.geometry?.location?.lng;
+        const formattedAddress = result?.formatted_address || address;
         if (
           typeof lat === "number" &&
           typeof lng === "number" &&
@@ -653,59 +698,63 @@ const LocationInputWithSearch = ({
           isFinite(lat) &&
           isFinite(lng)
         ) {
-          onChange(formattedAddress)
-          setShowSuggestions(false)
-          setSuggestions([])
-          setHighlightIndex(-1)
-          setIsInputFocused(false)
-          inputRef.current?.blur()
-          setSearchTrigger(formattedAddress)
-          onLocationSelect({ lat, lng, address: formattedAddress })
+          onChange(formattedAddress);
+          setShowSuggestions(false);
+          setSuggestions([]);
+          setHighlightIndex(-1);
+          setIsInputFocused(false);
+          inputRef.current?.blur();
+          setSearchTrigger(formattedAddress);
+          onLocationSelect({ lat, lng, address: formattedAddress });
         }
       }
     } finally {
-      setIsSearching(false)
+      setIsSearching(false);
     }
-  }
+  };
 
   const handleSearch = async () => {
-    if (!value.trim()) return
+    if (!value.trim()) return;
 
-    setIsSearching(true)
-    setSearchTrigger(value) // This will trigger the map to search
+    setIsSearching(true);
+    setSearchTrigger(value); // This will trigger the map to search
     // Close any open suggestions when an explicit search is triggered
-    setShowSuggestions(false)
-    setSuggestions([])
+    setShowSuggestions(false);
+    setSuggestions([]);
 
     // Reset after a short delay
     setTimeout(() => {
-      setIsSearching(false)
-    }, 2000)
-  }
+      setIsSearching(false);
+    }, 2000);
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (showSuggestions && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
-      e.preventDefault()
+      e.preventDefault();
       setHighlightIndex((prev) => {
-        const count = suggestions.length
-        if (count === 0) return -1
-        if (e.key === "ArrowDown") return (prev + 1 + count) % count
-        return (prev - 1 + count) % count
-      })
-      return
+        const count = suggestions.length;
+        if (count === 0) return -1;
+        if (e.key === "ArrowDown") return (prev + 1 + count) % count;
+        return (prev - 1 + count) % count;
+      });
+      return;
     }
 
     if (e.key === "Enter") {
-      e.preventDefault()
-      if (showSuggestions && highlightIndex >= 0 && suggestions[highlightIndex]) {
-        const s = suggestions[highlightIndex]
-        const address = s.description || s.formatted_address || s.name || value
-        geocodeAndSelect(address)
+      e.preventDefault();
+      if (
+        showSuggestions &&
+        highlightIndex >= 0 &&
+        suggestions[highlightIndex]
+      ) {
+        const s = suggestions[highlightIndex];
+        const address = s.description || s.formatted_address || s.name || value;
+        geocodeAndSelect(address);
       } else {
-        handleSearch()
+        handleSearch();
       }
     }
-  }
+  };
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -715,26 +764,27 @@ const LocationInputWithSearch = ({
             type="text"
             value={value}
             onChange={(e) => {
-              onChange(e.target.value)
-              setShowSuggestions(true)
+              onChange(e.target.value);
+              setShowSuggestions(true);
             }}
             placeholder="Enter address or click on map to select location..."
             className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             onKeyDown={handleKeyPress}
             onFocus={() => {
-              setIsInputFocused(true)
-              if (value) setShowSuggestions(true)
+              setIsInputFocused(true);
+              if (value) setShowSuggestions(true);
             }}
             onBlur={() => {
-              setIsInputFocused(false)
-              setTimeout(() => setShowSuggestions(false), 100)
+              setIsInputFocused(false);
+              setTimeout(() => setShowSuggestions(false), 100);
             }}
             ref={inputRef}
           />
           {showSuggestions && suggestions.length > 0 && (
             <div className="absolute z-[9999] mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-56 overflow-auto">
               {suggestions.map((s, idx) => {
-                const address = s.description || s.formatted_address || s.name || ""
+                const address =
+                  s.description || s.formatted_address || s.name || "";
                 return (
                   <button
                     key={idx}
@@ -745,15 +795,15 @@ const LocationInputWithSearch = ({
                     onMouseEnter={() => setHighlightIndex(idx)}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
-                      setShowSuggestions(false)
-                      setIsInputFocused(false)
-                      inputRef.current?.blur()
-                      geocodeAndSelect(address)
+                      setShowSuggestions(false);
+                      setIsInputFocused(false);
+                      inputRef.current?.blur();
+                      geocodeAndSelect(address);
                     }}
                   >
                     {address}
                   </button>
-                )
+                );
               })}
             </div>
           )}
@@ -769,10 +819,14 @@ const LocationInputWithSearch = ({
         </motion.button>
       </div>
 
-      <OlaMapComponent location={selectedLocation} onLocationSelect={onLocationSelect} searchQuery={searchTrigger} />
+      <OlaMapComponent
+        location={selectedLocation}
+        onLocationSelect={onLocationSelect}
+        searchQuery={searchTrigger}
+      />
     </div>
-  )
-}
+  );
+};
 
 const initialProfileData = {
   profile: {
@@ -790,7 +844,7 @@ const initialProfileData = {
     timezone: "Eastern Standard Time",
     preferredMeetingTimes: ["10:00 AM - 12:00 PM", "2:00 PM - 4:00 PM"],
   },
-}
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -805,7 +859,7 @@ const containerVariants = {
     opacity: 0,
     transition: { duration: 0.2 },
   },
-}
+};
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -813,7 +867,7 @@ const itemVariants = {
     opacity: 1,
     y: 0,
   },
-}
+};
 
 const cardVariants = {
   hidden: { opacity: 0, y: 30, scale: 0.95 },
@@ -822,7 +876,7 @@ const cardVariants = {
     y: 0,
     scale: 1,
   },
-}
+};
 
 const skillVariants = {
   hidden: { opacity: 0, scale: 0.8 },
@@ -830,26 +884,26 @@ const skillVariants = {
     opacity: 1,
     scale: 1,
   },
-}
+};
 
 const convertDescriptionToPoints = (description: string): string[] => {
-  if (!description) return []
+  if (!description) return [];
 
   // Split by common bullet point indicators
   const points = description
     .split(/[\n•\-*]/)
     .map((point) => point.trim())
     .filter((point) => point.length > 0 && point.length > 5) // Filter very short points
-    .map((point) => point.replace(/^[-*•]\s*/, ""))
+    .map((point) => point.replace(/^[-*•]\s*/, ""));
 
-  return points.length > 0 ? points : [description]
-}
+  return points.length > 0 ? points : [description];
+};
 
 const parseEducationPeriod = (period: string): string | undefined => {
-  if (!period) return undefined
+  if (!period) return undefined;
 
-  return period
-}
+  return period;
+};
 
 export default function ProfileTab() {
   const searchParams = useSearchParams();
@@ -896,7 +950,7 @@ export default function ProfileTab() {
       { id: "certifications", label: "Certifications" },
       { id: "schedule", label: "Schedule" },
       { id: "resume", label: "Resume & Jobs" },
-      { id: "jobsApplied", label: "Jobs Applied" }
+      { id: "jobsApplied", label: "Jobs Applied" },
     ];
 
     return baseTabs;
@@ -1358,17 +1412,20 @@ export default function ProfileTab() {
               languages: profile.languages || ["English (Native)"],
               phoneNumber: profile.phoneNumber || "",
               unavailability:
-                profile.unavailability?.map((slot: any) => ({
-                  startDate: slot.startDate,
-                  endDate: slot.endDate,
-                  description: `${
-                    slot.description || "Unavailable"
-                  } (${new Date(
-                    slot.startDate
-                  ).toLocaleDateString()} - ${new Date(
-                    slot.endDate
-                  ).toLocaleDateString()})`,
-                })) || [],
+                profile.unavailability?.map((slot: any) => {
+                  const formatDate = (dateStr: string) => {
+                    const date = new Date(dateStr);
+                    return date.toLocaleDateString("en-GB");
+                  };
+                  return {
+                    startDate: slot.startDate,
+                    endDate: slot.endDate,
+                    description: `Unavailable from ${formatDate(
+                      slot.startDate
+                    )} to ${formatDate(slot.endDate)}`,
+                  };
+                }) || [],
+
               location: profile.locationData || null,
             },
             education:
@@ -1662,8 +1719,6 @@ export default function ProfileTab() {
         }
       }
 
-     
-
       // Only make API call if we have data to send (besides userId)
       let hasDataToSend = false;
       for (const pair of formData.entries()) {
@@ -1926,8 +1981,6 @@ export default function ProfileTab() {
         }
       }
 
-
-
       // API call
       const res = await fetch(
         profile?._id
@@ -2049,12 +2102,14 @@ export default function ProfileTab() {
           {description}
         </motion.p>
         <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.4 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => openModal(type)}
+          onClick={() => {
+            if (type === "certificate") {
+              handleAddCertificate(); // adds new certificate
+              openModal("certificate"); // opens the modal UI
+            } else {
+              openModal(type);
+            }
+          }}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 rounded-full transition-colors text-sm sm:text-base"
         >
           {buttonText}
@@ -2096,6 +2151,9 @@ export default function ProfileTab() {
     setFormData({});
     setIsModalOpen(true);
   };
+  const handleAddCertificate = () => {
+    openModal("certificate");
+  };
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -2112,7 +2170,7 @@ export default function ProfileTab() {
       [field]: value,
     }));
   };
-  // Replace the complex updateSpecificSectionAPI with this simpler version
+
   const updateSpecificSectionAPI = async (
     sectionType: string,
     sectionData: any
@@ -2175,9 +2233,16 @@ export default function ProfileTab() {
         formData.append("certificates", JSON.stringify(allCertificateDetails));
 
         // Append certificate files separately
-        sectionData.forEach((cert: any, index: number) => {
+        sectionData.forEach((cert: any, index: any) => {
           if (cert.file) {
-            formData.append("certificateFiles", cert.file);
+            const renamedFile = new File(
+              [cert.file],
+              `${index}__${cert.file.name}`,
+              {
+                type: cert.file.type,
+              }
+            );
+            formData.append("certificateFiles", renamedFile);
           }
         });
       }
@@ -2384,28 +2449,17 @@ export default function ProfileTab() {
 
     const config = modalContent[modalType];
 
-    const handleCertificateFileChange = (file: File | null, meta: any = {}) => {
+    const handleCertificateFileChange = (file: File | null, index?: number) => {
       if (!file) return;
 
-      // Store the file directly in formData for immediate use
-      setFormData((prev: any) => ({
-        ...prev,
-        file: file,
-        certificateFileName: file.name,
-        certificateMime: file.type,
-      }));
-
-      // Also add to the certificates files array for later processing
       setNewCertificatesFiles((prev) => {
-        const fileExists = prev.some(
-          (existingFile) =>
-            existingFile.name === file.name && existingFile.size === file.size
-        );
-        if (fileExists) {
-          console.warn("File already selected:", file.name);
-          return prev;
+        const updatedFiles = [...prev];
+        if (typeof index === "number") {
+          updatedFiles[index] = file; // replace for that certificate only
+        } else {
+          updatedFiles.push(file);
         }
-        return [...prev, file];
+        return updatedFiles;
       });
     };
 
@@ -2698,7 +2752,11 @@ export default function ProfileTab() {
   ) => {
     try {
       const sectionKey =
-        type === "certificate" ? "certifications" : type === "education" ? "education" : "experiences";
+        type === "certificate"
+          ? "certifications"
+          : type === "education"
+          ? "education"
+          : "experiences";
 
       // Keep a snapshot for potential revert
       const prevSnapshot = profileData;
@@ -2760,7 +2818,7 @@ export default function ProfileTab() {
                   <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-black">
                     About
                   </h3>
-                  <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
+                  <p className="text-gray-700 text-sm sm:text-base text-justify">
                     {profileData.profile.bio}
                   </p>
                 </motion.div>
@@ -3107,77 +3165,51 @@ export default function ProfileTab() {
               </motion.div>
             ) : (
               <div className="space-y-4">
-                {applications.map((application, index) => (
-                  <motion.div
+                {applications.map((application) => (
+                  <div
                     key={application._id}
-                    variants={cardVariants}
-                    whileHover={{
-                      y: -2,
-                      boxShadow: "0 8px 25px rgba(0, 0, 0, 0.1)",
-                    }}
-                    transition={{ duration: 0.3 }}
-                    className="bg-white rounded-xl p-6 shadow-sm border"
+                    className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 mb-4"
                   >
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                          Job Application{" "}
-                          {application.job?.title || "Unknown Job"}
-                        </h4>
-                        <h4 className="text-sm font-light text-gray-900 mb-2">
-                          {application.job?.description
-                            ? application.job.description.substring(0, 120) +
-                              "..."
-                            : "No description available"}
-                        </h4>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span>
-                            Applied:{" "}
-                            {new Date(
-                              application.appliedDate
-                            ).toLocaleDateString()}
-                          </span>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              application.status === "pending"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : application.status === "reviewing"
-                                ? "bg-blue-100 text-blue-800"
-                                : application.status === "shortlisted"
-                                ? "bg-green-100 text-green-800"
-                                : application.status === "interview"
-                                ? "bg-purple-100 text-purple-800"
-                                : application.status === "hired"
-                                ? "bg-green-200 text-green-900"
-                                : "bg-red-100 text-red-800"
-                            }`}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                          {application.job.title}
+                          {/* Redirect Icon */}
+                          <Link
+                            href={`/jobs/details?id=${application.job._id}`}
+                            className="text-blue-600 hover:text-blue-800 transition-all"
+                            title="View Job Details"
                           >
-                            {application.status.charAt(0).toUpperCase() +
-                              application.status.slice(1)}
-                          </span>
-                        </div>
-                      </div>
+                            <ArrowUpRight className="w-5 h-5 inline" />
+                          </Link>
+                        </h3>
 
-                      {application.documents &&
-                        application.documents.length > 0 && (
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() =>
-                              setDocumentUploadModal({
-                                isOpen: true,
-                                applicationId: application._id,
-                                documents: application.documents,
-                              })
-                            }
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
-                          >
-                            <Upload className="w-4 h-4" />
-                            Upload Documents
-                          </motion.button>
-                        )}
+                        <p className="text-gray-600 text-sm mt-1 line-clamp-2">
+                          {application.job.description}
+                        </p>
+                        <p className="text-gray-500 text-xs mt-2">
+                          Applied on{" "}
+                          {new Date(application.appliedDate).toLocaleDateString(
+                            "en-GB"
+                          )}
+                        </p>
+
+                        {/* Status Tag */}
+                        <span
+                          className={`inline-block mt-3 text-xs px-3 py-1 rounded-full ${
+                            application.status === "approved"
+                              ? "bg-green-100 text-green-700"
+                              : application.status === "rejected"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
+                        >
+                          {application.status.charAt(0).toUpperCase() +
+                            application.status.slice(1)}
+                        </span>
+                      </div>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             )}
@@ -3382,7 +3414,10 @@ export default function ProfileTab() {
         transition={{ duration: 0.5 }}
         className="absolute top-4 sm:top-8 left-4 sm:left-8"
       >
-        <Link href="/" className="flex items-center gap-1 -mt-4 md:-mt-10 mb-20">
+        <Link
+          href="/"
+          className="flex items-center gap-1 -mt-4 md:-mt-10 mb-20"
+        >
           <Image
             src="/black_logo.png"
             alt="ProjectMATCH by Compscope"
@@ -3909,232 +3944,232 @@ export default function ProfileTab() {
       </AnimatePresence>
 
       {/* Profile Edit Modal */}
-<AnimatePresence>
-  {isProfileEditOpen && (
-    <motion.div
-      key="profile-edit-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      aria-modal="true"
-      role="dialog"
-      aria-labelledby="profile-edit-title"
-    >
-      <motion.div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={() => setIsProfileEditOpen(false)}
-      />
-
-      <motion.div
-        className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg my-8 text-gray-500 max-h-[calc(100vh-4rem)] overflow-y-auto"
-        initial={{ y: 24, opacity: 0, scale: 0.98 }}
-        animate={{ y: 0, opacity: 1, scale: 1 }}
-        exit={{ y: 24, opacity: 0, scale: 0.98 }}
-      >
-        <div className="sticky top-0 bg-white z-10 flex items-center justify-between mb-6 p-6 border-b border-gray-200">
-          <h2
-            id="profile-edit-title"
-            className="text-xl font-semibold text-gray-900"
+      <AnimatePresence>
+        {isProfileEditOpen && (
+          <motion.div
+            key="profile-edit-modal"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            aria-modal="true"
+            role="dialog"
+            aria-labelledby="profile-edit-title"
           >
-            {isProfileComplete()
-              ? "Edit Profile"
-              : "Add Profile Information"}
-          </h2>
-          <button
-            onClick={() => setIsProfileEditOpen(false)}
-            aria-label="Close"
-            className="p-2 rounded-full hover:bg-gray-100 flex-shrink-0"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
-
-        <div className="px-6 pb-6 space-y-5">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700">
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={profileFormData.name}
-              onChange={(e) =>
-                setProfileFormData((prev) => ({
-                  ...prev,
-                  name: e.target.value,
-                }))
-              }
-              placeholder="e.g., John Doe"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <motion.div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsProfileEditOpen(false)}
             />
-          </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700">
-              Location
-            </label>
-            <div className="space-y-3">
-              <LocationInputWithSearch
-                value={profileFormData.location}
-                onChange={(value) => {
-                  setProfileFormData((prev) => ({
-                    ...prev,
-                    location: value,
-                  }));
-                }}
-                onLocationSelect={handleMapLocationSelect}
-                selectedLocation={
-                  profileFormData.locationData || undefined
-                }
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700">
-              About
-            </label>
-            <textarea
-              value={profileFormData.bio}
-              onChange={(e) =>
-                setProfileFormData((prev) => ({
-                  ...prev,
-                  bio: e.target.value,
-                }))
-              }
-              placeholder="Tell us about yourself..."
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700">
-              Skills
-            </label>
-            <input
-              type="text"
-              value={profileFormData.skills}
-              onChange={(e) =>
-                setProfileFormData((prev) => ({
-                  ...prev,
-                  skills: e.target.value,
-                }))
-              }
-              placeholder="e.g., JavaScript, React, Python (comma separated)"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700">
-              Languages
-            </label>
-            <input
-              type="text"
-              value={profileFormData.languages}
-              onChange={(e) =>
-                setProfileFormData((prev) => ({
-                  ...prev,
-                  languages: e.target.value,
-                }))
-              }
-              placeholder="e.g., English (Native), Spanish (Intermediate) (comma separated)"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-gray-700">
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              value={profileFormData.phone}
-              onChange={(e) =>
-                setProfileFormData((prev) => ({
-                  ...prev,
-                  phone: e.target.value,
-                }))
-              }
-              placeholder="e.g., +1 (555) 123-4567"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Availability Section */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">
-                Unavailability
-              </label>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowAvailabilityModal(true)}
-                className="flex cursor-pointer items-center gap-1 px-3 py-1 bg-blue-50 text-blue-600 rounded-md text-sm hover:bg-blue-100 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Add Slot
-              </motion.button>
-            </div>
-
-            {/* Display current availability slots */}
-            {availabilitySlots.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {availabilitySlots.map((slot, index) => (
-                  <motion.div
-                    key={index}
-                    whileHover={{ scale: 1.05 }}
-                    className="flex items-center gap-2 px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium"
-                  >
-                    <Calendar className="w-3 h-3" />
-                    <span>{slot.description}</span>
-                    <button
-                      onClick={() => removeAvailabilitySlot(slot)}
-                      className="ml-1 p-0.5 rounded-full hover:bg-red-200 transition-colors"
-                      aria-label="Remove slot"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </motion.div>
-                ))}
+            <motion.div
+              className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg my-8 text-gray-500 max-h-[calc(100vh-4rem)] overflow-y-auto"
+              initial={{ y: 24, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 24, opacity: 0, scale: 0.98 }}
+            >
+              <div className="sticky top-0 bg-white z-10 flex items-center justify-between mb-6 p-6 border-b border-gray-200">
+                <h2
+                  id="profile-edit-title"
+                  className="text-xl font-semibold text-gray-900"
+                >
+                  {isProfileComplete()
+                    ? "Edit Profile"
+                    : "Add Profile Information"}
+                </h2>
+                <button
+                  onClick={() => setIsProfileEditOpen(false)}
+                  aria-label="Close"
+                  className="p-2 rounded-full hover:bg-gray-100 flex-shrink-0"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
               </div>
-            )}
 
-            {availabilitySlots.length === 0 && (
-              <p className="text-sm text-gray-500 mt-1">
-                No unavailability slots added yet. Click "Add Slot" to get
-                started.
-              </p>
-            )}
-          </div>
-        </div>
+              <div className="px-6 pb-6 space-y-5">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={profileFormData.name}
+                    onChange={(e) =>
+                      setProfileFormData((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g., John Doe"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
 
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex items-center justify-end gap-3">
-          <button
-            className="px-4 py-2 rounded-full cursor-pointer border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-            onClick={() => setIsProfileEditOpen(false)}
-          >
-            Cancel
-          </button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="px-5 py-2 rounded-full cursor-pointer bg-blue-600 hover:bg-blue-700 text-white text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={handleProfileSave}
-            disabled={isLoading}
-          >
-            {isLoading ? "Saving..." : "Save"}
-          </motion.button>
-        </div>
-      </motion.div>
-    </motion.div>
-  )}
-</AnimatePresence>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Location
+                  </label>
+                  <div className="space-y-3">
+                    <LocationInputWithSearch
+                      value={profileFormData.location}
+                      onChange={(value) => {
+                        setProfileFormData((prev) => ({
+                          ...prev,
+                          location: value,
+                        }));
+                      }}
+                      onLocationSelect={handleMapLocationSelect}
+                      selectedLocation={
+                        profileFormData.locationData || undefined
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    About
+                  </label>
+                  <textarea
+                    value={profileFormData.bio}
+                    onChange={(e) =>
+                      setProfileFormData((prev) => ({
+                        ...prev,
+                        bio: e.target.value,
+                      }))
+                    }
+                    placeholder="Tell us about yourself..."
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Skills
+                  </label>
+                  <input
+                    type="text"
+                    value={profileFormData.skills}
+                    onChange={(e) =>
+                      setProfileFormData((prev) => ({
+                        ...prev,
+                        skills: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g., JavaScript, React, Python (comma separated)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Languages
+                  </label>
+                  <input
+                    type="text"
+                    value={profileFormData.languages}
+                    onChange={(e) =>
+                      setProfileFormData((prev) => ({
+                        ...prev,
+                        languages: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g., English (Native), Spanish (Intermediate) (comma separated)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={profileFormData.phone}
+                    onChange={(e) =>
+                      setProfileFormData((prev) => ({
+                        ...prev,
+                        phone: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g., +1 (555) 123-4567"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Availability Section */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">
+                      Unavailability
+                    </label>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowAvailabilityModal(true)}
+                      className="flex cursor-pointer items-center gap-1 px-3 py-1 bg-blue-50 text-blue-600 rounded-md text-sm hover:bg-blue-100 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Slot
+                    </motion.button>
+                  </div>
+
+                  {/* Display current availability slots */}
+                  {availabilitySlots.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {availabilitySlots.map((slot, index) => (
+                        <motion.div
+                          key={index}
+                          whileHover={{ scale: 1.05 }}
+                          className="flex items-center gap-2 px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium"
+                        >
+                          <Calendar className="w-3 h-3" />
+                          <span>{slot.description}</span>
+                          <button
+                            onClick={() => removeAvailabilitySlot(slot)}
+                            className="ml-1 p-0.5 rounded-full hover:bg-red-200 transition-colors"
+                            aria-label="Remove slot"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+
+                  {availabilitySlots.length === 0 && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      No unavailability slots added yet. Click "Add Slot" to get
+                      started.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex items-center justify-end gap-3">
+                <button
+                  className="px-4 py-2 rounded-full cursor-pointer border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  onClick={() => setIsProfileEditOpen(false)}
+                >
+                  Cancel
+                </button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="px-5 py-2 rounded-full cursor-pointer bg-blue-600 hover:bg-blue-700 text-white text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleProfileSave}
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Saving..." : "Save"}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Availability Slot Modal */}
       <AnimatePresence>

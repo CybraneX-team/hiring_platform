@@ -1040,8 +1040,8 @@ export default function PostRole({
     setPendingResponsibilities([]);
   };
   const validateWorkDates = () => {
-    if (!workStartDate || !workEndDate) {
-      toast.error("Please select both start and end dates for work duration");
+    if (!workStartDate ) {
+      toast.error("Please select start dates for work duration");
       return false;
     }
 
