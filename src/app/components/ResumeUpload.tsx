@@ -186,7 +186,7 @@ export default function ResumeUpload({ userId, onUploadComplete, onClose }: Resu
           Drop your resume here or click to browse
         </p>
         <p className="text-sm text-gray-500 mb-4">
-          Supports PDF, DOC, and DOCX files (Max 10MB)
+          Supports PDF files (Max 10MB)
         </p>
         <button
           onClick={() => fileInputRef.current?.click()}
@@ -205,7 +205,7 @@ export default function ResumeUpload({ userId, onUploadComplete, onClose }: Resu
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.doc,.docx"
+          accept=".pdf"
           onChange={handleFileInput}
           className="hidden"
         />
