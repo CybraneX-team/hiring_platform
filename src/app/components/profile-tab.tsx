@@ -1991,7 +1991,7 @@ if (availabilitySlots && availabilitySlots.length > 0) {
         Array.isArray(updatedData.certifications) &&
         updatedData.certifications.length > 0
       ) {
-        const processed = processCerts(updatedData.certifications);
+        const processed : any  = processCerts(updatedData.certifications);
         if (processed.length > 0) {
           fd.append("certificates", JSON.stringify(processed));
         }

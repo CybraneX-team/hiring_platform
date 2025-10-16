@@ -6,7 +6,7 @@ import type {
   SubmittedDocument,
 } from "../../types";
 
-export const companies: Company[] = [
+export const companies: any[] = [
   {
     id: "1",
     name: "TechCorp Solutions",
