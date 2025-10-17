@@ -545,11 +545,19 @@ const LocationInputWithSearch = ({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [isAutoDetected, setIsAutoDetected] = useState(false);
+  // Prevent suggestions from reopening immediately after a selection
+  const [isFromSelection, setIsFromSelection] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Debounced search for suggestions
   useEffect(() => {
     const timeoutId = setTimeout(() => {
+      if (isFromSelection) {
+        // skip fetching suggestions right after a programmatic value change
+        setShowSuggestions(false);
+        return;
+      }
       if (value.trim() && value.length > 2) {
         searchSuggestions(value);
       } else {
@@ -561,12 +569,16 @@ const LocationInputWithSearch = ({
     return () => clearTimeout(timeoutId);
   }, [value]);
 
-  // Only trigger suggestions when user is actively typing (not from auto-detect)
+  // Only trigger suggestions when user is actively typing
   useEffect(() => {
-    if (value.trim() && value.length > 2 && !isAutoDetected) {
+    if (value.trim() && value.length > 2 && !isAutoDetected && !isFromSelection) {
       setShowSuggestions(true);
+    } else if (isFromSelection) {
+      // Close and clear selection flag right after using it
+      setShowSuggestions(false);
+      setIsFromSelection(false);
     }
-  }, [value, isAutoDetected]);
+  }, [value, isAutoDetected, isFromSelection]);
 
   const searchSuggestions = async (query: string) => {
     if (abortControllerRef.current) {
@@ -610,7 +622,13 @@ const LocationInputWithSearch = ({
 
   const handleSuggestionClick = (suggestion: any) => {
     setShowSuggestions(false);
+    setIsFromSelection(true);
     setSelectedIndex(-1);
+    // Stop any in-flight autocomplete request
+    if (abortControllerRef.current) {
+      try { abortControllerRef.current.abort(); } catch {}
+      abortControllerRef.current = null;
+    }
 
     // Handle different response structures
     const address =
@@ -627,6 +645,10 @@ const LocationInputWithSearch = ({
       lng: lng,
       address: address,
     });
+    // Blur input to avoid reopening list due to focus/typing
+    if (inputRef.current) {
+      inputRef.current.blur();
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -705,7 +727,7 @@ const LocationInputWithSearch = ({
               onKeyDown={handleKeyDown}
               onKeyPress={handleKeyPress}
               onFocus={() => {
-                if (suggestions.length > 0) setShowSuggestions(true);
+                if (suggestions.length > 0 && !isFromSelection) setShowSuggestions(true);
               }}
               onBlur={() => {
                 // Delay hiding to allow clicks on suggestions
@@ -713,6 +735,7 @@ const LocationInputWithSearch = ({
               }}
               placeholder="Enter address or click auto-detect to select location..."
               className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs text-black sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              ref={inputRef}
             />
             {isLoading && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">

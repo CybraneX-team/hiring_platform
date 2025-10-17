@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginRight: 12,
-    marginBottom: 4,
+    marginBottom: 5,
   },
   metaText: {
     fontSize: 10,
@@ -214,7 +214,7 @@ export const ResumePDF: React.FC<{ data: ResumeData; generatedOn?: string }> = (
                     fill="#6B7280"
                   />
                 </Svg>
-                <Text style={{ ...styles.metaText, marginLeft: 4, marginTop: 3 }}>
+                <Text style={{ ...styles.metaText, marginLeft: 4, marginTop: 2 }}>
                   <Text style={{ fontWeight: 700 }}>Experience: </Text>
                   {data.experience}
                 </Text>

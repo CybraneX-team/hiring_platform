@@ -627,16 +627,29 @@ const LocationInputWithSearch = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState<number>(-1);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isFromSelection, setIsFromSelection] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Debounced autocomplete suggestions
   useEffect(() => {
     if (!isInputFocused) {
-      // If input is not focused, keep suggestions hidden
       setShowSuggestions(false);
       return;
     }
+    if (isFromSelection) {
+      setShowSuggestions(false);
+      setIsFromSelection(false);
+      return;
+    }
+    if (abortControllerRef.current) {
+      try {
+        abortControllerRef.current.abort();
+      } catch {}
+      abortControllerRef.current = null;
+    }
     const controller = new AbortController();
+    abortControllerRef.current = controller;
     const fetchSuggestions = async () => {
       try {
         const query = value.trim();
@@ -674,39 +687,79 @@ const LocationInputWithSearch = ({
 
     fetchSuggestions();
     return () => controller.abort();
-  }, [value, isInputFocused]);
+  }, [value, isInputFocused, isFromSelection]);
 
-  const geocodeAndSelect = async (address: string) => {
+  const geocodeAndSelect = async (
+    addressOrSuggestion: string | any,
+    quiet: boolean = false
+  ) => {
     try {
       setIsSearching(true);
-      const response = await fetch(
-        `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(
-          address
-        )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        const result = data.geocodingResults?.[0];
-        const lat = result?.geometry?.location?.lat;
-        const lng = result?.geometry?.location?.lng;
-        const formattedAddress = result?.formatted_address || address;
-        if (
-          typeof lat === "number" &&
-          typeof lng === "number" &&
-          !isNaN(lat) &&
-          !isNaN(lng) &&
-          isFinite(lat) &&
-          isFinite(lng)
-        ) {
-          onChange(formattedAddress);
-          setShowSuggestions(false);
-          setSuggestions([]);
-          setHighlightIndex(-1);
-          setIsInputFocused(false);
-          inputRef.current?.blur();
-          setSearchTrigger(formattedAddress);
-          onLocationSelect({ lat, lng, address: formattedAddress });
+      let formattedAddress: string | undefined;
+      let lat: number | undefined;
+      let lng: number | undefined;
+
+      const maybeSuggestion =
+        typeof addressOrSuggestion === "object" && addressOrSuggestion;
+      const placeId = maybeSuggestion?.place_id || maybeSuggestion?.placeId;
+
+      if (placeId) {
+        const detailsResp = await fetch(
+          `https://api.olamaps.io/places/v1/details?place_id=${encodeURIComponent(
+            placeId
+          )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
+        );
+        if (detailsResp.ok) {
+          const detailsData = await detailsResp.json();
+          const result = detailsData?.result || detailsData?.details || {};
+          lat = result?.geometry?.location?.lat;
+          lng = result?.geometry?.location?.lng;
+          formattedAddress =
+            result?.formatted_address || maybeSuggestion?.description;
         }
+      }
+
+      if (typeof lat !== "number" || typeof lng !== "number") {
+        const address =
+          typeof addressOrSuggestion === "string"
+            ? addressOrSuggestion
+            : (addressOrSuggestion?.description ||
+               addressOrSuggestion?.formatted_address ||
+               addressOrSuggestion?.name ||
+               value);
+        const response = await fetch(
+          `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(
+            address
+          )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          const result = data.geocodingResults?.[0];
+          lat = result?.geometry?.location?.lat;
+          lng = result?.geometry?.location?.lng;
+          formattedAddress = result?.formatted_address || address;
+        }
+      }
+
+      if (
+        typeof lat === "number" &&
+        typeof lng === "number" &&
+        !isNaN(lat) &&
+        !isNaN(lng) &&
+        isFinite(lat) &&
+        isFinite(lng)
+      ) {
+        const finalAddress = formattedAddress || value;
+        onChange(finalAddress);
+        setShowSuggestions(false);
+        setSuggestions([]);
+        setHighlightIndex(-1);
+        setIsInputFocused(false);
+        inputRef.current?.blur();
+        if (!quiet) {
+          setSearchTrigger(finalAddress);
+        }
+        onLocationSelect({ lat, lng, address: finalAddress });
       }
     } finally {
       setIsSearching(false);
@@ -749,7 +802,7 @@ const LocationInputWithSearch = ({
       ) {
         const s = suggestions[highlightIndex];
         const address = s.description || s.formatted_address || s.name || value;
-        geocodeAndSelect(address);
+        geocodeAndSelect(s, true);
       } else {
         handleSearch();
       }
@@ -772,7 +825,7 @@ const LocationInputWithSearch = ({
             onKeyDown={handleKeyPress}
             onFocus={() => {
               setIsInputFocused(true);
-              if (value) setShowSuggestions(true);
+              if (value && !isFromSelection) setShowSuggestions(true);
             }}
             onBlur={() => {
               setIsInputFocused(false);
@@ -797,8 +850,15 @@ const LocationInputWithSearch = ({
                     onClick={() => {
                       setShowSuggestions(false);
                       setIsInputFocused(false);
+                      setIsFromSelection(true);
+                      if (abortControllerRef.current) {
+                        try {
+                          abortControllerRef.current.abort();
+                        } catch {}
+                        abortControllerRef.current = null;
+                      }
                       inputRef.current?.blur();
-                      geocodeAndSelect(address);
+                      geocodeAndSelect(s, true);
                     }}
                   >
                     {address}
@@ -1443,7 +1503,7 @@ export default function ProfileTab() {
               profile.education?.map((edu: any, index: any) => ({
                 id: index + 1,
                 type: edu.Degree || "Degree",
-                period: edu.period, // Use period directly as string
+                period: edu.period || "", // Use period directly as string
                 institution: edu.institure || edu.institute || "",
                 description: edu.GPA ? `GPA: ${edu.GPA}` : "",
               })) || [],

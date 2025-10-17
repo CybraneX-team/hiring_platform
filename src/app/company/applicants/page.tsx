@@ -159,13 +159,13 @@ function ApplicationDetailContent() {
               const jobStart = application.job?.startDate
                 ? new Date(application.job.startDate)
                 : application.startDate
-                ? new Date(application.startDate)
-                : null;
+                  ? new Date(application.startDate)
+                  : null;
               const jobEnd = application.job?.endDate
                 ? new Date(application.job.endDate)
                 : application.endDate
-                ? new Date(application.endDate)
-                : null;
+                  ? new Date(application.endDate)
+                  : null;
 
               // fallback to status-based check if job dates unavailable
               if (!jobStart || !jobEnd) {
@@ -365,37 +365,37 @@ function ApplicationDetailContent() {
       // Certifications
       const certifications = Array.isArray(p?.certificates)
         ? p.certificates.map((c: any) => ({
-            name: c?.name,
-            issuer: c?.issuer,
-            date: c?.date,
-            description: c?.description,
-          }))
+          name: c?.name,
+          issuer: c?.issuer,
+          date: c?.date,
+          description: c?.description,
+        }))
         : [];
 
       // Experience details
       const experience_details = Array.isArray(p?.WorkExperience)
         ? p.WorkExperience.map((exp: any) => ({
-            title: exp?.title,
-            company: exp?.company,
-            period:
-              exp?.period ||
-              (exp?.startDate && exp?.endDate
-                ? `${exp.startDate} - ${exp.endDate}`
-                : ""),
-            description: exp?.description,
-            points: Array.isArray(exp?.points)
-              ? exp.points.map((pt: any) => ({ point: pt?.point || pt }))
-              : undefined,
-          }))
+          title: exp?.title,
+          company: exp?.company,
+          period:
+            exp?.period ||
+            (exp?.startDate && exp?.endDate
+              ? `${exp.startDate} - ${exp.endDate}`
+              : ""),
+          description: exp?.description,
+          points: Array.isArray(exp?.points)
+            ? exp.points.map((pt: any) => ({ point: pt?.point || pt }))
+            : undefined,
+        }))
         : [];
 
       // Academics/Education
       const academics = Array.isArray(p?.education)
         ? p.education.map((edu: any) => ({
-            level: edu?.Degree,
-            institution: edu?.institure || edu?.institute,
-            completed: true,
-          }))
+          level: edu?.Degree,
+          institution: edu?.institure || edu?.institute,
+          completed: true,
+        }))
         : [];
 
       const skills = Array.isArray(p?.skills) ? p.skills : [];
@@ -417,9 +417,41 @@ function ApplicationDetailContent() {
         : applicant?.experience || "0 Years";
       const email = applicant?.user?.email || applicant?.contact?.email;
       const phone = p?.phoneNumber || applicant?.contact?.phone;
-      const companyLogoUrl =
+      // Prefer original logo URL; unwrap Next.js optimized URLs if present
+      const rawLogo =
         localStorage.getItem("companyLogo") || profile?.companyLogo || "";
+      const companyLogoUrl = (() => {
+        try {
+          if (!rawLogo) return "";
+          if (rawLogo.includes("/_next/image")) {
+            const u = new URL(rawLogo, window.location.origin);
+            const embedded = u.searchParams.get("url");
+            return embedded ? decodeURIComponent(embedded) : rawLogo;
+          }
+          return rawLogo;
+        } catch {
+          return rawLogo;
+        }
+      })();
       const bio = p?.bio || applicant?.bio || "";
+
+      // Convert company logo to data URL for reliable embedding in PDF
+      let companyLogoDataUrl: string | undefined = undefined;
+      if (companyLogoUrl) {
+        try {
+          const resp = await fetch(companyLogoUrl, { mode: "cors", cache: "no-store" });
+          const blob = await resp.blob();
+          companyLogoDataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(String(reader.result));
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch (e) {
+          // fallback to original URL if data URI conversion fails
+          companyLogoDataUrl = companyLogoUrl;
+        }
+      }
 
       const blob = await pdf(
         <ResumePDF
@@ -436,7 +468,7 @@ function ApplicationDetailContent() {
             academics,
             languages,
 
-            companyLogo: companyLogoUrl,
+            companyLogo: companyLogoDataUrl,
             bio,
           }}
           generatedOn={formattedDate}
@@ -500,9 +532,26 @@ function ApplicationDetailContent() {
       <div className="sr-only" aria-live="polite">
         {isShortlisted ? "Shortlisted" : ""}
       </div>
-      <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 mb-3 sm:mb-4">
-        Compscope
-      </h1>
+      <div className="mb-3 sm:mb-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Image
+            src="/black_logo.png"
+            alt="ProjectMATCH by Compscope"
+            width={200}
+            height={80}
+            className="h-10 sm:h-12 md:h-12 lg:h-16 w-auto"
+            priority
+          />
+          <div className="leading-tight text-black">
+            <div className="text-sm sm:text-base md:text-lg lg:text-xl font-black">
+              ProjectMATCH
+            </div>
+            <div className="text-[10px] sm:text-xs md:text-sm text-gray-600">
+              <span className="text-[#3EA442] font-bold">by Compscope</span>
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="max-w-6xl mx-auto mt-6 sm:mt-8 lg:mt-12">
         <div className="mb-6 sm:mb-8 lg:mb-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <motion.button
@@ -592,30 +641,10 @@ function ApplicationDetailContent() {
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-gray-200">
             <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0 overflow-hidden">
-                {applicant.avatar ? (
-                  <Image
-                    src={applicant.avatar}
-                    alt={applicant.name || "Applicant"}
-                    width={64}
-                    height={64}
-                    className="rounded-full object-cover"
-                    onError={(e) => {
-                      // Hide image and show initials on error
-                      e.currentTarget.style.display = "none";
-                      const parent = e.currentTarget.parentElement;
-                      if (parent) {
-                        parent.innerHTML = `<span class="text-white font-bold text-lg sm:text-xl">${generateAvatar(
-                          applicant.name
-                        )}</span>`;
-                      }
-                    }}
-                  />
-                ) : (
-                  <span className="text-white font-bold text-lg sm:text-xl">
-                    {generateAvatar(applicant.name)}
-                  </span>
-                )}
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-lg sm:text-xl">
+                  {generateAvatar(applicant.name)}
+                </span>
               </div>
 
               <div className="min-w-0 flex-1">
@@ -642,24 +671,7 @@ function ApplicationDetailContent() {
                   <CircularProgress percentage={applicant.matchPercentage} />
                 </div>
               )}
-              {preparingPdf && profile?.companyLogo && (
-                <div className="flex items-center justify-center h-full">
-                  <Image
-                    src={profile.companyLogo}
-                    alt="Company Logo"
-                    width={0}
-                    height={0}
-                    sizes="100vw"
-                    style={{
-                      width: "auto",
-                      height: "auto",
-                      maxWidth: "120px",
-                      maxHeight: "60px",
-                      objectFit: "contain",
-                    }}
-                  />
-                </div>
-              )}
+              {/* Keep progress circle visible during PDF preparation; do not overlay company logo here */}
             </div>
           </div>
 
@@ -672,9 +684,8 @@ function ApplicationDetailContent() {
                 <XCircle className="w-3 h-3 sm:w-4 sm:h-4 text-red-500 flex-shrink-0" />
               )}
               <span
-                className={`font-medium ${
-                  applicant.available ? "text-green-600" : "text-red-600"
-                } text-xs sm:text-sm`}
+                className={`font-medium ${applicant.available ? "text-green-600" : "text-red-600"
+                  } text-xs sm:text-sm`}
               >
                 {applicant.available ? "Available" : "Unavailable"}
               </span>
@@ -726,7 +737,7 @@ function ApplicationDetailContent() {
             </h3>
             <div className="space-y-2 sm:space-y-3">
               {applicant.certifications &&
-              applicant.certifications.length > 0 ? (
+                applicant.certifications.length > 0 ? (
                 applicant.certifications.map((cert: any, index: number) => (
                   <div
                     key={index}
@@ -762,7 +773,7 @@ function ApplicationDetailContent() {
             </h3>
             <div className="space-y-3 sm:space-y-4">
               {applicant.experience_details &&
-              applicant.experience_details.length > 0 ? (
+                applicant.experience_details.length > 0 ? (
                 applicant.experience_details.map((exp: any, index: number) => (
                   <div
                     key={index}
@@ -789,13 +800,13 @@ function ApplicationDetailContent() {
                       const points: string[] =
                         Array.isArray(exp?.points) && exp.points.length
                           ? exp.points
-                              .map((p: any) =>
-                                typeof p === "string" ? p : p?.point
-                              )
-                              .filter(Boolean)
+                            .map((p: any) =>
+                              typeof p === "string" ? p : p?.point
+                            )
+                            .filter(Boolean)
                           : exp?.description
-                          ? [exp.description]
-                          : [];
+                            ? [exp.description]
+                            : [];
                       return points.length > 0 ? (
                         <div className="mt-2 sm:mt-3">
                           <ul className="space-y-1 sm:space-y-2">

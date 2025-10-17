@@ -648,16 +648,28 @@ const LocationInputWithSearch = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState<number>(-1);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isFromSelection, setIsFromSelection] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Debounced autocomplete suggestions
   useEffect(() => {
     if (!isInputFocused) {
-      // If input is not focused, keep suggestions hidden
       setShowSuggestions(false);
       return;
     }
+    if (isFromSelection) {
+      // Skip fetching right after a programmatic selection
+      setShowSuggestions(false);
+      setIsFromSelection(false);
+      return;
+    }
+    if (abortControllerRef.current) {
+      try { abortControllerRef.current.abort(); } catch {}
+      abortControllerRef.current = null;
+    }
     const controller = new AbortController();
+    abortControllerRef.current = controller;
     const fetchSuggestions = async () => {
       try {
         const query = value.trim();
@@ -667,11 +679,8 @@ const LocationInputWithSearch = ({
           setHighlightIndex(-1);
           return;
         }
-
-        // small delay for debounce
         await new Promise((r) => setTimeout(r, 300));
         if (controller.signal.aborted) return;
-
         const resp = await fetch(
           `https://api.olamaps.io/places/v1/autocomplete?input=${encodeURIComponent(
             query
@@ -680,7 +689,6 @@ const LocationInputWithSearch = ({
         );
         if (!resp.ok) throw new Error("Failed to fetch suggestions");
         const data = await resp.json();
-        // Normalize results; Ola Maps returns predictions similar to Google
         const preds = data.predictions || data.suggestions || [];
         setSuggestions(preds.slice(0, 8));
         setShowSuggestions(true);
@@ -692,42 +700,83 @@ const LocationInputWithSearch = ({
         }
       }
     };
-
     fetchSuggestions();
     return () => controller.abort();
-  }, [value, isInputFocused]);
+  }, [value, isInputFocused, isFromSelection]);
 
-  const geocodeAndSelect = async (address: string) => {
+  // Resolve a suggestion or free-text address into a precise lat/lng and update state
+  const geocodeAndSelect = async (
+    addressOrSuggestion: string | any,
+    quiet: boolean = false
+  ) => {
     try {
       setIsSearching(true);
-      const response = await fetch(
-        `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(
-          address
-        )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        const result = data.geocodingResults?.[0];
-        const lat = result?.geometry?.location?.lat;
-        const lng = result?.geometry?.location?.lng;
-        const formattedAddress = result?.formatted_address || address;
-        if (
-          typeof lat === "number" &&
-          typeof lng === "number" &&
-          !isNaN(lat) &&
-          !isNaN(lng) &&
-          isFinite(lat) &&
-          isFinite(lng)
-        ) {
-          onChange(formattedAddress);
-          setShowSuggestions(false);
-          setSuggestions([]);
-          setHighlightIndex(-1);
-          setIsInputFocused(false);
-          inputRef.current?.blur();
-          setSearchTrigger(formattedAddress);
-          onLocationSelect({ lat, lng, address: formattedAddress });
+      let formattedAddress: string | undefined;
+      let lat: number | undefined;
+      let lng: number | undefined;
+
+      // Prefer resolving by place_id when available for higher precision
+      const maybeSuggestion =
+        typeof addressOrSuggestion === "object" && addressOrSuggestion;
+      const placeId = maybeSuggestion?.place_id || maybeSuggestion?.placeId;
+
+      if (placeId) {
+        const detailsResp = await fetch(
+          `https://api.olamaps.io/places/v1/details?place_id=${encodeURIComponent(
+            placeId
+          )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
+        );
+        if (detailsResp.ok) {
+          const detailsData = await detailsResp.json();
+          const result = detailsData?.result || detailsData?.details || {};
+          lat = result?.geometry?.location?.lat;
+          lng = result?.geometry?.location?.lng;
+          formattedAddress =
+            result?.formatted_address || maybeSuggestion?.description;
         }
+      }
+
+      if (typeof lat !== "number" || typeof lng !== "number") {
+        const address =
+          typeof addressOrSuggestion === "string"
+            ? addressOrSuggestion
+            : (addressOrSuggestion?.description ||
+               addressOrSuggestion?.formatted_address ||
+               addressOrSuggestion?.name ||
+               value);
+        const response = await fetch(
+          `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(
+            address
+          )}&api_key=${process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          const result = data.geocodingResults?.[0];
+          lat = result?.geometry?.location?.lat;
+          lng = result?.geometry?.location?.lng;
+          formattedAddress = result?.formatted_address || address;
+        }
+      }
+
+      if (
+        typeof lat === "number" &&
+        typeof lng === "number" &&
+        !isNaN(lat) &&
+        !isNaN(lng) &&
+        isFinite(lat) &&
+        isFinite(lng)
+      ) {
+        const finalAddress = formattedAddress || value;
+        onChange(finalAddress);
+        setShowSuggestions(false);
+        setSuggestions([]);
+        setHighlightIndex(-1);
+        setIsInputFocused(false);
+        inputRef.current?.blur();
+        if (!quiet) {
+          setSearchTrigger(finalAddress);
+        }
+        onLocationSelect({ lat, lng, address: finalAddress });
       }
     } finally {
       setIsSearching(false);
@@ -737,16 +786,33 @@ const LocationInputWithSearch = ({
   const handleSearch = async () => {
     if (!value.trim()) return;
 
+    // If user hasn't explicitly chosen a suggestion, prefer the best suggestion
+    // from autocomplete to avoid geocoding to a broad/random area.
+    // Prefer Bengaluru/Bangalore variants when present to disambiguate Whitefield
+    const ranked = [...suggestions].sort((a: any, b: any) => {
+      const ak = (a.description || a.formatted_address || "").toLowerCase();
+      const bk = (b.description || b.formatted_address || "").toLowerCase();
+      const score = (s: string) =>
+        (/(bengaluru|bangalore)/.test(s) ? 2 : 0) +
+        (/(karnataka)/.test(s) ? 1 : 0);
+      return score(bk) - score(ak);
+    });
+
+    const selectedSuggestion =
+      (highlightIndex >= 0 && suggestions[highlightIndex]) ||
+      (ranked.length > 0 ? ranked[0] : null);
+
+    if (selectedSuggestion) {
+      await geocodeAndSelect(selectedSuggestion);
+      return;
+    }
+
     setIsSearching(true);
-    setSearchTrigger(value); // This will trigger the map to search
-    // Close any open suggestions when an explicit search is triggered
+    // Fallback: geocode the raw input
+    setSearchTrigger(value);
     setShowSuggestions(false);
     setSuggestions([]);
-
-    // Reset after a short delay
-    setTimeout(() => {
-      setIsSearching(false);
-    }, 2000);
+    setTimeout(() => setIsSearching(false), 1500);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -770,7 +836,7 @@ const LocationInputWithSearch = ({
       ) {
         const s = suggestions[highlightIndex];
         const address = s.description || s.formatted_address || s.name || value;
-        geocodeAndSelect(address);
+        geocodeAndSelect(s, true);
       } else {
         handleSearch();
       }
@@ -816,10 +882,17 @@ const LocationInputWithSearch = ({
                     onMouseEnter={() => setHighlightIndex(idx)}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
+                      // Close list and prevent immediate reopen
                       setShowSuggestions(false);
                       setIsInputFocused(false);
+                      setIsFromSelection(true);
+                      if (abortControllerRef.current) {
+                        try { abortControllerRef.current.abort(); } catch {}
+                        abortControllerRef.current = null;
+                      }
                       inputRef.current?.blur();
-                      geocodeAndSelect(address);
+                      // Pass the full suggestion when available for precise place_id resolution
+                      geocodeAndSelect(s, true);
                     }}
                   >
                     {address}

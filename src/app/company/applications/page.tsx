@@ -385,9 +385,23 @@ function ApplicationsListContent() {
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] p-3 sm:p-4 lg:p-6 xl:p-8">
-      <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 mb-3 sm:mb-4">
-        {jobInfo?.title || "Job Applications"}
-      </h1>
+      <div className="mb-3 sm:mb-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <img
+            src="/black_logo.png"
+            alt="ProjectMATCH by Compscope"
+            className="h-10 sm:h-12 md:h-12 lg:h-16 w-auto"
+          />
+          <div className="leading-tight text-black">
+            <div className="text-sm sm:text-base md:text-lg lg:text-xl font-black">
+              ProjectMATCH
+            </div>
+            <div className="text-[10px] sm:text-xs md:text-sm text-gray-600">
+              <span className="text-[#3EA442] font-bold">by Compscope</span>
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="max-w-4xl mx-auto mt-6 sm:mt-8 lg:mt-12">
         {/* Header */}
         <div className="mb-6 sm:mb-8 lg:mb-10">
