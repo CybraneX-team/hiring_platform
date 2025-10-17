@@ -1776,23 +1776,7 @@ export default function ProfileTab() {
       }
 
       // Handle certificates only if there are valid entries and they've changed
-      const validCertificates =
-        profileData.certifications
-          ?.filter((cert: any) => cert.name && cert.issuer)
-          .map((cert: any) => ({
-            name: cert.name || "Unknown Certificate",
-            issuer: cert.issuer || "Unknown Issuer",
-            date: cert.date || "Unknown Date",
-            description: cert.description || "",
-          })) || [];
 
-      if (validCertificates.length > 0) {
-        const currentCerts = JSON.stringify(profile?.certificates || []);
-        const newCerts = JSON.stringify(validCertificates);
-        if (currentCerts !== newCerts) {
-          formData.append("certificates", newCerts);
-        }
-      }
 
       // Only make API call if we have data to send (besides userId)
       let hasDataToSend = false;
@@ -3326,7 +3310,7 @@ export default function ProfileTab() {
                                 isOpen: true,
                                 applicationId: application._id,
                                 documents: application.documents.filter(
-                                  (doc) => doc.status === "requested" && doc.inputType === "file"
+                                  (doc : any) => doc.status === "requested" && doc.inputType === "file"
                                 ),
                               })
                             }
