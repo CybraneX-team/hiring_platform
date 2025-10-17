@@ -723,10 +723,10 @@ const LocationInputWithSearch = ({
         const address =
           typeof addressOrSuggestion === "string"
             ? addressOrSuggestion
-            : (addressOrSuggestion?.description ||
-               addressOrSuggestion?.formatted_address ||
-               addressOrSuggestion?.name ||
-               value);
+            : addressOrSuggestion?.description ||
+              addressOrSuggestion?.formatted_address ||
+              addressOrSuggestion?.name ||
+              value;
         const response = await fetch(
           `https://api.olamaps.io/places/v1/geocode?address=${encodeURIComponent(
             address
@@ -1696,15 +1696,16 @@ export default function ProfileTab() {
 
       // Handle availability only if changed
       // Handle availability only if changed
-// Around line 2200 in handleProfileSave
-if (availabilitySlots && availabilitySlots.length > 0) {
-  const currentAvailability = JSON.stringify(profile?.unavailability || []);
-  const newAvailability = JSON.stringify(availabilitySlots);
-  if (currentAvailability !== newAvailability) {
-    formData.append("unavailability", newAvailability); // ✅ Changed from "availability"
-  }
-}
-
+      // Around line 2200 in handleProfileSave
+      if (availabilitySlots && availabilitySlots.length > 0) {
+        const currentAvailability = JSON.stringify(
+          profile?.unavailability || []
+        );
+        const newAvailability = JSON.stringify(availabilitySlots);
+        if (currentAvailability !== newAvailability) {
+          formData.append("unavailability", newAvailability); // ✅ Changed from "availability"
+        }
+      }
 
       // Handle location data properly
       if (
@@ -2051,7 +2052,7 @@ if (availabilitySlots && availabilitySlots.length > 0) {
         Array.isArray(updatedData.certifications) &&
         updatedData.certifications.length > 0
       ) {
-        const processed : any  = processCerts(updatedData.certifications);
+        const processed: any = processCerts(updatedData.certifications);
         if (processed.length > 0) {
           fd.append("certificates", JSON.stringify(processed));
         }
@@ -2279,16 +2280,16 @@ if (availabilitySlots && availabilitySlots.length > 0) {
         formData.append("WorkExperience", JSON.stringify(validExperiences));
       }
       if (sectionType === "unavailability") {
-  const validSlots = sectionData
-    .filter((slot: any) => slot.startDate && slot.endDate)
-    .map((slot: any) => ({
-      startDate: slot.startDate,
-      endDate: slot.endDate,
-      description: slot.description || "",
-    }));
-  
-  formData.append("unavailability", JSON.stringify(validSlots));
-}
+        const validSlots = sectionData
+          .filter((slot: any) => slot.startDate && slot.endDate)
+          .map((slot: any) => ({
+            startDate: slot.startDate,
+            endDate: slot.endDate,
+            description: slot.description || "",
+          }));
+
+        formData.append("unavailability", JSON.stringify(validSlots));
+      }
       /********* 2) EDUCATION *********/
       if (sectionType === "education") {
         const validEducation = sectionData
@@ -2862,7 +2863,7 @@ if (availabilitySlots && availabilitySlots.length > 0) {
           : "experiences";
 
       // ✅ FIXED: Store the previous snapshot properly
-      const prevSnapshot : any  = { ...profileData };
+      const prevSnapshot: any = { ...profileData };
 
       // Optimistic update
       const updatedSection = (profileData as any)[sectionKey].filter(
@@ -2879,10 +2880,10 @@ if (availabilitySlots && availabilitySlots.length > 0) {
       toast.success(`${type} deleted successfully!`);
     } catch (error: any) {
       console.error("Failed to delete:", error);
-      const prevSnapshot : any  = { ...profileData };
+      const prevSnapshot: any = { ...profileData };
 
       // ✅ FIXED: Properly revert using the stored snapshot
-      setProfileData(prevSnapshot );
+      setProfileData(prevSnapshot);
 
       toast.error(error?.message || "Failed to delete. Please try again.");
     }
@@ -3271,11 +3272,11 @@ if (availabilitySlots && availabilitySlots.length > 0) {
                 </motion.button>
               </motion.div>
             ) : (
-              <div className="space-y-4">
+              <div className="relative space-y-4">
                 {applications.map((application) => (
                   <div
                     key={application._id}
-                    className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 mb-4"
+                    className="relative bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 mb-4"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
@@ -3314,8 +3315,32 @@ if (availabilitySlots && availabilitySlots.length > 0) {
                           {application.status.charAt(0).toUpperCase() +
                             application.status.slice(1)}
                         </span>
+                      {application.documents.some(
+                        (doc: any) => doc.status === "requested" && doc.inputType === "file"
+                      ) && (
+                        <div className="absolute bottom-4 right-4">
+                          <button
+                            className="flex items-center gap-2 px-5 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-base font-medium shadow-sm"
+                            onClick={() =>
+                              setDocumentUploadModal({
+                                isOpen: true,
+                                applicationId: application._id,
+                                documents: application.documents.filter(
+                                  (doc) => doc.status === "requested" && doc.inputType === "file"
+                                ),
+                              })
+                            }
+                          >
+                            <Upload className="w-5 h-5" />
+                            Upload Documents
+                          </button>
+                        </div>
+                      )}
                       </div>
                     </div>
+
+
+
                   </div>
                 ))}
               </div>
