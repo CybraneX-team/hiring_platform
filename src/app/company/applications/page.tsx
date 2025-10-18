@@ -415,7 +415,7 @@ function ApplicationsListContent() {
             Back
           </motion.button>
           {jobInfo?.title && (
-            <div className="mt-3 sm:mt-4 text-3xl font-semibold text-gray-900">
+            <div className="mt-3 sm:mt-4 text-base sm:text-lg lg:text-3xl font-semibold text-gray-900">
               {jobInfo.title}
             </div>
           )}

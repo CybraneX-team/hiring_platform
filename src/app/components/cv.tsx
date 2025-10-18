@@ -302,14 +302,14 @@ export default function ApplicationDetailView() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] p-4 sm:p-6 lg:p-8">
+    <div className="bg-[#F5F5F5] p-4 sm:p-6 lg:p-8 sm:min-h-screen">
       <div className="sr-only" aria-live="polite">
         {isShortlisted ? "Shortlisted" : ""}
       </div>
 
-      <div className="max-w-6xl mx-auto mt-12">
+      <div className="max-w-6xl mx-auto sm:mt-12">
         {/* Header */}
-        <div className="mb-10 flex items-center justify-between">
+        <div className="mb-6 sm:mb-10 flex items-center justify-between">
           {/* Resume Link */}
           {/* <div className="flex items-center gap-3">
             {applicantDetail.resumeUrl && (
@@ -343,12 +343,21 @@ export default function ApplicationDetailView() {
           </div>
         </div>
 
-        {/* Main Content Card */}
+        {/* Mobile Info Message */}
+        <div className="block sm:hidden">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-blue-800 text-sm text-center">
+              <strong>Info:</strong> To preview the resume, please download it using the button above.
+            </p>
+          </div>
+        </div>
+
+        {/* Main Content Card - Hidden on mobile */}
         <motion.div
           ref={contentRef}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl p-6 sm:p-8 shadow-sm"
+          className="bg-white rounded-xl p-6 sm:p-8 shadow-sm hidden sm:block"
         >
           {/* Profile Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-gray-200">

@@ -1621,10 +1621,10 @@ export default function ProfileTab() {
         </div>
 
         <div className="min-w-0">
-          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 truncate">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 break-words whitespace-normal sm:whitespace-nowrap sm:truncate">
             {profile?.name || user?.name || "Unknown User"}
           </h2>
-          <p className="text-gray-500 text-sm sm:text-base">
+          <p className="text-gray-500 text-sm sm:text-base break-words">
             {getLocationDisplay(profile?.location)}
           </p>
         </div>
