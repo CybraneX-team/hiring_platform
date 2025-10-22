@@ -3631,22 +3631,54 @@ export default function ProfileTab() {
                     {doc.status === "requested" && (
                       <div className="mt-3">
                         {doc.inputType === "file" ? (
-                          <input
-                            type="file"
-                            accept=".pdf,.jpg,.jpeg,.png"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                uploadDocument(
-                                  documentUploadModal.applicationId,
-                                  doc.docId,
-                                  file
-                                );
-                              }
-                            }}
-                            className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                            disabled={uploadingDocument}
-                          />
+                          <div className="space-y-3">
+                            {/* Download button for Service Contract Agreement */}
+                            {doc.docId === 8 && (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    const link = document.createElement('a');
+                                    link.href = '/COMPSCOPE_Freelance Agreement-(2025) (1).docx';
+                                    link.download = 'COMPSCOPE_Freelance Agreement-(2025) (1).docx';
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                  }}
+                                  className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                  Download Template
+                                </button>
+                                <div className="relative group">
+                                  <svg className="w-5 h-5 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                                  </svg>
+                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                                    Download the doc and attach the signed document here!
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            <input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  uploadDocument(
+                                    documentUploadModal.applicationId,
+                                    doc.docId,
+                                    file
+                                  );
+                                }
+                              }}
+                              className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                              disabled={uploadingDocument}
+                            />
+                          </div>
                         ) : doc.inputType === "text" &&
                           doc.name === "Bank Details" ? (
                           <div className="space-y-3">
