@@ -47,10 +47,10 @@ export default function Footer() {
             </Link>
           </div>
 
-          <div className="flex flex-col sm:flex-row lg:flex-col gap-6 sm:gap-8 lg:gap-4">
-            <div className="text-center lg:text-left">
-              <h3 className="font-semibold mb-3 sm:mb-4 text-[#17181D] text-sm sm:text-base">Quick Links</h3>
-              <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
+          <div className="text-center sm:text-left">
+              <h3 className="font-semibold mb-3 sm:mb-4 text-[#17181D] text-sm sm:text-xl">Quick Links</h3>
+              <ul className="space-y-2 sm:space-y-3 text-sm sm:text-md">
                 <li>
                   <Link href="/news" className="text-gray-600 hover:text-[#17181D] transition-colors">
                     News & Blogs
@@ -63,6 +63,23 @@ export default function Footer() {
                 </li>
               </ul>
             </div>
+            <div className="text-center sm:text-left">
+              <h3 className="font-semibold mb-3 sm:mb-4 text-[#17181D] text-sm sm:text-xl">Partnerships & Inquiries</h3>
+              <div className="space-y-2 sm:space-y-3 text-sm sm:text-md">
+                <div>
+                  <a href="mailto:info@compscope.in" className="text-gray-600 hover:text-[#17181D] transition-colors">
+                    info@compscope.in
+                  </a>
+                </div>
+                <div>
+                  <a href="tel:+917318546574" className="text-gray-600 hover:text-[#17181D] transition-colors">
+                    +91 73185 46574
+                  </a>
+                </div>
+              </div>
+            </div>
+            
+            
           </div>
         </div>
 
