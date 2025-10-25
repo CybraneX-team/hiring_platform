@@ -2,7 +2,14 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, MapPin, Clock, Plus, MoreVertical, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  MapPin,
+  Clock,
+  Plus,
+  MoreVertical,
+  Trash2,
+} from "lucide-react";
 import type { InspectItem } from "@/app/types";
 import FileUploadModal from "../FileUploadModal";
 
@@ -11,12 +18,11 @@ interface InspectViewProps {
   searchQuery?: string;
 }
 
-
-const DeleteConfirmModal = ({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  inspectorName 
+const DeleteConfirmModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  inspectorName,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -37,13 +43,16 @@ const DeleteConfirmModal = ({
           <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
             <Trash2 className="w-5 h-5 text-red-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">Delete Inspector</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Delete Inspector
+          </h3>
         </div>
-        
+
         <p className="text-gray-600 mb-6">
-          Are you sure you want to delete <strong>{inspectorName}</strong>? This action cannot be undone.
+          Are you sure you want to delete <strong>{inspectorName}</strong>? This
+          action cannot be undone.
         </p>
-        
+
         <div className="flex gap-3 justify-end">
           <button
             onClick={onClose}
@@ -64,15 +73,15 @@ const DeleteConfirmModal = ({
 };
 
 // Three Dots Menu Component
-const ThreeDotsMenu = ({ 
-  isOpen, 
-  onClose, 
-  onDelete , 
-  position = "right"
+const ThreeDotsMenu = ({
+  isOpen,
+  onClose,
+  onDelete,
+  position = "right",
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onDelete: any
+  onDelete: any;
   position?: "left" | "right";
 }) => {
   if (!isOpen) return null;
@@ -134,13 +143,16 @@ const CircularProgress = ({ percentage }: { percentage: number }) => {
   );
 };
 
-export default function InspectView({ onItemSelect, searchQuery }: InspectViewProps) {
+export default function InspectView({
+  onItemSelect,
+  searchQuery,
+}: InspectViewProps) {
   const [items, setItems] = useState<InspectItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<InspectItem[]>([]);
   const [activeFilter, setActiveFilter] = useState("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  
+
   // Three dots menu state
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [deleteModalState, setDeleteModalState] = useState<{
@@ -205,11 +217,15 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
         id: profile?._id?.toString() || profile?.id || "",
         name: profile?.name || profile?.user?.name || "Unnamed Inspector",
         company: companyName,
+        userId: profile?.user?._id ? profile?.user?._id : "id not found",
         status,
         lastActivity: formatRelative(profile?.updatedAt || profile?.createdAt),
         role: primaryRole,
         email: profile?.user?.email || "",
-        location: profile?.location ?.split(",").slice(-4).join(", ")  || profile?.locationData?.address.split(",").slice(-4).join(", ")  || "",
+        location:
+          profile?.location?.split(",").slice(-4).join(", ") ||
+          profile?.locationData?.address.split(",").slice(-4).join(", ") ||
+          "",
         yearsOfExp: profile?.yearsOfExp || "",
         matchScore,
         profile,
@@ -238,6 +254,7 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
 
       const data = await res.json();
       const rawProfiles = Array.isArray(data?.profiles) ? data.profiles : [];
+      console.log("rawProfiles", rawProfiles);
       const transformed = rawProfiles.map(transformProfileToItem);
       setItems(transformed);
       setFilteredItems(transformed);
@@ -256,57 +273,72 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
     }
   }, [transformProfileToItem]);
 
-  // Delete inspector function
-  const deleteInspector = useCallback(async (inspectorId: string) => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-    
-    if (!baseUrl) {
-      setError("API base URL is not configured.");
-      return;
-    }
+  // Delete inspector functioni
+  const deleteInspector = useCallback(
+    async (inspectorId: string, userId: string) => {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
-    try {
-      const res = await fetch(`${baseUrl}/profile/delete-profile/${inspectorId}`, {
-        method: 'DELETE',
-      });
-
-      if (!res.ok) {
-        throw new Error(`Failed to delete inspector (status ${res.status})`);
+      if (!baseUrl) {
+        setError("API base URL is not configured.");
+        return;
       }
 
-      // Remove from local state
-      setItems(prev => prev.filter(item => item.id !== inspectorId));
-      setFilteredItems(prev => prev.filter(item => item.id !== inspectorId));
-      
-      // Close modal and menu
-      setDeleteModalState({ isOpen: false, inspector: null });
-      setActiveMenuId(null);
-      
-    } catch (err) {
-      console.error("Failed to delete inspector", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to delete inspector"
-      );
-    }
-  }, []);
+      try {
+        const res = await fetch(
+          `${baseUrl}/profile/delete-profile/${inspectorId}?userId=${userId}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error(`Failed to delete inspector (status ${res.status})`);
+        }
+
+        // Remove from local state
+        setItems((prev) => prev.filter((item) => item.id !== inspectorId));
+        setFilteredItems((prev) =>
+          prev.filter((item) => item.id !== inspectorId)
+        );
+
+        // Close modal and menu
+        setDeleteModalState({ isOpen: false, inspector: null });
+        setActiveMenuId(null);
+      } catch (err) {
+        console.error("Failed to delete inspector", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to delete inspector"
+        );
+      }
+    },
+    []
+  );
 
   // Handle three dots menu actions
-  const handleMenuToggle = useCallback((itemId: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    setActiveMenuId(activeMenuId === itemId ? null : itemId);
-  }, [activeMenuId]);
+  const handleMenuToggle = useCallback(
+    (itemId: string, event: React.MouseEvent) => {
+      event.stopPropagation();
+      setActiveMenuId(activeMenuId === itemId ? null : itemId);
+    },
+    [activeMenuId]
+  );
 
-  const handleDeleteClick = useCallback((inspector: InspectItem, event: React.MouseEvent) => {
-    event.stopPropagation();
-    setDeleteModalState({ isOpen: true, inspector });
-    setActiveMenuId(null);
-  }, []);
+  const handleDeleteClick = useCallback(
+    (inspector: InspectItem, event: React.MouseEvent) => {
+      event.stopPropagation();
+      setDeleteModalState({ isOpen: true, inspector });
+      setActiveMenuId(null);
+    },
+    []
+  );
 
   const handleDeleteConfirm = useCallback(() => {
     if (deleteModalState.inspector) {
-      deleteInspector(deleteModalState.inspector.id);
+      console.log("inspector", deleteModalState.inspector);
+      deleteInspector(
+        deleteModalState.inspector.id,
+        deleteModalState.inspector.userId
+      );
     }
   }, [deleteModalState.inspector, deleteInspector]);
 
@@ -317,8 +349,8 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
     };
 
     if (activeMenuId) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
     }
   }, [activeMenuId]);
 
@@ -369,9 +401,9 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
           item.role,
           item.location,
         ].filter(Boolean);
-        
-        return searchableFields.some(field => 
-          field && field.toLowerCase().includes(query)
+
+        return searchableFields.some(
+          (field) => field && field.toLowerCase().includes(query)
         );
       });
     }
@@ -518,11 +550,11 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
                   >
                     <MoreVertical className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
                   </button>
-                  
+
                   <ThreeDotsMenu
                     isOpen={activeMenuId === item.id}
                     onClose={() => setActiveMenuId(null)}
-                    onDelete={(e : any) => handleDeleteClick(item, e)}
+                    onDelete={(e: any) => handleDeleteClick(item, e)}
                   />
                 </div>
 
@@ -552,7 +584,9 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
                           <span className="font-medium text-gray-700 break-words">
                             {item.role || "Role not specified"}
                           </span>
-                          <span className="hidden sm:inline text-gray-300 flex-shrink-0">•</span>
+                          <span className="hidden sm:inline text-gray-300 flex-shrink-0">
+                            •
+                          </span>
                           <span className="break-words">
                             {item.company || "Not Assigned"}
                           </span>
@@ -576,17 +610,25 @@ export default function InspectView({ onItemSelect, searchQuery }: InspectViewPr
                       <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                         <div className="flex items-center gap-1">
                           <MapPin className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="break-words">{item.location || "Unknown Location"}</span>
+                          <span className="break-words">
+                            {item.location || "Unknown Location"}
+                          </span>
                         </div>
 
                         <div className="flex items-center gap-1">
                           <Clock className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                          <span className="break-words">Experience: {formatExperience(item.yearsOfExp) || "Not Specified"}</span>
+                          <span className="break-words">
+                            Experience:{" "}
+                            {formatExperience(item.yearsOfExp) ||
+                              "Not Specified"}
+                          </span>
                         </div>
 
                         <div className="flex items-center gap-1 text-xs text-gray-400 sm:ml-auto">
                           <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
-                          <span className="break-words">{item.lastActivity || "18 hours ago"}</span>
+                          <span className="break-words">
+                            {item.lastActivity || "18 hours ago"}
+                          </span>
                         </div>
                       </div>
                     </div>

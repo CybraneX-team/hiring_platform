@@ -91,6 +91,7 @@ export interface InspectItem {
   email?: string;
   location?: string;
   yearsOfExp?: string;
+  userId : string;
   matchScore?: number;
   profile ?: unknown;
 }
