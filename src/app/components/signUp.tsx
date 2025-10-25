@@ -178,7 +178,7 @@ export default function SignupPage() {
     const state = JSON.stringify({ mode: "Inspector" });
     const encodedState = encodeURIComponent(state);
 
-    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google?state=${encodedState}`;
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google?state=${state}`;
   };
   return (
     <motion.div
