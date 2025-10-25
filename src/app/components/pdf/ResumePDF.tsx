@@ -270,6 +270,7 @@ export const ResumePDF: React.FC<{ data: ResumeData; generatedOn?: string }> = (
                 <Text style={{ color: "#374151" }}>{[e.company, e.period].filter(Boolean).join(" • ")}</Text>
                 {Array.isArray(e.points) && e.points.length > 0 ? (
                   <View style={{ marginTop: 4 }}>
+                    <Text style={{ fontWeight: 600, marginBottom: 4 }}>Role and responsibilities:</Text>
                     {e.points.map((p, idx) => (
                       <View key={idx} style={styles.bulletRow}>
                         <Text style={styles.bulletSymbol}>{"•"}</Text>
