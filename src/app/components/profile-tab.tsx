@@ -1141,6 +1141,12 @@ export default function ProfileTab() {
   ) => {
     setUploadingDocument(true);
     try {
+      // Client-side size guard to match backend/proxy limit
+      const maxBytes = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxBytes) {
+        toast.error("File exceeds 10MB limit");
+        return;
+      }
       const formData = new FormData();
       formData.append("document", file);
       formData.append("docId", docId.toString());
@@ -1164,8 +1170,16 @@ export default function ProfileTab() {
           documents: [],
         });
       } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || "Failed to upload document");
+        if (response.status === 413) {
+          toast.error("File exceeds 10MB limit");
+        } else {
+          try {
+            const errorData = await response.json();
+            toast.error(errorData.message || "Failed to upload document");
+          } catch (_e) {
+            toast.error("Failed to upload document");
+          }
+        }
       }
     } catch (error) {
       console.error("Error uploading document:", error);
