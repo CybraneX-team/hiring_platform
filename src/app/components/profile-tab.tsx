@@ -1652,6 +1652,27 @@ export default function ProfileTab() {
 
       const formData = new FormData();
 
+      // Basic required-field validation for better UX
+      const missing: string[] = [];
+      if (!profileFormData.name || !profileFormData.name.trim()) missing.push("Full Name");
+      const hasLocation =
+        (profileFormData.locationData &&
+          profileFormData.locationData.lat &&
+          profileFormData.locationData.lng &&
+          profileFormData.locationData.address) ||
+        (profileFormData.location && profileFormData.location.trim());
+      if (!hasLocation) missing.push("Location");
+      if (!profileFormData.bio || !profileFormData.bio.trim()) missing.push("About");
+      const skillsCount = (profileFormData.skills || "").split(',').map((s)=>s.trim()).filter(Boolean).length;
+      if (skillsCount === 0) missing.push("Skills");
+      const languagesCount = (profileFormData.languages || "").split(',').map((l)=>l.trim()).filter(Boolean).length;
+      if (languagesCount === 0) missing.push("Languages");
+      if (missing.length > 0) {
+        toast.error(`Please fill required fields: ${missing.join(', ')}`);
+        setIsLoading(false);
+        return;
+      }
+
       // Always include userId (required)
       if (user?.id) {
         formData.append("userId", user.id);
@@ -2480,12 +2501,12 @@ export default function ProfileTab() {
         fields: [
           {
             name: "type",
-            label: "Degree Type",
+            label: "Degree Type *",
             placeholder: "e.g., Bachelor's, Master's",
           },
           {
             name: "institution",
-            label: "Institution",
+            label: "Institution *",
             placeholder: "University name",
           },
           {
@@ -2506,12 +2527,12 @@ export default function ProfileTab() {
         fields: [
           {
             name: "title",
-            label: "Job Title",
+            label: "Job Title *",
             placeholder: "e.g., Senior Software Engineer",
           },
           {
             name: "company",
-            label: "Company",
+            label: "Company *",
             placeholder: "Company name",
           },
           {
@@ -2603,15 +2624,15 @@ export default function ProfileTab() {
             </div>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
-              {config.fields.map((field: any, index) => (
+                  {config.fields.map((field: any, index) => (
                 <motion.div
                   key={field.name}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1, duration: 0.3 }}
                 >
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {field.label}
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {field.label}
                   </label>
                   {field.type === "textarea" ? (
                     <textarea
@@ -2620,6 +2641,8 @@ export default function ProfileTab() {
                       onChange={(e) =>
                         handleInputChange(field.name, e.target.value)
                       }
+                          aria-required={String(field.label).includes('*')}
+                          required={String(field.label).includes('*')}
                       className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none h-20 sm:h-24 text-sm sm:text-base"
                     />
                   ) : (
@@ -2630,6 +2653,8 @@ export default function ProfileTab() {
                       onChange={(e) =>
                         handleInputChange(field.name, e.target.value)
                       }
+                          aria-required={String(field.label).includes('*')}
+                          required={String(field.label).includes('*')}
                       className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm sm:text-base"
                     />
                   )}
@@ -4153,7 +4178,7 @@ export default function ProfileTab() {
               <div className="px-6 pb-6 space-y-5">
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-gray-700">
-                    Full Name
+                    Full Name <span className="text-red-600">*</span>
                   </label>
                   <input
                     type="text"
@@ -4165,13 +4190,15 @@ export default function ProfileTab() {
                       }))
                     }
                     placeholder="e.g., John Doe"
+                    required
+                    aria-required="true"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-gray-700">
-                    Location
+                    Location <span className="text-red-600">*</span>
                   </label>
                   <div className="space-y-3">
                     <LocationInputWithSearch
@@ -4192,7 +4219,7 @@ export default function ProfileTab() {
 
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-gray-700">
-                    About
+                    About <span className="text-red-600">*</span>
                   </label>
                   <textarea
                     value={profileFormData.bio}
@@ -4204,13 +4231,15 @@ export default function ProfileTab() {
                     }
                     placeholder="Tell us about yourself..."
                     rows={4}
+                    required
+                    aria-required="true"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   />
                 </div>
 
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-gray-700">
-                    Skills
+                    Skills <span className="text-red-600">*</span>
                   </label>
                   <input
                     type="text"
@@ -4222,13 +4251,15 @@ export default function ProfileTab() {
                       }))
                     }
                     placeholder="e.g., JavaScript, React, Python (comma separated)"
+                    required
+                    aria-required="true"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-gray-700">
-                    Languages
+                    Languages <span className="text-red-600">*</span>
                   </label>
                   <input
                     type="text"
@@ -4240,6 +4271,8 @@ export default function ProfileTab() {
                       }))
                     }
                     placeholder="e.g., English (Native), Spanish (Intermediate) (comma separated)"
+                    required
+                    aria-required="true"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -4257,7 +4290,10 @@ export default function ProfileTab() {
                         phone: e.target.value,
                       }))
                     }
-                    placeholder="e.g., +1 (555) 123-4567"
+                    placeholder="e.g., +91 98765 43210"
+                    inputMode="tel"
+                    pattern="^(?:\\+91[\ s-]?)?[6-9]\d{9}$"
+                    title="Enter a valid Indian phone number (e.g., +91 98765 43210)"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
