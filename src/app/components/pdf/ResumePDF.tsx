@@ -22,7 +22,7 @@ export interface ResumeData {
     description?: string
     points?: Array<{ point: string }>
   }>
-  academics?: Array<{ level?: string; institution?: string; completed?: boolean }>
+  academics?: Array<{ level?: string; institution?: string; period?: string; gpa?: string; description?: string; completed?: boolean }>
   languages?: string[]
   contact?: { phone?: string; email?: string }
   companyLogo?: string
@@ -206,7 +206,7 @@ export const ResumePDF: React.FC<{ data: ResumeData; generatedOn?: string }> = (
                 <Text style={{ ...styles.metaText, marginLeft: 4, marginTop: 2 }}>{data.available ? 'Available' : 'Unavailable'}</Text>
               </View>
             ) : null} */}
-            {data.experience ? (
+            {data.experience && (
               <View style={styles.metaItem}>
                 <Svg width={10} height={10} viewBox="0 0 24 24">
                   <Path
@@ -216,10 +216,20 @@ export const ResumePDF: React.FC<{ data: ResumeData; generatedOn?: string }> = (
                 </Svg>
                 <Text style={{ ...styles.metaText, marginLeft: 4, marginTop: 2 }}>
                   <Text style={{ fontWeight: 700 }}>Experience: </Text>
-                  {data.experience}
+                  {(() => {
+                    // If data.experience contains 'year' or 'Years', don't append.
+                    const value = String(data.experience).trim();
+                    if (/year/i.test(value)) return value;
+                    // If numeric, append correct pluralization
+                    const num = Number(value);
+                    if (!isNaN(num)) {
+                      return `${num} ${num === 1 ? "Year" : "Years"}`;
+                    }
+                    return value;
+                  })()}
                 </Text>
               </View>
-            ) : null}
+            )}
           </View>
         </View>
 
@@ -294,9 +304,15 @@ export const ResumePDF: React.FC<{ data: ResumeData; generatedOn?: string }> = (
                   <View>
                     <Text style={styles.sectionTitle}>Academics</Text>
                     {data.academics.map((a, i) => (
-                      <Text key={i} style={styles.listItem}>
-                        {[a.level, a.institution].filter(Boolean).join(" — ")}
-                      </Text>
+                      <View key={i} style={styles.listItem}>
+                        {a.level ? (
+                          <Text style={{ fontWeight: 700 }}>{a.level}</Text>
+                        ) : null}
+                        {a.institution ? <Text>{a.institution}</Text> : null}
+                        {a.period ? <Text>Period: {a.period}</Text> : null}
+                        {a.gpa ? <Text>GPA: {a.gpa}</Text> : null}
+                        {a.description ? <Text>{a.description}</Text> : null}
+                      </View>
                     ))}
                   </View>
                 )}

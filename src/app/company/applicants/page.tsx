@@ -394,6 +394,9 @@ function ApplicationDetailContent() {
         ? p.education.map((edu: any) => ({
           level: edu?.Degree,
           institution: edu?.institure || edu?.institute,
+          period: edu?.period || undefined,
+          gpa: edu?.GPA || undefined,
+          description: edu?.description || undefined,
           completed: true,
         }))
         : [];
@@ -412,9 +415,16 @@ function ApplicationDetailContent() {
         : "Unknown Location";
       const imageUrl = p?.profile_image_url || undefined;
       const available = applicant?.available || false;
-      const experience = p?.yearsOfExp
-        ? `${p.yearsOfExp}`
-        : applicant?.experience || "0 Years";
+      const experience = (() => {
+        let exp = p?.yearsOfExp || applicant?.experience;
+        if (exp === null || exp === undefined || exp === "") return "0";
+        if (typeof exp === 'number' && !isNaN(exp)) return String(exp);
+        if (typeof exp === 'string') {
+          let match = exp.match(/(\d+(?:\.\d+)?)/);
+          return match ? match[1] : "0";
+        }
+        return "0";
+      })();
       const email = applicant?.user?.email || applicant?.contact?.email;
       const phone = p?.phoneNumber || applicant?.contact?.phone;
       // Prefer original logo URL; unwrap Next.js optimized URLs if present

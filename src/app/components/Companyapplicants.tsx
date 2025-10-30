@@ -191,6 +191,9 @@ export default function Companyapplicants({
       const academics = (applicant?.education || []).map((edu: any) => ({
         level: edu?.Degree,
         institution: edu?.institure || edu?.institute,
+        period: edu?.period || undefined,
+        gpa: edu?.GPA || undefined,
+        description: edu?.description || undefined,
         completed: true,
       }));
 
@@ -209,9 +212,15 @@ export default function Companyapplicants({
               applicant?.profilePicture ||
               undefined,
 
-            experience: applicant?.yearsOfExp
-              ? `${applicant.yearsOfExp}`
-              : undefined,
+            experience: (() => {
+              const exp = applicant?.yearsOfExp;
+              if (!exp) return undefined;
+              if (typeof exp === 'string') {
+                let match = exp.match(/(\d+(?:\.\d+)?)/);
+                return match ? match[1] : exp;
+              }
+              return String(exp);
+            })(),
             skills: applicant?.skills || [],
             certifications,
             experience_details,

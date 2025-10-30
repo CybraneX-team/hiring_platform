@@ -164,6 +164,9 @@ interface applicantDetail {
   academics: Array<{
     level: string;
     institution: string;
+    period?: string;
+    gpa?: string;
+    description?: string;
     completed: boolean;
   }>;
   languages: string[];
@@ -209,7 +212,10 @@ export default function ApplicationDetailView() {
       academics: Array.isArray(profile.education)
         ? profile.education.map((edu: any) => ({
             level: edu.Degree || "Degree",
-            institution: edu.institure || "Institution", // Note: keeping the typo from your data
+            institution: edu.institure || "Institution",
+            period: edu.period || undefined,
+            gpa: edu.GPA || undefined,
+            description: edu.description || undefined,
             completed: true,
           }))
         : [],
@@ -259,7 +265,16 @@ export default function ApplicationDetailView() {
             location: applicantDetail.location? applicantDetail.location.split(",").slice(-4).join(", ") : "Unknown Location" ,
             imageUrl: (profile as any)?.profile_image_url || undefined,
             
-            experience: applicantDetail.experience,
+            experience: (() => {
+              const exp = applicantDetail.experience;
+              if (!exp) return undefined;
+              // Remove all variations of 'year', 'years', etc.
+              if (typeof exp === 'string') {
+                let match = exp.match(/(\d+(?:\.\d+)?)/);
+                return match ? match[1] : exp;
+              }
+              return String(exp);
+            })(),
             skills: applicantDetail.skills,
             certifications: applicantDetail.certifications,
             experience_details: applicantDetail.experience_details,
