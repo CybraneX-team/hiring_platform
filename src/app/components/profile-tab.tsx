@@ -3300,7 +3300,7 @@ export default function ProfileTab() {
                             application.status.slice(1)}
                         </span>
                       {application.documents.some(
-                        (doc: any) => doc.status === "requested" && doc.inputType === "file"
+                        (doc: any) => ["requested", "needs_resubmission"].includes(doc.status)
                       ) && (
                         <div className="absolute bottom-4 right-4">
                           <button
@@ -3310,7 +3310,8 @@ export default function ProfileTab() {
                                 isOpen: true,
                                 applicationId: application._id,
                                 documents: application.documents.filter(
-                                  (doc : any) => doc.status === "requested" && doc.inputType === "file"
+                                  (doc : any) => ["requested", "needs_resubmission"].includes(doc.status)
+
                                 ),
                               })
                             }
@@ -3628,7 +3629,7 @@ export default function ProfileTab() {
                       </div>
                     </div>
 
-                    {doc.status === "requested" && (
+                    {["requested", "needs_resubmission"].includes(doc.status)&& (
                       <div className="mt-3">
                         {doc.inputType === "file" ? (
                           <div className="space-y-3">
