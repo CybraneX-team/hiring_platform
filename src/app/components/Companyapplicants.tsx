@@ -166,12 +166,15 @@ export default function Companyapplicants({
 
       const certifications = (applicant?.certificates || []).map(
         (cert: any) => {
-          if (typeof cert === "string") return { name: cert };
+          if (typeof cert === "string") return { name: cert } as any;
           return {
             name: cert?.name || cert?.title,
             issuer: cert?.issuer,
             date: cert?.date,
             description: cert?.description,
+            fileUrl: cert?.fileUrl || cert?.certificateUrl || undefined,
+            fileName: cert?.fileName || cert?.certificateFileName || undefined,
+            mimeType: cert?.mimeType || cert?.certificateMime || undefined,
           };
         }
       );

@@ -365,11 +365,14 @@ function ApplicationDetailContent() {
       // Certifications
       const certifications = Array.isArray(p?.certificates)
         ? p.certificates.map((c: any) => ({
-          name: c?.name,
-          issuer: c?.issuer,
-          date: c?.date,
-          description: c?.description,
-        }))
+            name: c?.name,
+            issuer: c?.issuer,
+            date: c?.date,
+            description: c?.description,
+            fileUrl: c?.fileUrl || c?.certificateUrl || undefined,
+            fileName: c?.fileName || c?.certificateFileName || undefined,
+            mimeType: c?.mimeType || c?.certificateMime || undefined,
+          }))
         : [];
 
       // Experience details

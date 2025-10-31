@@ -340,6 +340,40 @@ export const ResumePDF: React.FC<{ data: ResumeData; generatedOn?: string }> = (
 
         <Text fixed style={styles.footer}>{footerText}</Text>
       </Page>
+
+      {/* Append certificate pages with images or info blocks */}
+      {Array.isArray(data.certifications)
+        ? data.certifications
+            .filter((c) => !!c?.fileUrl)
+            .map((c, idx) => {
+              const url = c!.fileUrl as string;
+              const isImage = /\.(png|jpg|jpeg|webp|gif)$/i.test(url) || /image\//i.test(url);
+              return (
+                <Page key={`cert-${idx}`} size="A4" style={{ padding: 24 }}>
+                  <Text style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
+                    Certificate: {c?.name || `Certificate ${idx + 1}`}
+                  </Text>
+                  {c?.issuer ? (
+                    <Text style={{ marginBottom: 4 }}>Issuer: {c.issuer}</Text>
+                  ) : null}
+                  {c?.date ? <Text style={{ marginBottom: 8 }}>Date: {c.date}</Text> : null}
+                  {isImage ? (
+                    <Image
+                      src={url}
+                      style={{ width: "100%", height: "auto", objectFit: "contain" }}
+                    />
+                  ) : (
+                    <View>
+                      <Text style={{ marginBottom: 8 }}>
+                        This certificate is a PDF or unsupported format. Use the link below to view it:
+                      </Text>
+                      <Text>{url}</Text>
+                    </View>
+                  )}
+                </Page>
+              );
+            })
+        : null}
     </Document>
   );
 };

@@ -257,6 +257,17 @@ export default function ApplicationDetailView() {
       const formattedDate = `${String(now.getDate()).padStart(2, "0")}/${String(
         now.getMonth() + 1
       ).padStart(2, "0")}/${now.getFullYear()}`;
+      // Normalize certifications to include fileUrl/fileName/mimeType for PDF attachments
+      const certifications = (applicantDetail.certifications || []).map((c: any) => ({
+        name: c?.name || c?.title,
+        issuer: c?.issuer,
+        date: c?.date,
+        description: c?.description,
+        fileUrl: c?.fileUrl || c?.certificateUrl || undefined,
+        fileName: c?.fileName || c?.certificateFileName || undefined,
+        mimeType: c?.mimeType || c?.certificateMime || undefined,
+      }));
+
       const blob = await pdf(
         <ResumePDF
           data={{
@@ -276,7 +287,7 @@ export default function ApplicationDetailView() {
               return String(exp);
             })(),
             skills: applicantDetail.skills,
-            certifications: applicantDetail.certifications,
+            certifications,
             experience_details: applicantDetail.experience_details,
             academics: applicantDetail.academics,
             languages: applicantDetail.languages,
