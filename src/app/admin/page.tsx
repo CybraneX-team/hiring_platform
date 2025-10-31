@@ -82,17 +82,17 @@ export default function AdminPanel() {
   const [authError, setAuthError] = useState<string | null>(null);
   const bootstrapAttemptedRef = useRef(false);
 
-  const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
-    return docs.map((doc: any) => ({
-      id: Number(doc.id),
-      name: String(doc.name || `Document ${doc.id}`),
-      status: (doc.status || "requested") as SubmittedDocument["status"],
-      file: doc.file ?? null,
-      fileUrl: doc.fileUrl ?? null,
-      inputType: doc.inputType || "file", // ✅ ADD THIS LINE
-      value: doc.value ?? null, // ✅ ADD THIS LINE
-    }));
-  }, []);
+const normalizeDocuments = useCallback((docs: any[]): SubmittedDocument[] => {
+  return docs.map((doc: any) => ({
+    id: Number(doc.id),
+    name: String(doc.name || `Document ${doc.id}`),
+    status: (doc.status || "requested") as SubmittedDocument["status"],
+    inputType: doc.inputType || "file",
+    value: doc.value ?? null,
+    files: Array.isArray(doc.files) ? doc.files : [], // ✅ keep multi-file uploads
+  }));
+}, []);
+
 
   const handleProfileUpdate = useCallback((updatedProfile: any) => {
     // Update the selectedInspectItem with new data

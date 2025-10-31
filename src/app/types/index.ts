@@ -52,12 +52,28 @@ export interface DocumentType {
 export interface SubmittedDocument {
   id: number;
   name: string;
-  status: "requested" | "submitted" | "approved" | "rejected";
-  file?: string | null;
-  fileUrl?: string | null;
-  inputType : string;
-  value : string | any
+  status: "requested" | "submitted" | "approved" | "rejected" | "needs_resubmission";
+  inputType: "file" | "text";
+  value?: string | {
+    accountHolderName: string;
+    accountNumber: string;
+    ifscCode: string;
+    bankName: string;
+    branch: string;
+  };
+
+  // ✅ NEW field replacing fileName/fileUrl
+  files: {
+    fileName: string;
+    fileUrl: string;
+    uploadedAt: string;
+  }[];
+
+  // legacy (OPTIONAL SAFE!)
+  fileUrl?: string;
+  fileName?: string;
 }
+
 
 export interface AnalyticsData {
   totalCompanies: number;

@@ -147,3 +147,27 @@ export const transformProfileData = (apiProfile: any) => {
     },
   };
 };
+
+export const getMissingFields = (profileData : any) => {
+  const missing: string[] = [];
+
+  if (!profileData?.skills  || profileData.skills.length === 0) {
+    missing.push("skills");
+  }
+
+  if (!profileData?.phoneNumber || profileData.phoneNumber.trim().length < 5) {
+    missing.push("Phone Number");
+  }
+
+  if (!profileData?.locationData) {
+    missing.push("Location");
+  }
+
+  if (!profileData?.WorkExperience || profileData.WorkExperience.length === 0) {
+    missing.push("Work Experience");
+  }
+
+  return missing;
+};
+
+

@@ -34,6 +34,7 @@ import { toast } from "react-toastify";
 import ApplicationDetailView from "./cv";
 import Link from "next/link";
 import {
+  getMissingFields,
   processCerts,
   processEducation,
   processExperiences,
@@ -1137,18 +1138,15 @@ export default function ProfileTab() {
   const uploadDocument = async (
     applicationId: string,
     docId: number,
-    file: File
+    files: File[]
   ) => {
     setUploadingDocument(true);
     try {
-      // Client-side size guard to match backend/proxy limit
-      const maxBytes = 10 * 1024 * 1024; // 10MB
-      if (file.size > maxBytes) {
-        toast.error("File exceeds 10MB limit");
-        return;
-      }
       const formData = new FormData();
-      formData.append("document", file);
+      files.forEach((f) => {
+        formData.append("documents", f);
+      });
+
       formData.append("docId", docId.toString());
 
       const response = await fetch(
@@ -1595,6 +1593,7 @@ export default function ProfileTab() {
       }
     }
   }, [profile]);
+  const missing = getMissingFields(profile);
 
   const renderProfilePicture = () => {
     return (
@@ -1654,7 +1653,8 @@ export default function ProfileTab() {
 
       // Basic required-field validation for better UX
       const missing: string[] = [];
-      if (!profileFormData.name || !profileFormData.name.trim()) missing.push("Full Name");
+      if (!profileFormData.name || !profileFormData.name.trim())
+        missing.push("Full Name");
       const hasLocation =
         (profileFormData.locationData &&
           profileFormData.locationData.lat &&
@@ -1662,13 +1662,20 @@ export default function ProfileTab() {
           profileFormData.locationData.address) ||
         (profileFormData.location && profileFormData.location.trim());
       if (!hasLocation) missing.push("Location");
-      if (!profileFormData.bio || !profileFormData.bio.trim()) missing.push("About");
-      const skillsCount = (profileFormData.skills || "").split(',').map((s)=>s.trim()).filter(Boolean).length;
+      if (!profileFormData.bio || !profileFormData.bio.trim())
+        missing.push("About");
+      const skillsCount = (profileFormData.skills || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean).length;
       if (skillsCount === 0) missing.push("Skills");
-      const languagesCount = (profileFormData.languages || "").split(',').map((l)=>l.trim()).filter(Boolean).length;
+      const languagesCount = (profileFormData.languages || "")
+        .split(",")
+        .map((l) => l.trim())
+        .filter(Boolean).length;
       if (languagesCount === 0) missing.push("Languages");
       if (missing.length > 0) {
-        toast.error(`Please fill required fields: ${missing.join(', ')}`);
+        toast.error(`Please fill required fields: ${missing.join(", ")}`);
         setIsLoading(false);
         return;
       }
@@ -1811,7 +1818,6 @@ export default function ProfileTab() {
       }
 
       // Handle certificates only if there are valid entries and they've changed
-
 
       // Only make API call if we have data to send (besides userId)
       let hasDataToSend = false;
@@ -2624,15 +2630,15 @@ export default function ProfileTab() {
             </div>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
-                  {config.fields.map((field: any, index) => (
+              {config.fields.map((field: any, index) => (
                 <motion.div
                   key={field.name}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1, duration: 0.3 }}
                 >
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {field.label}
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {field.label}
                   </label>
                   {field.type === "textarea" ? (
                     <textarea
@@ -2641,8 +2647,8 @@ export default function ProfileTab() {
                       onChange={(e) =>
                         handleInputChange(field.name, e.target.value)
                       }
-                          aria-required={String(field.label).includes('*')}
-                          required={String(field.label).includes('*')}
+                      aria-required={String(field.label).includes("*")}
+                      required={String(field.label).includes("*")}
                       className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none h-20 sm:h-24 text-sm sm:text-base"
                     />
                   ) : (
@@ -2653,8 +2659,8 @@ export default function ProfileTab() {
                       onChange={(e) =>
                         handleInputChange(field.name, e.target.value)
                       }
-                          aria-required={String(field.label).includes('*')}
-                          required={String(field.label).includes('*')}
+                      aria-required={String(field.label).includes("*")}
+                      required={String(field.label).includes("*")}
                       className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm sm:text-base"
                     />
                   )}
@@ -3338,33 +3344,35 @@ export default function ProfileTab() {
                           {application.status.charAt(0).toUpperCase() +
                             application.status.slice(1)}
                         </span>
-                      {application.documents.some(
-                        (doc: any) => ["requested", "needs_resubmission"].includes(doc.status)
-                      ) && (
-                        <div className="absolute bottom-4 right-4">
-                          <button
-                            className="flex items-center gap-2 px-5 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-base font-medium shadow-sm"
-                            onClick={() =>
-                              setDocumentUploadModal({
-                                isOpen: true,
-                                applicationId: application._id,
-                                documents: application.documents.filter(
-                                  (doc : any) => ["requested", "needs_resubmission"].includes(doc.status)
-
-                                ),
-                              })
-                            }
-                          >
-                            <Upload className="w-5 h-5" />
-                            Upload Documents
-                          </button>
-                        </div>
-                      )}
+                        {application.documents.some((doc: any) =>
+                          ["requested", "needs_resubmission"].includes(
+                            doc.status
+                          )
+                        ) && (
+                          <div className="absolute bottom-4 right-4">
+                            <button
+                              className="flex items-center gap-2 px-5 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-base font-medium shadow-sm"
+                              onClick={() =>
+                                setDocumentUploadModal({
+                                  isOpen: true,
+                                  applicationId: application._id,
+                                  documents: application.documents.filter(
+                                    (doc: any) =>
+                                      [
+                                        "requested",
+                                        "needs_resubmission",
+                                      ].includes(doc.status)
+                                  ),
+                                })
+                              }
+                            >
+                              <Upload className="w-5 h-5" />
+                              Upload Documents
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
-
-
-
                   </div>
                 ))}
               </div>
@@ -3668,7 +3676,9 @@ export default function ProfileTab() {
                       </div>
                     </div>
 
-                    {["requested", "needs_resubmission"].includes(doc.status)&& (
+                    {["requested", "needs_resubmission"].includes(
+                      doc.status
+                    ) && (
                       <div className="mt-3">
                         {doc.inputType === "file" ? (
                           <div className="space-y-3">
@@ -3677,43 +3687,66 @@ export default function ProfileTab() {
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => {
-                                    const link = document.createElement('a');
-                                    link.href = '/COMPSCOPE_Freelance Agreement-(2025) (1).docx';
-                                    link.download = 'COMPSCOPE_Freelance Agreement-(2025) (1).docx';
+                                    const link = document.createElement("a");
+                                    link.href =
+                                      "/COMPSCOPE_Freelance Agreement-(2025) (1).docx";
+                                    link.download =
+                                      "COMPSCOPE_Freelance Agreement-(2025) (1).docx";
                                     document.body.appendChild(link);
                                     link.click();
                                     document.body.removeChild(link);
                                   }}
                                   className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
                                 >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                    />
                                   </svg>
                                   Download Template
                                 </button>
+
                                 <div className="relative group">
-                                  <svg className="w-5 h-5 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                                  <svg
+                                    className="w-5 h-5 text-gray-400 cursor-help"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                                      clipRule="evenodd"
+                                    />
                                   </svg>
                                   <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
-                                    Download the doc and attach the signed document here!
+                                    Download the doc and attach the signed
+                                    document here!
                                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
                                   </div>
                                 </div>
                               </div>
                             )}
+
                             <input
                               type="file"
+                              multiple
                               accept=".pdf,.jpg,.jpeg,.png"
                               onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  uploadDocument(
-                                    documentUploadModal.applicationId,
-                                    doc.docId,
-                                    file
-                                  );
-                                }
+                                if (!e.target.files) return;
+                                const selected = Array.from(e.target.files);
+                                uploadDocument(
+                                  documentUploadModal.applicationId,
+                                  doc.docId,
+                                  selected
+                                );
                               }}
                               className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                               disabled={uploadingDocument}
@@ -3841,17 +3874,20 @@ export default function ProfileTab() {
                       </div>
                     )}
 
-                    {doc.fileUrl && (
-                      <div className="mt-3">
-                        <a
-                          href={doc.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100"
-                        >
-                          <FileText className="w-4 h-4" />
-                          View Uploaded
-                        </a>
+                    {doc.files && doc.files.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {doc.files.map((file : any, index : any) => (
+                          <a
+                            key={index}
+                            href={file.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-3 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100"
+                          >
+                            <FileText className="w-4 h-4" />
+                            {file.fileName || `Uploaded File ${index + 1}`}
+                          </a>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -3968,6 +4004,30 @@ export default function ProfileTab() {
               </div>
             </div>
           </motion.div>
+          {missing && missing.length > 0 && (
+            <div className="mb-4 w-full bg-red-50 border border-red-200 rounded-md p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-red-700 font-medium text-sm sm:text-base">
+                  Your profile is incomplete — you cannot apply to jobs until
+                  the following information is added:
+                </p>
+
+                <ul className="mt-1 text-xs sm:text-sm text-red-600 list-disc ml-6">
+                  {missing.map((item: string, idx: number) => (
+                    <li key={idx}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <button
+                onClick={() => setIsProfileEditOpen(true)}
+                className="mt-3 sm:mt-0 inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-md text-sm hover:bg-red-700 transition"
+              >
+                Complete Profile
+                <ArrowUpRight size={16} />
+              </button>
+            </div>
+          )}
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
