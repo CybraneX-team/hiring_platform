@@ -30,7 +30,29 @@ export const metadata: Metadata = {
     ],
     shortcut: '/favicon.ico'
   },
-  manifest: '/site.webmanifest'
+  manifest: '/site.webmanifest',
+  openGraph: {
+    title: "ProjectMATCH - Connecting Talent to Projects",
+    description: "Connecting talent to the projects — securely and efficiently. Find your next project or hire the right talent.",
+    url: "https://compscope.in",
+    siteName: "ProjectMATCH",
+    images: [
+      {
+        url: 'https://compscope.in/favicon-256x256.png',
+        width: 256,
+        height: 256,
+        alt: 'ProjectMATCH Logo',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: "ProjectMATCH - Connecting Talent to Projects",
+    description: "Connecting talent to the projects — securely and efficiently. Find your next project or hire the right talent.",
+    images: ['https://compscope.in/favicon-256x256.png'],
+  },
 };
 
 export default function RootLayout({
