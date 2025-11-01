@@ -31,6 +31,7 @@ import ResumeUpload from "./ResumeUpload";
 import JobMatching from "./JobMatching";
 import { useUser } from "../context/UserContext";
 import { toast } from "react-toastify";
+import PhoneInput from "react-phone-input-2";
 import ApplicationDetailView from "./cv";
 import Link from "next/link";
 import {
@@ -3876,7 +3877,7 @@ export default function ProfileTab() {
 
                     {doc.files && doc.files.length > 0 && (
                       <div className="mt-3 space-y-2">
-                        {doc.files.map((file : any, index : any) => (
+                        {doc.files.map((file: any, index: any) => (
                           <a
                             key={index}
                             href={file.fileUrl}
@@ -4342,20 +4343,21 @@ export default function ProfileTab() {
                   <label className="text-sm font-medium text-gray-700">
                     Phone Number
                   </label>
-                  <input
-                    type="tel"
+                  <PhoneInput
+                    country="in"
                     value={profileFormData.phone}
-                    onChange={(e) =>
-                      setProfileFormData((prev) => ({
+                    onChange={(value) =>
+                      setProfileFormData((prev: any) => ({
                         ...prev,
-                        phone: e.target.value,
+                        phone: `+${value}`, // ALWAYS formats with +
                       }))
                     }
-                    placeholder="e.g., +91 98765 43210"
-                    inputMode="tel"
-                    pattern="^(?:\\+91[\ s-]?)?[6-9]\d{9}$"
-                    title="Enter a valid Indian phone number (e.g., +91 98765 43210)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    enableSearch
+                    inputStyle={{
+                      width: "100%",
+                      height: "40px",
+                      fontSize: "14px",
+                    }}
                   />
                 </div>
 

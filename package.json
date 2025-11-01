@@ -32,6 +32,7 @@
     "olamaps-web-sdk": "^1.1.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-phone-input-2": "^2.15.1",
     "react-router-dom": "^7.6.3",
     "react-toastify": "^11.0.5",
     "tailwind-merge": "^3.3.1",

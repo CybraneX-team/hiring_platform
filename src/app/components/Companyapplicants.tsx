@@ -66,6 +66,7 @@ export default function Companyapplicants({
   onUpdate,
 }: CompanyApplicantsProps) {
   const [applicant, setApplicant] = useState(itemId);
+  console.log("applicant", applicant);
   const contentRef = useRef<HTMLDivElement>(null);
   const [preparingPdf, setPreparingPdf] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -218,7 +219,7 @@ export default function Companyapplicants({
             experience: (() => {
               const exp = applicant?.yearsOfExp;
               if (!exp) return undefined;
-              if (typeof exp === 'string') {
+              if (typeof exp === "string") {
                 let match = exp.match(/(\d+(?:\.\d+)?)/);
                 return match ? match[1] : exp;
               }
@@ -344,8 +345,6 @@ export default function Companyapplicants({
         })),
       };
 
-
-
       const response = await fetch(
         `${API_URL}/profile/edit/${applicant._id}/certifications`,
         {
@@ -469,8 +468,6 @@ export default function Companyapplicants({
           description: edu.description || "",
         })),
       };
-
-
 
       const response = await fetch(
         `${API_URL}/profile/edit/${applicant._id}/education`,
@@ -862,6 +859,21 @@ export default function Companyapplicants({
                   <span className="font-medium">Mail :</span>{" "}
                   {applicant.user.email || "example@mail.com"}
                 </p>
+
+                {/* ✅ ADD HERE */}
+                {applicant.resumeUrl && (
+                  <p className="text-gray-700">
+                    <span className="font-medium">Resume:</span>{" "}
+                    <a
+                      href={applicant.resumeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline hover:text-blue-800 cursor-pointer"
+                    >
+                      Click here to view
+                    </a>
+                  </p>
+                )}
               </div>
             </div>
           </div>
