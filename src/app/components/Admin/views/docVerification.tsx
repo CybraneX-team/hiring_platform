@@ -30,6 +30,22 @@ const renderTextValue = (doc: any) => {
 
   const value = doc.value;
 
+  // Helper function to format field labels properly
+  const formatLabel = (key: string): string => {
+    // Special case for IFSC
+    if (key.toLowerCase() === "ifsccode") return "IFSC Code";
+    
+    // Split camelCase and capitalize each word
+    const spaced = key.replace(/([A-Z])/g, " $1").trim();
+    const words = spaced.split(/\s+/);
+    const capitalized = words.map(word => {
+      // Keep IFSC uppercase if found
+      if (word.toLowerCase() === "ifsc") return "IFSC";
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    });
+    return capitalized.join(" ");
+  };
+
   return (
     <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
       <p className="text-gray-600 text-xs mb-1">Submitted Information:</p>
@@ -38,7 +54,7 @@ const renderTextValue = (doc: any) => {
         <div className="text-sm text-gray-900 font-medium space-y-1">
           {Object.entries(value).map(([key, val] : any) => (
             <div key={key}>
-              <strong>{key.replace(/([A-Z])/g, " $1")}: </strong>
+              <strong>{formatLabel(key)}: </strong>
               {val}
             </div>
           ))}
